@@ -1,0 +1,3 @@
+[submodule "librime"]
+	path = app/src/main/jni/librime
+	url = https://github.com/rime/librime.git

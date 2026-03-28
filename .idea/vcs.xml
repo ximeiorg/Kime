@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/src/main/jni/librime" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/src/main/jni/librime/deps/glog" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/src/main/jni/librime/deps/googletest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/src/main/jni/librime/deps/leveldb" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/src/main/jni/librime/deps/leveldb/third_party/benchmark" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/src/main/jni/librime/deps/leveldb/third_party/googletest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/src/main/jni/librime/deps/marisa-trie" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/src/main/jni/librime/deps/opencc" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/app/src/main/jni/librime/deps/yaml-cpp" vcs="Git" />
+  </component>
+</project>

@@ -1,0 +1,26 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# librime and its dependencies
+app/src/main/jni/librime/
+app/src/main/jni/snappy/
+app/src/main/jni/cmake/
+app/src/main/jni/boost*
+
+# Large archives
+*.tar.xz
+*.tar.gz
+*.zip
