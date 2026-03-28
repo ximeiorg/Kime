@@ -1,0 +1,150 @@
+# Rime default settings
+# encoding: utf-8
+
+config_version: "0.36"
+
+schema_list:
+  - schema: wubi86
+
+switcher:
+  caption: "〔方案选单〕"
+  hotkeys:
+    - "Control+grave"
+  fold_options: true
+  abbreviate_options: true
+  option_list_separator: "／"
+
+menu:
+  page_size: 5
+
+punctuator:
+  full_shape:
+    " " : { commit: " " }
+    "," : { commit: "," }
+    "." : { commit: "." }
+    "<" : { commit: "<" }
+    ">" : { commit: ">" }
+    "?" : { commit: "?" }
+    ";" : { commit: ";" }
+    ":" : { commit: ":" }
+    "'" : { commit: "'" }
+    "\"" : { commit: "\"" }
+    "\\" : { commit: "\\" }
+    "|" : { commit: "|" }
+    "`" : { commit: "`" }
+    "~" : { commit: "~" }
+    "!" : { commit: "!" }
+    "$" : { commit: "$" }
+    "%" : { commit: "%" }
+    "^" : { commit: "^" }
+    "&" : { commit: "&" }
+    "*" : { commit: "*" }
+    "(" : { commit: "(" }
+    ")" : { commit: ")" }
+    "[" : { commit: "[" }
+    "]" : { commit: "]" }
+    "{" : { commit: "{" }
+    "}" : { commit: "}" }
+  half_shape:
+    "," : { commit: "," }
+    "." : { commit: "." }
+    "?" : { commit: "?" }
+    ";" : { commit: ";" }
+    ":" : { commit: ":" }
+    "'" : { commit: "'" }
+    "\"" : { commit: "\"" }
+    "\\" : { commit: "\\" }
+    "|" : { commit: "|" }
+    "`" : { commit: "`" }
+    "~" : { commit: "~" }
+    "!" : { commit: "!" }
+    "$" : { commit: "$" }
+    "%" : { commit: "%" }
+    "^" : { commit: "^" }
+    "&" : { commit: "&" }
+    "*" : { commit: "*" }
+    "(" : { commit: "(" }
+    ")" : { commit: ")" }
+    "[" : { commit: "[" }
+    "]" : { commit: "]" }
+    "{" : { commit: "{" }
+    "}" : { commit: "}" }
+  ascii_style:
+    "," : { commit: "," }
+    "." : { commit: "." }
+
+key_binder:
+  bindings:
+    # 空格键选第一候选词
+    - { when: has_menu, accept: space, send: 1 }
+    # 回车键提交输入编码
+    - { when: composing, accept: Return, send: Enter }
+    - { when: composing, accept: Enter, send: Escape }
+    # 退格键删除
+    - { when: composing, accept: BackSpace, send: BackSpace }
+    # 删除键
+    - { when: composing, accept: Delete, send: Delete }
+    # 左右方向键
+    - { when: composing, accept: Left, send: Left }
+    - { when: composing, accept: Right, send: Right }
+    # 上下方向键翻页
+    - { when: has_menu, accept: Up, send: Page_Up }
+    - { when: has_menu, accept: Down, send: Page_Down }
+    # 数字键选择候选词
+    - { when: has_menu, accept: "1", send: 1 }
+    - { when: has_menu, accept: "2", send: 2 }
+    - { when: has_menu, accept: "3", send: 3 }
+    - { when: has_menu, accept: "4", send: 4 }
+    - { when: has_menu, accept: "5", send: 5 }
+    - { when: has_menu, accept: "6", send: 6 }
+    - { when: has_menu, accept: "7", send: 7 }
+    - { when: has_menu, accept: "8", send: 8 }
+    - { when: has_menu, accept: "9", send: 9 }
+    - { when: has_menu, accept: "0", send: 10 }
+  select:
+    - { when: has_menu, accept: "1", send: 1 }
+    - { when: has_menu, accept: "2", send: 2 }
+    - { when: has_menu, accept: "3", send: 3 }
+    - { when: has_menu, accept: "4", send: 4 }
+    - { when: has_menu, accept: "5", send: 5 }
+    - { when: has_menu, accept: "6", send: 6 }
+    - { when: has_menu, accept: "7", send: 7 }
+    - { when: has_menu, accept: "8", send: 8 }
+    - { when: has_menu, accept: "9", send: 9 }
+    - { when: has_menu, accept: "0", send: 10 }
+
+recognizer:
+  patterns:
+    # 无特殊模式识别
+
+ascii_composer:
+  good_old_caps_lock: true
+  switch_key:
+    Caps_Lock: clear
+    Shift_L: commit_code
+    Shift_R: commit_code
+    Control_L: noop
+    Control_R: noop
+
+editor:
+  bindings:
+    - { when: composing, accept: BackSpace, send: BackSpace }
+    - { when: composing, accept: Delete, send: Delete }
+    - { when: composing, accept: Left, send: Left }
+    - { when: composing, accept: Right, send: Right }
+    - { when: composing, accept: Return, send: Enter }
+    - { when: composing, accept: Enter, send: Escape }
+
+spacer:
+  max_width: 1
+
+style:
+  horizontal: true
+  inline_preedit: true
+  display_tray_icon: false
+  font_face: "Microsoft YaHei"
+  font_point: 14
+  label_font_face: "Microsoft YaHei"
+  label_font_point: 10
+  comment_font_face: "Microsoft YaHei"
+  comment_font_point: 10

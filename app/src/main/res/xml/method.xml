@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<input-method xmlns:android="http://schemas.android.com/apk/res/android"
+    android:settingsActivity="com.kingzcheung.kime.MainActivity"
+    android:isDefault="false">
+    
+    <subtype
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeLocale="zh_CN"
+        android:label="@string/subtype_label_wubi"
+        android:isAsciiCapable="false" />
+        
+    <subtype
+        android:imeSubtypeMode="keyboard"
+        android:imeSubtypeLocale="zh_CN"
+        android:label="@string/subtype_label_pinyin"
+        android:isAsciiCapable="false" />
+        
+</input-method>
