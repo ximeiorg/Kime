@@ -1,0 +1,79 @@
+# Rime schema settings
+# encoding: utf-8
+
+schema:
+  schema_id: wubi86_pinyin
+  name: "拼音混输"
+  version: "0.9"
+  author:
+    - 发明人 王永民先生
+  description: |
+    五笔字形 86 极点极爽版，方案由 KyleBing 修改 - 2019年11月08日 10:26
+  dependencies:
+    - pinyin_simp
+
+switches:
+  - name: full_shape
+    states: [ 半角, 全角 ]
+  - name: extended_charset
+    states: [ 常用, 扩展 ]
+  - name: ascii_punct
+    states: [ 。，, ．， ]
+
+engine:
+  processors:
+    - ascii_composer
+    - recognizer
+    - key_binder
+    - speller
+    - punctuator
+    - selector
+    - navigator
+    - express_editor
+  segmentors:
+    - ascii_segmentor
+    - matcher
+    - abc_segmentor
+    - punct_segmentor
+    - fallback_segmentor
+  translators:
+    - punct_translator
+    - reverse_lookup_translator
+    - table_translator
+
+speller:
+
+translator:
+  dictionary: wubi86
+  enable_charset_filter: true
+  enable_completion: true
+  enable_sentence: false
+  enable_user_dict: false
+  enable_encoder: true
+  encode_commit_history: false
+  max_phrase_length: 10
+  user_dict: user
+  db_class: tabledb
+  disable_user_dict_for_patterns:
+    - "^z.*$"
+
+# 输入的编码同时进行拼音反查，实现五笔与拼音的混输
+abc_segmentor:
+  extra_tags:
+    - reverse_lookup
+
+reverse_lookup:
+  dictionary: pinyin_simp
+  preedit_format:
+    - xform/([nl])v/$1ü/
+    - xform/([nl])ue/$1üe/
+    - xform/([jqxy])v/$1u/
+
+punctuator:
+  import_preset: default
+
+key_binder:
+  import_preset: default
+
+recognizer:
+  import_preset: default
