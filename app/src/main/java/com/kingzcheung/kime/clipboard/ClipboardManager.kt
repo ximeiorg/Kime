@@ -12,7 +12,8 @@ data class ClipboardItem(
     val id: Long = System.currentTimeMillis(),
     val text: String,
     val timestamp: Long = System.currentTimeMillis(),
-    val isPinned: Boolean = false
+    val isPinned: Boolean = false,
+    val isQuickSend: Boolean = false
 )
 
 class ClipboardManager private constructor(private val context: Context) {
@@ -20,8 +21,10 @@ class ClipboardManager private constructor(private val context: Context) {
     companion object {
         private const val TAG = "ClipboardManager"
         private const val MAX_ITEMS = 50
+        private const val MAX_QUICK_SEND_ITEMS = 20
         private const val PREFS_NAME = "clipboard_prefs"
         private const val KEY_CLIPBOARD_ITEMS = "clipboard_items"
+        private const val KEY_QUICK_SEND_ITEMS = "quick_send_items"
         
         @Volatile
         private var instance: ClipboardManager? = null
@@ -38,10 +41,14 @@ class ClipboardManager private constructor(private val context: Context) {
     private val _clipboardItems = MutableStateFlow<List<ClipboardItem>>(emptyList())
     val clipboardItems: StateFlow<List<ClipboardItem>> = _clipboardItems.asStateFlow()
     
+    private val _quickSendItems = MutableStateFlow<List<ClipboardItem>>(emptyList())
+    val quickSendItems: StateFlow<List<ClipboardItem>> = _quickSendItems.asStateFlow()
+    
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     
     init {
         loadItems()
+        loadQuickSendItems()
         startListening()
     }
     
@@ -57,14 +64,31 @@ class ClipboardManager private constructor(private val context: Context) {
         }
     }
     
+    private fun loadQuickSendItems() {
+        val itemsJson = prefs.getString(KEY_QUICK_SEND_ITEMS, null)
+        if (itemsJson != null) {
+            try {
+                val items = deserializeItems(itemsJson)
+                _quickSendItems.value = items
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load quick send items", e)
+            }
+        }
+    }
+    
     private fun saveItems() {
         val itemsJson = serializeItems(_clipboardItems.value)
         prefs.edit().putString(KEY_CLIPBOARD_ITEMS, itemsJson).apply()
     }
     
+    private fun saveQuickSendItems() {
+        val itemsJson = serializeItems(_quickSendItems.value)
+        prefs.edit().putString(KEY_QUICK_SEND_ITEMS, itemsJson).apply()
+    }
+    
     private fun serializeItems(items: List<ClipboardItem>): String {
         return items.joinToString(separator = "|||") { item ->
-            "${item.id}:::${item.text.escape()}:::${item.timestamp}:::${item.isPinned}"
+            "${item.id}:::${item.text.escape()}:::${item.timestamp}:::${item.isPinned}:::${item.isQuickSend}"
         }
     }
     
@@ -72,13 +96,26 @@ class ClipboardManager private constructor(private val context: Context) {
         if (json.isEmpty()) return emptyList()
         return json.split("|||").mapNotNull { itemStr ->
             val parts = itemStr.split(":::")
-            if (parts.size == 4) {
+            if (parts.size == 5) {
                 try {
                     ClipboardItem(
                         id = parts[0].toLong(),
                         text = parts[1].unescape(),
                         timestamp = parts[2].toLong(),
-                        isPinned = parts[3].toBoolean()
+                        isPinned = parts[3].toBoolean(),
+                        isQuickSend = parts[4].toBoolean()
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            } else if (parts.size == 4) {
+                try {
+                    ClipboardItem(
+                        id = parts[0].toLong(),
+                        text = parts[1].unescape(),
+                        timestamp = parts[2].toLong(),
+                        isPinned = parts[3].toBoolean(),
+                        isQuickSend = false
                     )
                 } catch (e: Exception) {
                     null
@@ -167,6 +204,61 @@ class ClipboardManager private constructor(private val context: Context) {
         val pinnedItems = _clipboardItems.value.filter { it.isPinned }
         _clipboardItems.value = pinnedItems
         saveItems()
+    }
+    
+    fun addToQuickSend(id: Long) {
+        val clipboardItem = _clipboardItems.value.find { it.id == id }
+        if (clipboardItem != null) {
+            val quickSendItem = clipboardItem.copy(isQuickSend = true, isPinned = true)
+            val currentQuickSend = _quickSendItems.value.toMutableList()
+            
+            val existingIndex = currentQuickSend.indexOfFirst { it.text == quickSendItem.text }
+            if (existingIndex >= 0) {
+                currentQuickSend[existingIndex] = quickSendItem
+            } else {
+                currentQuickSend.add(0, quickSendItem)
+                
+                if (currentQuickSend.size > MAX_QUICK_SEND_ITEMS) {
+                    currentQuickSend.removeAt(currentQuickSend.size - 1)
+                }
+            }
+            
+            _quickSendItems.value = currentQuickSend
+            saveQuickSendItems()
+        }
+    }
+    
+    fun removeFromQuickSend(id: Long) {
+        val currentQuickSend = _quickSendItems.value.toMutableList()
+        currentQuickSend.removeAll { it.id == id }
+        _quickSendItems.value = currentQuickSend
+        saveQuickSendItems()
+    }
+    
+    fun addQuickSendItem(text: String) {
+        if (text.isBlank()) return
+        
+        val newItem = ClipboardItem(
+            text = text,
+            isQuickSend = true,
+            isPinned = true
+        )
+        
+        val currentQuickSend = _quickSendItems.value.toMutableList()
+        
+        val existingIndex = currentQuickSend.indexOfFirst { it.text == text }
+        if (existingIndex >= 0) {
+            currentQuickSend[existingIndex] = newItem.copy(timestamp = System.currentTimeMillis())
+        } else {
+            currentQuickSend.add(0, newItem)
+            
+            if (currentQuickSend.size > MAX_QUICK_SEND_ITEMS) {
+                currentQuickSend.removeAt(currentQuickSend.size - 1)
+            }
+        }
+        
+        _quickSendItems.value = currentQuickSend
+        saveQuickSendItems()
     }
     
     fun copyToSystemClipboard(text: String) {

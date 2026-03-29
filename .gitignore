@@ -24,4 +24,4 @@ app/src/main/jni/boost*
 *.tar.xz
 *.tar.gz
 *.zip
-.kilo/
+/.kilo
