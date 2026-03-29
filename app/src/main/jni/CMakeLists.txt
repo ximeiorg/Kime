@@ -11,8 +11,14 @@ option(BUILD_TESTING "" OFF)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
-# 下载并配置 Boost
+# 下载并配置 Boost (必须在 add_subdirectory(librime) 之前)
 include(Boost)
+
+# 设置 Boost 已找到，让 librime 跳过 find_package
+set(Boost_FOUND TRUE)
+set(Boost_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/boost")
+set(Boost_LIBRARIES "")
+set(Boost_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/boost")
 
 # 配置 glog
 option(WITH_GFLAGS "Use gflags" OFF)
@@ -48,7 +54,12 @@ target_compile_options(marisa PRIVATE "-ffile-prefix-map=${CMAKE_CURRENT_SOURCE_
 set(LIBMARISA marisa)
 option(USE_SYSTEM_MARISA "" ON)
 
-# 配置 OpenCC
+# 配置 OpenCC - 禁用工具和测试，只构建库
+option(BUILD_DOCUMENTATION "" OFF)
+option(ENABLE_GTEST "" OFF)
+option(ENABLE_BENCHMARK "" OFF)
+option(ENABLE_DARTS "" OFF)
+option(BUILD_PYTHON "" OFF)
 add_subdirectory(librime/deps/opencc)
 include(OpenccWorkarounds)
 
