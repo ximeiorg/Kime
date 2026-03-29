@@ -140,7 +140,8 @@ SwipeableIconKeyButton(
             iconColor = keyTextColor,
             modifier = Modifier.weight(1.2f),
             swipeText = "清空",
-            onSwipe = { onKeyPress("clear_composition") }
+            onSwipe = { onKeyPress("clear_composition") },
+            onLongClick = { onKeyPress("delete") }
         )
         }
     }

@@ -3,6 +3,7 @@ package com.kingzcheung.kime.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 data class SwipeState(
     val isSwiping: Boolean = false,
@@ -50,7 +53,8 @@ fun KeyButton(
     swipeDownText: String? = null,
     onSwipe: ((String) -> Unit)? = null,
     onSwipeDown: ((String) -> Unit)? = null,
-    onSwipeStateChange: ((SwipeState) -> Unit)? = null
+    onSwipeStateChange: ((SwipeState) -> Unit)? = null,
+    fontSize: androidx.compose.ui.unit.TextUnit? = null
 ) {
     var isPressed by remember { mutableStateOf(false) }
     var dragOffsetY by remember { mutableStateOf(0f) }
@@ -142,7 +146,7 @@ fun KeyButton(
         Text(
             text = text,
             color = textColor,
-            fontSize = if (text.length > 2) 14.sp else 16.sp,
+            fontSize = fontSize ?: if (text.length > 2) 14.sp else 16.sp,
             fontWeight = if (text.length > 2) FontWeight.Medium else FontWeight.Normal,
             textAlign = TextAlign.Center,
             maxLines = 1
@@ -374,14 +378,28 @@ fun SwipeableIconKeyButton(
     isHighlighted: Boolean = false,
     iconSize: androidx.compose.ui.unit.Dp = 20.dp,
     swipeText: String? = null,
-    onSwipe: (() -> Unit)? = null
+    onSwipe: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null
 ) {
     var isPressed by remember { mutableStateOf(false) }
     var dragOffsetY by remember { mutableStateOf(0f) }
     var hasTriggeredSwipe by remember { mutableStateOf(false) }
+    var isDragging by remember { mutableStateOf(false) }
+    var isLongPress by remember { mutableStateOf(false) }
+    var hasTriggeredLongPress by remember { mutableStateOf(false) }
     
     val swipeThreshold = -50f
-    val bubbleShowThreshold = swipeThreshold * 0.3f
+    
+    // 长按重复触发
+    LaunchedEffect(isLongPress) {
+        if (isLongPress && onLongClick != null) {
+            hasTriggeredLongPress = true
+            while (isLongPress) {
+                onLongClick()
+                delay(80)
+            }
+        }
+    }
     
     Box(
         modifier = modifier
@@ -393,24 +411,50 @@ fun SwipeableIconKeyButton(
                 else backgroundColor
             )
             .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        isPressed = true
+                        hasTriggeredLongPress = false
+                        tryAwaitRelease()
+                        isPressed = false
+                        isLongPress = false
+                    },
+                    onTap = {
+                        if (!isDragging && !hasTriggeredLongPress) {
+                            onClick()
+                        }
+                        hasTriggeredLongPress = false
+                    },
+                    onLongPress = {
+                        isLongPress = true
+                    }
+                )
+            }
+            .pointerInput(Unit) {
                 detectDragGestures(
                     onDragStart = {
+                        isDragging = true
                         isPressed = true
+                        isLongPress = false
                         dragOffsetY = 0f
                         hasTriggeredSwipe = false
                     },
                     onDragEnd = {
-                        if (!hasTriggeredSwipe && dragOffsetY > swipeThreshold) {
-                            onClick()
+                        if (dragOffsetY < swipeThreshold && !hasTriggeredSwipe && onSwipe != null) {
+                            onSwipe()
                         }
                         isPressed = false
                         dragOffsetY = 0f
                         hasTriggeredSwipe = false
+                        isDragging = false
+                        isLongPress = false
                     },
                     onDragCancel = {
                         isPressed = false
                         dragOffsetY = 0f
                         hasTriggeredSwipe = false
+                        isDragging = false
+                        isLongPress = false
                     },
                     onDrag = { change, dragAmount ->
                         dragOffsetY += dragAmount.y

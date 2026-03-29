@@ -1,5 +1,6 @@
 package com.kingzcheung.kime.service
 
+import android.content.Intent
 import android.inputmethodservice.InputMethodService
 import android.media.AudioManager
 import android.os.Build
@@ -28,6 +29,7 @@ import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
+import com.kingzcheung.kime.MainActivity
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.kingzcheung.kime.clipboard.ClipboardManager
 import com.kingzcheung.kime.rime.RimeConfigHelper
@@ -442,9 +444,18 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             }
             "space" -> {
                 if (isComposingState.value) {
-                    // 如果正在组合中，空格选择第一个候选词
+                    // 如果正在组合中
                     if (candidatesState.value.isNotEmpty()) {
+                        // 有候选词，选择第一个
                         selectCandidate(0)
+                    } else {
+                        // 没有候选词，输入当前编码的字母
+                        val input = inputTextState.value
+                        if (input.isNotEmpty()) {
+                            commitText(input)
+                            rimeEngine.clearComposition()
+                            updateUI()
+                        }
                     }
                 } else {
                     commitText(" ")
@@ -612,8 +623,8 @@ patch:
     private fun openSettings() {
         Log.d(TAG, "Opening settings...")
         try {
-            val intent = android.content.Intent(android.provider.Settings.ACTION_INPUT_METHOD_SETTINGS)
-            intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            val intent = Intent(this, MainActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to open settings", e)

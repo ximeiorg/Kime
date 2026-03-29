@@ -61,6 +61,7 @@ fun KeyboardView(
     var showMenu by remember { mutableStateOf(false) }
     var showCandidatePage by remember { mutableStateOf(false) }
     var showClipboard by remember { mutableStateOf(false) }
+    var showEmoji by remember { mutableStateOf(false) }
     var clipboardTab by remember { mutableStateOf(0) }
     
     val keyBgColor = if (isDarkTheme) KeyBackgroundDark else KeyBackground
@@ -116,12 +117,21 @@ CandidateBar(
                         onDismiss = { showMenu = false },
                         onClipboard = { 
                             showClipboard = true
+                            clipboardTab = 0
                             showMenu = false
                             onClipboard?.invoke() 
                         },
-                        onQuickSend = { onQuickSend?.invoke(); showMenu = false },
+                        onQuickSend = { 
+                            showClipboard = true
+                            clipboardTab = 1
+                            showMenu = false
+                            onQuickSend?.invoke() 
+                        },
                         onHandwriting = { onHandwriting?.invoke(); showMenu = false },
-                        onEmoji = { onEmoji?.invoke(); showMenu = false },
+                        onEmoji = { 
+                            showEmoji = true
+                            showMenu = false 
+                        },
                         onReloadConfig = { onReloadConfig?.invoke(); showMenu = false },
                         onSettings = { onSettings?.invoke(); showMenu = false },
                         onMixedInput = { onMixedInput?.invoke(); showMenu = false },
@@ -143,6 +153,21 @@ CandidateBar(
                         onTogglePin = { id -> onClipboardTogglePin?.invoke(id) },
                         onAddToQuickSend = { id -> onAddToQuickSend?.invoke(id) },
                         onRemoveFromQuickSend = { id -> onRemoveFromQuickSend?.invoke(id) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                showEmoji -> {
+                    EmojiKeyboardLayout(
+                        onEmojiSelect = { emoji ->
+                            if (emoji == "delete") {
+                                onKeyPress("delete", false)
+                            } else {
+                                onClipboardSelect?.invoke(emoji)
+                            }
+                        },
+                        onBack = { showEmoji = false },
+                        backgroundColor = candidateBarBg,
+                        textColor = keyTextColor,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -188,6 +213,7 @@ CandidateBar(
                                     when (key) {
                                         "abc" -> keyboardMode = KeyboardMode.FULL
                                         "symbol" -> keyboardMode = KeyboardMode.SYMBOL
+                                        "emoji" -> showEmoji = true
                                         else -> onKeyPress(key, false)
                                     }
                                 },

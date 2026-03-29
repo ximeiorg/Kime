@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -75,7 +76,8 @@ fun NumberKeyboardLayout(
                     iconColor = keyTextColor,
                     modifier = Modifier.weight(1f),
                     swipeText = "清空",
-                    onSwipe = { onKeyPress("clear_composition") }
+                    onSwipe = { onKeyPress("clear_composition") },
+                    onLongClick = { onKeyPress("delete") }
                 )
         }
         
@@ -144,11 +146,11 @@ fun NumberKeyboardLayout(
             }
             
             // 右列：表情
-            KeyButton(
-                text = "😊",
+            IconKeyButton(
+                icon = rememberVectorPainter(Icons.Default.EmojiEmotions),
                 onClick = { onKeyPress("emoji") },
                 backgroundColor = specialKeyBackgroundColor,
-                textColor = keyTextColor,
+                iconColor = keyTextColor,
                 modifier = Modifier.weight(1f)
             )
         }

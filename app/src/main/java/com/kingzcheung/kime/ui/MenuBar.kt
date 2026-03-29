@@ -4,19 +4,23 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 data class MenuItem(
-    val icon: String,
+    val icon: Painter,
     val label: String,
     val action: () -> Unit
 )
@@ -43,27 +47,27 @@ fun MenuBar(
     val itemBgColor = if (isDarkTheme) Color(0xFF45474A) else Color.White
     
     val menuItems = listOf(
-        MenuItem("📋", "剪贴板", onClipboard),
-        MenuItem("⚡", "快捷发送", onQuickSend),
-        MenuItem("✍", "手写找字", onHandwriting),
-        MenuItem("😊", "表情", onEmoji),
-        MenuItem("🌓", if (isDarkTheme) "浅色模式" else "深色模式", onToggleDarkMode),
-        MenuItem("🔄", "重载配置", onReloadConfig),
-        MenuItem("⚙", "设置", onSettings),
-        MenuItem("混", "混输", onMixedInput)
+        MenuItem(rememberVectorPainter(Icons.Default.ContentPaste), "剪贴板", onClipboard),
+        MenuItem(rememberVectorPainter(Icons.Default.Bolt), "快捷发送", onQuickSend),
+        MenuItem(rememberVectorPainter(Icons.Default.Draw), "手写找字", onHandwriting),
+        MenuItem(rememberVectorPainter(Icons.Default.EmojiEmotions), "表情", onEmoji),
+        MenuItem(rememberVectorPainter(if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode), if (isDarkTheme) "浅色模式" else "深色模式", onToggleDarkMode),
+        MenuItem(rememberVectorPainter(Icons.Default.Refresh), "重载配置", onReloadConfig),
+        MenuItem(rememberVectorPainter(Icons.Default.Settings), "设置", onSettings),
+        MenuItem(rememberVectorPainter(Icons.Default.Keyboard), "混输", onMixedInput)
     )
     
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(bgColor)
-            .padding(12.dp)
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         Row(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             menuItems.take(4).forEach { item ->
                 MenuItemButton(
@@ -75,13 +79,11 @@ fun MenuBar(
             }
         }
         
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         
         Row(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             menuItems.drop(4).forEach { item ->
                 MenuItemButton(
@@ -104,26 +106,28 @@ fun MenuItemButton(
 ) {
     Column(
         modifier = modifier
-            .fillMaxHeight()
+            .aspectRatio(1f)
             .clip(RoundedCornerShape(12.dp))
             .background(bgColor)
             .clickable { item.action() }
-            .padding(vertical = 12.dp),
+            .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = item.icon,
-            fontSize = 28.sp,
-            textAlign = TextAlign.Center
+        Icon(
+            painter = item.icon,
+            contentDescription = item.label,
+            tint = textColor,
+            modifier = Modifier.size(24.dp)
         )
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = item.label,
             color = textColor,
-            fontSize = 12.sp,
+            fontSize = 10.sp,
             fontWeight = FontWeight.Medium,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            maxLines = 1
         )
     }
 }
