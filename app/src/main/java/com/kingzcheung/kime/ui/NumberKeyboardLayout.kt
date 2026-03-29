@@ -147,16 +147,16 @@ fun NumberKeyboardLayout(
             )
         }
         
-        // 第四行：ABC | 符号切换 | 0 | . | 确定
+        // 第四行：返回 | 符号切换 | 0 | . | 确定
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(IntrinsicSize.Min),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            // 返回全键盘
+            // 返回键
             KeyButton(
-                text = "ABC",
+                text = "←",
                 onClick = { onKeyPress("abc") },
                 backgroundColor = specialKeyBackgroundColor,
                 textColor = keyTextColor,
@@ -178,7 +178,7 @@ fun NumberKeyboardLayout(
                 onClick = { onKeyPress("0") },
                 backgroundColor = keyBackgroundColor,
                 textColor = keyTextColor,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1.5f)
             )
             
             // 小数点
@@ -196,7 +196,7 @@ fun NumberKeyboardLayout(
                 onClick = { onKeyPress("enter") },
                 backgroundColor = specialKeyBackgroundColor,
                 textColor = keyTextColor,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1.2f)
             )
         }
     }

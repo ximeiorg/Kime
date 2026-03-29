@@ -30,6 +30,8 @@ fun KeyboardView(
     inputText: String = "",
     isComposing: Boolean = false,
     isAsciiMode: Boolean = false,
+    schemaName: String = "",
+    enterKeyText: String = "发送",
     isDarkTheme: Boolean = false,
     onKeyPress: (String, Boolean) -> Unit,
     onCandidateSelect: (Int) -> Unit,
@@ -42,6 +44,7 @@ fun KeyboardView(
     onSettings: (() -> Unit)? = null,
     onMixedInput: (() -> Unit)? = null,
     onHideKeyboard: (() -> Unit)? = null,
+    onSwitchKeyboard: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var isShifted by remember { mutableStateOf(false) }
@@ -122,10 +125,14 @@ fun KeyboardView(
                                 },
                                 isShifted = isShifted,
                                 isAsciiMode = isAsciiMode,
+                                schemaName = schemaName,
+                                enterKeyText = enterKeyText,
                                 isDarkTheme = isDarkTheme,
                                 keyBackgroundColor = keyBgColor,
                                 keyTextColor = keyTextColor,
-                                specialKeyBackgroundColor = specialKeyBgColor
+                                specialKeyBackgroundColor = specialKeyBgColor,
+                                onHideKeyboard = onHideKeyboard,
+                                onSwitchKeyboard = onSwitchKeyboard
                             )
                         }
                         KeyboardMode.NUMBER -> {

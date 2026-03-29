@@ -15,6 +15,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,10 +51,14 @@ fun KeyboardLayout(
     onKeyPress: (String) -> Unit,
     isShifted: Boolean,
     isAsciiMode: Boolean = false,
+    schemaName: String = "",
+    enterKeyText: String = "发送",
     isDarkTheme: Boolean = false,
     keyBackgroundColor: Color,
     keyTextColor: Color,
     specialKeyBackgroundColor: Color,
+    onHideKeyboard: (() -> Unit)? = null,
+    onSwitchKeyboard: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var swipeState by remember { mutableStateOf(SwipeState()) }
@@ -201,29 +210,70 @@ fun KeyboardLayout(
                     modifier = Modifier.weight(0.8f)
                 )
                 
-                KeyButton(
-                    text = "空格",
+                SpaceKeyButton(
                     onClick = { onKeyPress("space") },
                     backgroundColor = keyBackgroundColor,
                     textColor = keyTextColor,
+                    schemaName = schemaName,
                     modifier = Modifier.weight(3f)
                 )
                 
-                KeyButton(
-                    text = "。",
-                    onClick = { onKeyPress(".") },
+                SwipeableKeyButton(
+                    text = if (isAsciiMode) "." else "。",
+                    onClick = { onKeyPress(if (isAsciiMode) "." else "。") },
                     backgroundColor = keyBackgroundColor,
                     textColor = keyTextColor,
-                    modifier = Modifier.weight(0.8f)
+                    modifier = Modifier.weight(0.8f),
+                    swipeText = if (isAsciiMode) "," else "，",
+                    onSwipe = { onSwipeText -> onKeyPress(onSwipeText) },
+                    onSwipeStateChange = { state, bounds ->
+                        swipeState = state
+                        if (state.isSwiping && keyboardBounds.width > 0) {
+                            val relativeX = bounds.left - keyboardBounds.left
+                            val relativeY = bounds.top - keyboardBounds.top
+                            val keyCenterX = relativeX + bounds.width / 2
+                            val currentBubbleWidthPx = if (state.isSwipeDown) bubbleWidthDownPx else bubbleSizePx
+                            val bubbleLeft = keyCenterX - currentBubbleWidthPx / 2
+                            val bubbleTop = relativeY + bubbleOffsetYPx
+                            bubblePosition = IntOffset(bubbleLeft.roundToInt(), bubbleTop.roundToInt())
+                        }
+                    }
                 )
                 
                 KeyButton(
-                    text = "发送",
+                    text = enterKeyText,
                     onClick = { onKeyPress("enter") },
                     backgroundColor = specialKeyBackgroundColor,
                     textColor = keyTextColor,
                     modifier = Modifier.weight(1.2f)
                 )
+            }
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                IconButton(
+                    onClick = { onHideKeyboard?.invoke() }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = "收起键盘",
+                        tint = keyTextColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                
+                IconButton(
+                    onClick = { onSwitchKeyboard?.invoke() }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Keyboard,
+                        contentDescription = "切换键盘",
+                        tint = keyTextColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
             }
         }
         

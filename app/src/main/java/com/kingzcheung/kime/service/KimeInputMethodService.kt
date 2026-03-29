@@ -31,6 +31,7 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.kingzcheung.kime.rime.RimeConfigHelper
 import com.kingzcheung.kime.rime.RimeEngine
+import com.kingzcheung.kime.settings.SchemaConfigHelper
 import com.kingzcheung.kime.settings.SettingsPreferences
 import com.kingzcheung.kime.ui.KeysConfigHelper
 import com.kingzcheung.kime.ui.theme.KimeTheme
@@ -72,6 +73,8 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     private val inputTextState = mutableStateOf("")
     private val isComposingState = mutableStateOf(false)
     private val isAsciiModeState = mutableStateOf(false)
+    private val schemaNameState = mutableStateOf("")
+    private val enterKeyTextState = mutableStateOf("发送")
     private val darkModeState = mutableStateOf(DARK_MODE_LIGHT)
     
     // 音频和振动
@@ -170,6 +173,8 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                 rimeEngine.switchSchema(savedSchema)
             }
             
+            updateSchemaName()
+            
             Log.d(TAG, "initRimeEngine: Rime engine initialized successfully")
         } catch (e: Exception) {
             Log.e(TAG, "initRimeEngine: Failed to initialize Rime engine", e)
@@ -184,7 +189,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(290.dp),
+                            .height(300.dp),
                         color = MaterialTheme.colorScheme.surface
                     ) {
                         KeyboardView(
@@ -192,6 +197,8 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             inputText = inputTextState.value,
                             isComposing = isComposingState.value,
                             isAsciiMode = isAsciiModeState.value,
+                            schemaName = schemaNameState.value,
+                            enterKeyText = enterKeyTextState.value,
                             isDarkTheme = isDarkTheme,
                             onKeyPress = { key, isShifted ->
                                 handleKeyPress(key, isShifted)
@@ -231,8 +238,12 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                                 toggleMixedInput()
                             },
                             onHideKeyboard = {
-                                // 收起键盘
                                 hideKeyboard()
+                            },
+                            onSwitchKeyboard = {
+                                val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                                @Suppress("DEPRECATION")
+                                imm.showInputMethodPicker()
                             }
                         )
                     }
@@ -245,6 +256,21 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         super.onStartInput(attribute, restarting)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
         loadDarkModePreference()
+        
+        // 更新 Enter 键文字
+        attribute?.let { updateEnterKeyText(it) }
+    }
+    
+    private fun updateEnterKeyText(editorInfo: EditorInfo) {
+        val action = editorInfo.imeOptions and EditorInfo.IME_MASK_ACTION
+        enterKeyTextState.value = when (action) {
+            EditorInfo.IME_ACTION_GO -> "前往"
+            EditorInfo.IME_ACTION_SEARCH -> "搜索"
+            EditorInfo.IME_ACTION_SEND -> "发送"
+            EditorInfo.IME_ACTION_NEXT -> "下一项"
+            EditorInfo.IME_ACTION_DONE -> "完成"
+            else -> "换行"
+        }
     }
 
     override fun onFinishInput() {
@@ -284,17 +310,17 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
      * 更新 UI 状态
      */
     private fun updateUI() {
-        // 获取当前输入编码
         inputTextState.value = rimeEngine.getInput()
-        
-        // 获取候选词列表
         candidatesState.value = rimeEngine.getCandidates()
-        
-        // 更新组合状态
         isComposingState.value = inputTextState.value.isNotEmpty()
-        
-        // 更新中英文模式状态
         isAsciiModeState.value = rimeEngine.isAsciiMode()
+    }
+    
+    private fun updateSchemaName() {
+        val currentSchemaId = rimeEngine.getCurrentSchema()
+        val schemas = SchemaConfigHelper.loadSchemas(this)
+        val schemaInfo = schemas.find { it.schemaId == currentSchemaId }
+        schemaNameState.value = schemaInfo?.name ?: currentSchemaId
     }
 
     private fun handleKeyPress(key: String, isShifted: Boolean) {
@@ -481,6 +507,7 @@ patch:
                 
                 // 在主线程更新 UI
                 mainHandler.post {
+                    updateSchemaName()
                     updateUI()
                     Log.d(TAG, "Config reloaded successfully")
                 }
@@ -535,6 +562,7 @@ patch:
             SettingsPreferences.setCurrentSchema(this, newSchema)
             rimeEngine.switchSchema(newSchema)
             rimeEngine.deploy()
+            updateSchemaName()
             updateUI()
             Log.d(TAG, "Switched to schema: $newSchema")
         } catch (e: Exception) {
