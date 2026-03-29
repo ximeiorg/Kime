@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -77,13 +81,13 @@ fun SymbolKeyboardLayout(
                 .height(IntrinsicSize.Min),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            KeyButton(
-                text = "←",
-                onClick = { onKeyPress("abc") },
-                backgroundColor = specialKeyBackgroundColor,
-                textColor = keyTextColor,
-                modifier = Modifier.weight(1.2f)
-            )
+IconKeyButton(
+            icon = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack),
+            onClick = { onKeyPress("abc") },
+            backgroundColor = specialKeyBackgroundColor,
+            iconColor = keyTextColor,
+            modifier = Modifier.weight(1.2f)
+        )
             
             KeyButton(
                 text = "123",
@@ -129,13 +133,13 @@ fun SymbolKeyboardLayout(
                 modifier = Modifier.weight(1f)
             )
             
-            KeyButton(
-                text = "⌫",
-                onClick = { onKeyPress("delete") },
-                backgroundColor = specialKeyBackgroundColor,
-                textColor = keyTextColor,
-                modifier = Modifier.weight(1.2f)
-            )
+IconKeyButton(
+            icon = rememberVectorPainter(Icons.AutoMirrored.Filled.Backspace),
+            onClick = { onKeyPress("delete") },
+            backgroundColor = specialKeyBackgroundColor,
+            iconColor = keyTextColor,
+            modifier = Modifier.weight(1.2f)
+        )
         }
     }
 }

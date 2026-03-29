@@ -148,7 +148,7 @@ fun KeyButton(
             maxLines = 1
         )
         
-        if (swipeText != null && swipeText.isNotEmpty()) {
+        if (!swipeText.isNullOrEmpty()) {
             Text(
                 text = swipeText,
                 color = textColor.copy(alpha = 0.5f),

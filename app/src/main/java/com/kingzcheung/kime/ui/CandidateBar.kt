@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -77,6 +76,9 @@ fun CandidateBar(
     backgroundColor: Color,
     textColor: Color,
     dividerColor: Color,
+    accentColor: Color = Color(0xFF1A73E8),
+    isDarkTheme: Boolean = false,
+    showCandidatePage: Boolean = false,
     onToggleDarkMode: (() -> Unit)? = null,
     onLogoClick: (() -> Unit)? = null,
     showMenu: Boolean = false,
@@ -88,8 +90,8 @@ fun CandidateBar(
     onClipboardTabChange: ((Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val displayCandidates = candidates.take(4)
-    val hasMoreCandidates = candidates.size > 4
+    val displayCandidates = candidates.take(5)
+    val hasMoreCandidates = candidates.size >= 5
     
     Row(
         modifier = modifier
@@ -99,33 +101,30 @@ fun CandidateBar(
             .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 显示剪切板 Tab 或常规内容
         if (showClipboardTabs) {
-            // 关闭按钮 - 使用图标，带圆角背景
             Box(
                 modifier = Modifier
                     .size(28.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF374151) else Color(0xFFF3F4F6))
+                    .background(if (isDarkTheme) Color(0xFF374151) else Color(0xFFF3F4F6))
                     .clickable { onDismissMenu?.invoke() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowUp,
                     contentDescription = "关闭面板",
-                    tint = Color(0xFF1A73E8),
+                    tint = accentColor,
                     modifier = Modifier.size(24.dp)
                 )
             }
             
             Spacer(modifier = Modifier.width(8.dp))
             
-            // Tab 容器 - HeroUI 风格
             Box(
                 modifier = Modifier
                     .height(26.dp)
                     .clip(RoundedCornerShape(13.dp))
-                    .background(if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF374151) else Color(0xFFF3F4F6))
+                    .background(if (isDarkTheme) Color(0xFF374151) else Color(0xFFF3F4F6))
                     .padding(2.dp)
             ) {
                 Row(
@@ -136,7 +135,7 @@ fun CandidateBar(
                         modifier = Modifier
                             .fillMaxHeight()
                             .clip(RoundedCornerShape(11.dp))
-                            .background(if (clipboardTab == 0) Color(0xFF3B82F6) else Color.Transparent)
+                            .background(if (clipboardTab == 0) accentColor else Color.Transparent)
                             .clickable { onClipboardTabChange?.invoke(0) }
                             .padding(horizontal = 12.dp),
                         contentAlignment = Alignment.Center
@@ -153,7 +152,7 @@ fun CandidateBar(
                         modifier = Modifier
                             .fillMaxHeight()
                             .clip(RoundedCornerShape(11.dp))
-                            .background(if (clipboardTab == 1) Color(0xFF3B82F6) else Color.Transparent)
+                            .background(if (clipboardTab == 1) accentColor else Color.Transparent)
                             .clickable { onClipboardTabChange?.invoke(1) }
                             .padding(horizontal = 12.dp),
                         contentAlignment = Alignment.Center
@@ -170,43 +169,44 @@ fun CandidateBar(
             
             Spacer(modifier = Modifier.weight(1f))
         } else {
-            // 常规候选栏内容
-            // 未输入内容时显示Logo或收起按钮
             if (!isComposing && inputText.isEmpty()) {
                 if (showMenu && onDismissMenu != null) {
-                    // 显示收起按钮 - 带圆角背景
                     Box(
                         modifier = Modifier
                             .size(28.dp)
                             .clip(RoundedCornerShape(14.dp))
-                            .background(if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF374151) else Color(0xFFF3F4F6))
+                            .background(if (isDarkTheme) Color(0xFF374151) else Color(0xFFF3F4F6))
                             .clickable { onDismissMenu() },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.KeyboardArrowUp,
                             contentDescription = "关闭菜单",
-                            tint = Color(0xFF1A73E8),
+                            tint = accentColor,
                             modifier = Modifier.size(24.dp)
                         )
                     }
                 } else {
-                    // 显示Logo
-                    Icon(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "Kime Logo",
-                        tint = Color.Unspecified,
+                    Box(
                         modifier = Modifier
-                            .size(24.dp)
-                            .clickable { onLogoClick?.invoke() }
-                            .padding(horizontal = 4.dp)
-                    )
+                            .size(28.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(if (isDarkTheme) Color(0xFF374151) else Color(0xFFF3F4F6))
+                            .clickable { onLogoClick?.invoke() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = if (isDarkTheme) R.drawable.logo_dark else R.drawable.logo),
+                            contentDescription = "Kime Logo",
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
                 
                 Spacer(modifier = Modifier.width(4.dp))
             }
             
-            // 显示当前输入编码（如五笔编码）
             if (isComposing && inputText.isNotEmpty()) {
                 Text(
                     text = inputText,
@@ -216,7 +216,6 @@ fun CandidateBar(
                     modifier = Modifier.padding(end = 8.dp)
                 )
                 
-                // 分隔线
                 Box(
                     modifier = Modifier
                         .width(1.dp)
@@ -227,7 +226,6 @@ fun CandidateBar(
                 Spacer(modifier = Modifier.width(8.dp))
             }
             
-            // 候选词横向滚动列表（最多显示4个）
             Row(
                 modifier = Modifier
                     .weight(1f)
@@ -244,37 +242,52 @@ fun CandidateBar(
                 }
             }
             
-            // 分隔线
-            Box(
+Box(
                 modifier = Modifier
                     .width(1.dp)
                     .height(28.dp)
                     .background(dividerColor)
             )
             
-            // 更多候选词按钮（候选词超过4个时显示）
-            if (hasMoreCandidates && onShowMoreCandidates != null) {
-                Text(
-                    text = "更多",
-                    color = Color(0xFF1A73E8),
-                    fontSize = 14.sp,
+            if (showCandidatePage) {
+                Box(
                     modifier = Modifier
-                        .clickable { onShowMoreCandidates() }
-                        .padding(horizontal = 8.dp)
-                )
-            }
-            
-            // 收起键盘按钮
-            if (onHideKeyboard != null) {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = "收起键盘",
-                    tint = textColor,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .clickable { onHideKeyboard() }
-                        .padding(horizontal = 4.dp)
-                )
+                        .size(28.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (isDarkTheme) Color(0xFF374151) else Color(0xFFF3F4F6))
+                        .clickable { onDismissMenu?.invoke() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = "返回键盘",
+                        tint = accentColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            } else {
+                if (hasMoreCandidates && onShowMoreCandidates != null) {
+                    Text(
+                        text = "更多",
+                        color = accentColor,
+                        fontSize = 14.sp,
+                        modifier = Modifier
+                            .clickable { onShowMoreCandidates() }
+                            .padding(horizontal = 8.dp)
+                    )
+                }
+                
+                if (onHideKeyboard != null) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowDown,
+                        contentDescription = "收起键盘",
+                        tint = textColor,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable { onHideKeyboard() }
+                            .padding(horizontal = 4.dp)
+                    )
+                }
             }
         }
     }

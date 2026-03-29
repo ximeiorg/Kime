@@ -262,7 +262,7 @@ fun KeyboardLayout(
                         imageVector = Icons.Default.KeyboardArrowDown,
                         contentDescription = "收起键盘",
                         tint = keyTextColor,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(32.dp)
                     )
                 }
                 
