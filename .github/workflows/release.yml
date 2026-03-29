@@ -31,6 +31,10 @@ jobs:
           sdkmanager "ndk;27.3.13750724"
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.3.13750724" >> $GITHUB_ENV
           
+      - name: Patch OpenCC to disable tools
+        run: |
+          sed -i 's/add_subdirectory(tools)/#add_subdirectory(tools)/' app/src/main/jni/librime/deps/opencc/src/CMakeLists.txt
+          
       - name: Cache CMake build
         uses: actions/cache@v4
         with:

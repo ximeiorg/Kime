@@ -15,6 +15,21 @@
 - **词库管理** - 查看和管理当前输入方案词库
 - **候选词编码提示** - 候选词显示五笔编码，方便学习
 
+## 截图展示
+
+<table>
+  <tr>
+    <td><img src="docs/Screenshot_20260329_194632.jpg" width="300"/></td>
+    <td><img src="docs/Screenshot_20260329_194638.jpg" width="300"/></td>
+  </tr>
+  <tr>
+    <td><img src="docs/Screenshot_20260329_194708.jpg" width="300"/></td>
+    <td><img src="docs/Screenshot_20260329_194717.jpg" width="300"/></td>
+  </tr>
+</table>
+
+![Screenshot 5](docs/Screenshot_20260329_194917.jpg)
+
 ## 系统要求
 
 - Android 9.0 (API 28) 及以上
