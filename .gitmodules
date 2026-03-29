@@ -1,3 +1,6 @@
 [submodule "librime"]
 	path = app/src/main/jni/librime
 	url = https://github.com/rime/librime.git
+[submodule "app/src/main/jni/snappy"]
+	path = app/src/main/jni/snappy
+	url = https://github.com/google/snappy.git

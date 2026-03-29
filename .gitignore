@@ -6,6 +6,7 @@
 /.idea/modules.xml
 /.idea/workspace.xml
 /.idea/navEditor.xml
+/.idea/assetWizardLayouts.xml
 /.idea/assetWizardSettings.xml
 .DS_Store
 /build
@@ -14,14 +15,11 @@
 .cxx
 local.properties
 
-# librime and its dependencies
-app/src/main/jni/librime/
-app/src/main/jni/snappy/
-app/src/main/jni/cmake/
-app/src/main/jni/boost*
+# Boost downloaded files (downloaded by cmake during build)
+app/src/main/jni/boost/
+app/src/main/jni/boost-*.tar.xz
 
-# Large archives
-*.tar.xz
+# Large archives (keep .tar.xz for boost download)
 *.tar.gz
 *.zip
 /.kilo
