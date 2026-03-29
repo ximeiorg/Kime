@@ -30,6 +30,7 @@ import com.kingzcheung.kime.settings.DictionaryHelper
 import com.kingzcheung.kime.settings.DictEntry
 import com.kingzcheung.kime.settings.SchemaConfigHelper
 import com.kingzcheung.kime.settings.SettingsPreferences
+import com.kingzcheung.kime.ui.theme.KeyboardThemes
 
 object SettingsRoutes {
     const val Main = "main"
@@ -308,6 +309,8 @@ fun ThemeSettingsContent(
 ) {
     val context = LocalContext.current
     var currentTheme by remember { mutableStateOf(SettingsPreferences.getDarkMode(context)) }
+    var currentColorTheme by remember { mutableStateOf(SettingsPreferences.getKeyboardTheme(context)) }
+    val colorThemes = KeyboardThemes.themes
     
     Column(
         modifier = Modifier
@@ -338,7 +341,7 @@ fun ThemeSettingsContent(
         ) {
             item {
                 Text(
-                    text = "选择主题",
+                    text = "显示模式",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -374,6 +377,53 @@ fun ThemeSettingsContent(
             }
             
             item {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "配色方案",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            
+            item {
+                Text(
+                    text = "选择特殊按键（Shift、中英切换、确定等）的配色",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            
+            item {
+                val rows = colorThemes.chunked(4)
+                rows.forEach { rowThemes ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        rowThemes.forEach { theme ->
+                            KeyboardThemeCard(
+                                theme = theme,
+                                isSelected = currentColorTheme == theme.id,
+                                isDark = currentTheme == 1,
+                                onClick = {
+                                    currentColorTheme = theme.id
+                                    SettingsPreferences.setKeyboardTheme(context, theme.id)
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                        repeat(4 - rowThemes.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+            
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "提示: 切换主题后，请重启输入法生效",
                     style = MaterialTheme.typography.bodySmall,

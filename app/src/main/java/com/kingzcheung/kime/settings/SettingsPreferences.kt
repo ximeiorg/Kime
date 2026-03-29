@@ -12,6 +12,7 @@ object SettingsPreferences {
     private const val KEY_SOUND_VOLUME = "sound_volume"
     private const val KEY_VIBRATION_ENABLED = "vibration_enabled"
     private const val KEY_VIBRATION_INTENSITY = "vibration_intensity"
+    private const val KEY_KEYBOARD_THEME = "keyboard_theme"
     
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -63,5 +64,13 @@ object SettingsPreferences {
     
     fun setVibrationIntensity(context: Context, intensity: Int) {
         getPrefs(context).edit().putInt(KEY_VIBRATION_INTENSITY, intensity).apply()
+    }
+    
+    fun getKeyboardTheme(context: Context): String {
+        return getPrefs(context).getString(KEY_KEYBOARD_THEME, "ocean_blue") ?: "ocean_blue"
+    }
+    
+    fun setKeyboardTheme(context: Context, themeId: String) {
+        getPrefs(context).edit().putString(KEY_KEYBOARD_THEME, themeId).apply()
     }
 }

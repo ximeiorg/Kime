@@ -7,9 +7,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.unit.dp
 
 /**
@@ -64,13 +68,13 @@ fun NumberKeyboardLayout(
             }
             
             // 右列：退格
-            KeyButton(
-                text = "⌫",
-                onClick = { onKeyPress("delete") },
-                backgroundColor = specialKeyBackgroundColor,
-                textColor = keyTextColor,
-                modifier = Modifier.weight(1f)
-            )
+            IconKeyButton(
+                    icon = rememberVectorPainter(Icons.AutoMirrored.Filled.Backspace),
+                    onClick = { onKeyPress("delete") },
+                    backgroundColor = specialKeyBackgroundColor,
+                    iconColor = keyTextColor,
+                    modifier = Modifier.weight(1f)
+                )
         }
         
         // 第二行：符号 | 4 | 5 | 6 | 空格
@@ -155,11 +159,11 @@ fun NumberKeyboardLayout(
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             // 返回键
-            KeyButton(
-                text = "←",
+            IconKeyButton(
+                icon = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack),
                 onClick = { onKeyPress("abc") },
                 backgroundColor = specialKeyBackgroundColor,
-                textColor = keyTextColor,
+                iconColor = keyTextColor,
                 modifier = Modifier.weight(1f)
             )
             

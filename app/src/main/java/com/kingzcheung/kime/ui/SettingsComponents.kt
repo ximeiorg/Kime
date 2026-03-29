@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kingzcheung.kime.settings.SchemaInfo
+import com.kingzcheung.kime.ui.theme.KeyboardColorScheme
 
 @Composable
 fun SettingsSection(
@@ -327,6 +328,139 @@ fun ThemeCard(
                             imageVector = Icons.Default.Check,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun KeyboardThemeCard(
+    theme: KeyboardColorScheme,
+    isSelected: Boolean,
+    isDark: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val backgroundColor = if (isDark) Color(0xFF202124) else Color(0xFFE8EAED)
+    val keyColor = if (isDark) Color(0xFF35363A) else Color(0xFFFFFFFF)
+    val specialKeyColor = if (isDark) theme.specialKeyDark else theme.specialKeyLight
+    val accentColor = if (isDark) theme.accentDark else theme.accentLight
+    val candidateBarColor = if (isDark) Color(0xFF2D2D2D) else Color(0xFFF8F9FA)
+    
+    Column(
+        modifier = modifier
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .then(
+                    if (isSelected) {
+                        Modifier.border(
+                            width = 2.dp,
+                            color = accentColor,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                    } else {
+                        Modifier
+                    }
+                ),
+            shape = RoundedCornerShape(12.dp),
+            color = Color.White,
+            shadowElevation = 2.dp,
+            onClick = onClick
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(backgroundColor)
+                        .padding(4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(12.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(candidateBarColor)
+                                .padding(horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .width(16.dp)
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(accentColor)
+                            )
+                        }
+                        
+                        Spacer(modifier = Modifier.height(4.dp))
+                        
+                        repeat(3) { rowIndex ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                                    .padding(vertical = 1.dp),
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                val keysInRow = if (rowIndex == 2) 4 else 10
+                                repeat(keysInRow) { keyIndex ->
+                                    val isSpecialKey = (rowIndex == 0 && keyIndex == 0) ||
+                                            (rowIndex == 2 && (keyIndex == 0 || keyIndex == 3))
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(if (isSpecialKey) 1.5f else 1f)
+                                            .fillMaxHeight()
+                                            .clip(RoundedCornerShape(3.dp))
+                                            .background(if (isSpecialKey) specialKeyColor else keyColor)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(specialKeyColor)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = theme.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
+                    )
+                    if (isSelected) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = accentColor,
                             modifier = Modifier.size(16.dp)
                         )
                     }

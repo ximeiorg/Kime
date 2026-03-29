@@ -88,6 +88,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     private val schemaNameState = mutableStateOf("")
     private val enterKeyTextState = mutableStateOf("发送")
     private val darkModeState = mutableStateOf(DARK_MODE_LIGHT)
+    private val themeIdState = mutableStateOf("ocean_blue")
     private val clipboardItemsState = mutableStateOf<List<com.kingzcheung.kime.clipboard.ClipboardItem>>(emptyList())
     private val quickSendItemsState = mutableStateOf<List<com.kingzcheung.kime.clipboard.ClipboardItem>>(emptyList())
     
@@ -135,6 +136,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     
     private fun loadDarkModePreference() {
         darkModeState.value = SettingsPreferences.getDarkMode(this)
+        themeIdState.value = SettingsPreferences.getKeyboardTheme(this)
     }
     
     private fun saveDarkModePreference(mode: Int) {
@@ -242,6 +244,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             schemaName = schemaNameState.value,
                             enterKeyText = enterKeyTextState.value,
                             isDarkTheme = isDarkTheme,
+                            themeId = themeIdState.value,
                             clipboardItems = clipboardItemsState.value,
                             quickSendItems = quickSendItemsState.value,
                             onKeyPress = { key, isShifted ->

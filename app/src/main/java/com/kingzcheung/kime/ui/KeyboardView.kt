@@ -22,8 +22,7 @@ import com.kingzcheung.kime.ui.theme.KeyBackground
 import com.kingzcheung.kime.ui.theme.KeyBackgroundDark
 import com.kingzcheung.kime.ui.theme.KeyTextColor
 import com.kingzcheung.kime.ui.theme.KeyTextColorDark
-import com.kingzcheung.kime.ui.theme.SpecialKeyBackground
-import com.kingzcheung.kime.ui.theme.SpecialKeyBackgroundDark
+import com.kingzcheung.kime.ui.theme.KeyboardThemes
 
 @Composable
 fun KeyboardView(
@@ -34,6 +33,7 @@ fun KeyboardView(
     schemaName: String = "",
     enterKeyText: String = "发送",
     isDarkTheme: Boolean = false,
+    themeId: String = "ocean_blue",
     clipboardItems: List<ClipboardItem> = emptyList(),
     quickSendItems: List<ClipboardItem> = emptyList(),
     onKeyPress: (String, Boolean) -> Unit,
@@ -65,9 +65,10 @@ fun KeyboardView(
     
     val keyBgColor = if (isDarkTheme) KeyBackgroundDark else KeyBackground
     val keyTextColor = if (isDarkTheme) KeyTextColorDark else KeyTextColor
-    val specialKeyBgColor = if (isDarkTheme) SpecialKeyBackgroundDark else SpecialKeyBackground
+    val specialKeyBgColor = KeyboardThemes.getSpecialKeyColor(themeId, isDarkTheme)
+    val accentColor = KeyboardThemes.getAccentColor(themeId, isDarkTheme)
     val candidateBarBg = if (isDarkTheme) CandidateBarBackgroundDark else CandidateBarBackground
-    val candidateTextColor = if (isDarkTheme) CandidateTextColorDark else CandidateTextColor
+    val candidateTextColor = accentColor
     val dividerColor = if (isDarkTheme) DividerColorDark else DividerColor
 
     Box(modifier = modifier) {
@@ -76,7 +77,7 @@ fun KeyboardView(
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
         ) {
-            CandidateBar(
+CandidateBar(
                 candidates = candidates.toList(),
                 inputText = inputText,
                 isComposing = isComposing,
@@ -84,12 +85,17 @@ fun KeyboardView(
                 backgroundColor = candidateBarBg,
                 textColor = candidateTextColor,
                 dividerColor = dividerColor,
+                accentColor = accentColor,
+                isDarkTheme = isDarkTheme,
+                showCandidatePage = showCandidatePage,
                 onToggleDarkMode = onToggleDarkMode,
                 onLogoClick = { showMenu = true },
                 showMenu = showMenu,
-                onDismissMenu = { 
+                onDismissMenu = {
                     if (showClipboard) {
                         showClipboard = false
+                    } else if (showCandidatePage) {
+                        showCandidatePage = false
                     } else {
                         showMenu = false
                     }
