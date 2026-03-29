@@ -139,7 +139,7 @@ fun KeyButton(
         Text(
             text = text,
             color = textColor,
-            fontSize = if (text.length > 2) 14.sp else 18.sp,
+            fontSize = if (text.length > 2) 14.sp else 16.sp,
             fontWeight = if (text.length > 2) FontWeight.Medium else FontWeight.Normal,
             textAlign = TextAlign.Center,
             maxLines = 1
