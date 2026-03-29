@@ -49,7 +49,7 @@ fun KeyboardView(
     onAddToQuickSend: ((Long) -> Unit)? = null,
     onRemoveFromQuickSend: ((Long) -> Unit)? = null,
     onQuickSend: (() -> Unit)? = null,
-    onHandwriting: (() -> Unit)? = null,
+    onManageDict: (() -> Unit)? = null,
     onEmoji: (() -> Unit)? = null,
     onReloadConfig: (() -> Unit)? = null,
     onSettings: (() -> Unit)? = null,
@@ -71,7 +71,7 @@ fun KeyboardView(
     val specialKeyBgColor = KeyboardThemes.getSpecialKeyColor(themeId, isDarkTheme)
     val accentColor = KeyboardThemes.getAccentColor(themeId, isDarkTheme)
     val candidateBarBg = if (isDarkTheme) CandidateBarBackgroundDark else CandidateBarBackground
-    val candidateTextColor = accentColor
+    val candidateTextColor = keyTextColor
     val dividerColor = if (isDarkTheme) DividerColorDark else DividerColor
 
     Box(modifier = modifier) {
@@ -135,7 +135,7 @@ CandidateBar(
                             showMenu = false
                             onQuickSend?.invoke() 
                         },
-                        onHandwriting = { onHandwriting?.invoke(); showMenu = false },
+                        onManageDict = { onManageDict?.invoke(); showMenu = false },
                         onEmoji = { 
                             showEmoji = true
                             showMenu = false 
@@ -182,6 +182,7 @@ CandidateBar(
                 showCandidatePage -> {
                     CandidatePage(
                         candidates = candidates.toList(),
+                        candidateComments = candidateComments.toList(),
                         inputText = inputText,
                         onCandidateSelect = { index ->
                             onCandidateSelect(index)

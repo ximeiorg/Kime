@@ -8,6 +8,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -45,12 +47,13 @@ object SettingsRoutes {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(initialRoute: String? = null) {
     val navController = rememberNavController()
+    val startDestination = if (initialRoute == "manage_dict") SettingsRoutes.Dictionary else SettingsRoutes.Main
     
     NavHost(
         navController = navController,
-        startDestination = SettingsRoutes.Main
+        startDestination = startDestination
     ) {
         composable(SettingsRoutes.Main) {
             SettingsMainContent(
@@ -647,7 +650,6 @@ fun DictionarySettingsContent(
     val context = LocalContext.current
     val currentSchema = SettingsPreferences.getCurrentSchema(context)
     val schemaInfo = SchemaConfigHelper.loadSchemas(context).find { it.schemaId == currentSchema }
-    val dictFile = DictionaryHelper.getDictFileForSchema(currentSchema)
     
     var searchQuery by remember { mutableStateOf("") }
     var allEntries by remember { mutableStateOf<List<DictEntry>>(emptyList()) }
@@ -657,13 +659,13 @@ fun DictionarySettingsContent(
     LaunchedEffect(currentSchema) {
         isLoading = true
         allEntries = DictionaryHelper.loadDictionary(context, currentSchema)
-        displayedEntries = allEntries.take(100)
+        displayedEntries = allEntries.take(50)
         isLoading = false
     }
     
     LaunchedEffect(searchQuery) {
         displayedEntries = if (searchQuery.isEmpty()) {
-            allEntries.take(100)
+            allEntries.take(50)
         } else {
             DictionaryHelper.searchDictionary(allEntries, searchQuery)
         }
@@ -675,7 +677,16 @@ fun DictionarySettingsContent(
             .background(Color(0xFFF0F1F3))
     ) {
         TopAppBar(
-            title = { Text("词库管理") },
+            title = { 
+                Column {
+                    Text("词库管理")
+                    Text(
+                        text = schemaInfo?.name ?: currentSchema,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(
@@ -692,108 +703,108 @@ fun DictionarySettingsContent(
         
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            SettingsSection(title = "当前词库", content = {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text(
-                                text = "输入方案",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = schemaInfo?.name ?: currentSchema,
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                text = "词库文件",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = dictFile ?: "未知",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "词条总数: ${allEntries.size}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            })
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("搜索词条或编码") },
-                leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = null)
-                },
-                trailingIcon = {
+                shape = RoundedCornerShape(28.dp),
+                tonalElevation = 2.dp,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = null,
+                        tint = if (searchQuery.isNotEmpty()) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    BasicTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                            color = MaterialTheme.colorScheme.onSurface
+                        ),
+                        decorationBox = { innerTextField ->
+                            Box {
+                                if (searchQuery.isEmpty()) {
+                                    Text(
+                                        "搜索词条或编码",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        }
+                    )
                     if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = "清除")
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(
+                            onClick = { searchQuery = "" },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Clear,
+                                contentDescription = "清除",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
-                },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search)
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+                }
+            }
+        }
+        
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+        ) {
             if (isLoading) {
                 Box(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
                 }
             } else {
-                SettingsSection(title = "词条列表 (${displayedEntries.size})", content = {
-                    if (displayedEntries.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            contentAlignment = Alignment.Center
+                Text(
+                    text = "共 ${allEntries.size} 条词条${if (searchQuery.isNotEmpty()) "，搜索结果 ${displayedEntries.size} 条" else ""}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+                
+                if (displayedEntries.isEmpty()) {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (searchQuery.isEmpty()) "暂无词条" else "未找到匹配词条",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    SettingsSection(title = "词条列表", content = {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth().weight(1f)
                         ) {
-                            Text(
-                                text = if (searchQuery.isEmpty()) "暂无词条" else "未找到匹配词条",
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    } else {
-                        displayedEntries.forEachIndexed { index, entry ->
-                            DictEntryItem(entry = entry)
-                            if (index < displayedEntries.size - 1) {
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(start = 16.dp, end = 16.dp),
-                                    thickness = 0.5.dp,
-                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                                )
+                            items(displayedEntries.take(50)) { entry ->
+                                DictEntryItem(entry = entry)
                             }
                         }
-                    }
-                })
+                    })
+                }
             }
         }
     }

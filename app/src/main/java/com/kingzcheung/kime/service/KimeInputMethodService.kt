@@ -302,8 +302,8 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             onQuickSend = {
                                 Log.d(TAG, "QuickSend clicked")
                             },
-                            onHandwriting = {
-                                Log.d(TAG, "Handwriting clicked")
+                            onManageDict = {
+                                openManageDict()
                             },
                             onEmoji = {
                                 commitText("😊")
@@ -357,6 +357,22 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     override fun onFinishInput() {
         super.onFinishInput()
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+        clearInputState()
+    }
+    
+    override fun onWindowHidden() {
+        super.onWindowHidden()
+        clearInputState()
+    }
+    
+    private fun clearInputState() {
+        rimeEngine.clearComposition()
+        uiState.value = uiState.value.copy(
+            candidates = emptyArray(),
+            candidateComments = emptyArray(),
+            inputText = "",
+            isComposing = false
+        )
     }
 
     override fun onDestroy() {
@@ -662,6 +678,18 @@ patch:
             startActivity(intent)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to open settings", e)
+        }
+    }
+    
+    private fun openManageDict() {
+        Log.d(TAG, "Opening manage dict...")
+        try {
+            val intent = Intent(this, MainActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            intent.putExtra("open_fragment", "manage_dict")
+            startActivity(intent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to open manage dict", e)
         }
     }
     

@@ -32,7 +32,7 @@ fun MenuBar(
     onDismiss: () -> Unit,
     onClipboard: () -> Unit,
     onQuickSend: () -> Unit,
-    onHandwriting: () -> Unit,
+    onManageDict: () -> Unit,
     onEmoji: () -> Unit,
     onReloadConfig: () -> Unit,
     onSettings: () -> Unit,
@@ -49,7 +49,7 @@ fun MenuBar(
     val menuItems = listOf(
         MenuItem(rememberVectorPainter(Icons.Default.ContentPaste), "剪贴板", onClipboard),
         MenuItem(rememberVectorPainter(Icons.Default.Bolt), "快捷发送", onQuickSend),
-        MenuItem(rememberVectorPainter(Icons.Default.Draw), "手写找字", onHandwriting),
+        MenuItem(rememberVectorPainter(Icons.Default.MenuBook), "管理词库", onManageDict),
         MenuItem(rememberVectorPainter(Icons.Default.EmojiEmotions), "表情", onEmoji),
         MenuItem(rememberVectorPainter(if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode), if (isDarkTheme) "浅色模式" else "深色模式", onToggleDarkMode),
         MenuItem(rememberVectorPainter(Icons.Default.Refresh), "重载配置", onReloadConfig),
