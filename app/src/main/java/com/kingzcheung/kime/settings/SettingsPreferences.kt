@@ -13,6 +13,7 @@ object SettingsPreferences {
     private const val KEY_VIBRATION_ENABLED = "vibration_enabled"
     private const val KEY_VIBRATION_INTENSITY = "vibration_intensity"
     private const val KEY_KEYBOARD_THEME = "keyboard_theme"
+    private const val KEY_SHOW_BOTTOM_BUTTONS = "show_bottom_buttons"
     
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -72,5 +73,13 @@ object SettingsPreferences {
     
     fun setKeyboardTheme(context: Context, themeId: String) {
         getPrefs(context).edit().putString(KEY_KEYBOARD_THEME, themeId).apply()
+    }
+    
+    fun showBottomButtons(context: Context): Boolean {
+        return getPrefs(context).getBoolean(KEY_SHOW_BOTTOM_BUTTONS, false)
+    }
+    
+    fun setShowBottomButtons(context: Context, show: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_SHOW_BOTTOM_BUTTONS, show).apply()
     }
 }

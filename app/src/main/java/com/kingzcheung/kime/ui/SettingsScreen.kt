@@ -160,8 +160,10 @@ fun SettingsMainContent(
                 })
             }
             
-            item {
+item {
                 SettingsSection(title = "功能设置", content = {
+                    var showBottomButtons by remember { mutableStateOf(SettingsPreferences.showBottomButtons(context)) }
+                    
                     SettingsItem(
                         icon = Icons.Outlined.KeyboardAlt,
                         title = "输入方案",
@@ -198,6 +200,21 @@ fun SettingsMainContent(
                         thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
+                    SettingsToggleItem(
+                        icon = Icons.Outlined.Visibility,
+                        title = "显示底部按钮",
+                        subtitle = "显示收回键盘和切换输入法按钮（部分系统自带）",
+                        checked = showBottomButtons,
+                        onCheckedChange = { newValue ->
+                            showBottomButtons = newValue
+                            SettingsPreferences.setShowBottomButtons(context, newValue)
+                        }
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
                     SettingsItem(
                         icon = Icons.Outlined.Mic,
                         title = "语言转文字",
@@ -210,7 +227,7 @@ fun SettingsMainContent(
                         thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
-SettingsItem(
+                    SettingsItem(
                         icon = Icons.Outlined.Book,
                         title = "词库管理",
                         subtitle = "管理用户词库",

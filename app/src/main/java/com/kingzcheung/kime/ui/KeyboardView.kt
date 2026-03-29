@@ -35,6 +35,7 @@ fun KeyboardView(
     enterKeyText: String = "发送",
     isDarkTheme: Boolean = false,
     themeId: String = "ocean_blue",
+    showBottomButtons: Boolean = false,
     clipboardItems: List<ClipboardItem> = emptyList(),
     quickSendItems: List<ClipboardItem> = emptyList(),
     onKeyPress: (String, Boolean) -> Unit,
@@ -210,6 +211,7 @@ CandidateBar(
                                 keyBackgroundColor = keyBgColor,
                                 keyTextColor = keyTextColor,
                                 specialKeyBackgroundColor = specialKeyBgColor,
+                                showBottomButtons = showBottomButtons,
                                 onHideKeyboard = onHideKeyboard,
                                 onSwitchKeyboard = onSwitchKeyboard
                             )

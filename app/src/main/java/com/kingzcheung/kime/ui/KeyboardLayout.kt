@@ -57,6 +57,7 @@ fun KeyboardLayout(
     keyBackgroundColor: Color,
     keyTextColor: Color,
     specialKeyBackgroundColor: Color,
+    showBottomButtons: Boolean = false,
     onHideKeyboard: (() -> Unit)? = null,
     onSwitchKeyboard: (() -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -246,30 +247,32 @@ fun KeyboardLayout(
                 )
             }
             
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                IconButton(
-                    onClick = { onHideKeyboard?.invoke() }
+            if (showBottomButtons) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = "收起键盘",
-                        tint = keyTextColor,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-                
-                IconButton(
-                    onClick = { onSwitchKeyboard?.invoke() }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Keyboard,
-                        contentDescription = "切换键盘",
-                        tint = keyTextColor,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    IconButton(
+                        onClick = { onHideKeyboard?.invoke() }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = "收起键盘",
+                            tint = keyTextColor,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    
+                    IconButton(
+                        onClick = { onSwitchKeyboard?.invoke() }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Keyboard,
+                            contentDescription = "切换键盘",
+                            tint = keyTextColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
         }

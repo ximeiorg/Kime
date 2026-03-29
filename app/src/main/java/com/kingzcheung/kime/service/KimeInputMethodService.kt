@@ -56,7 +56,8 @@ data class InputUIState(
     val schemaName: String = "",
     val enterKeyText: String = "发送",
     val darkMode: Int = 0,
-    val themeId: String = "ocean_blue"
+    val themeId: String = "ocean_blue",
+    val showBottomButtons: Boolean = false
 )
 
 /**
@@ -152,7 +153,8 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     private fun loadDarkModePreference() {
         uiState.value = uiState.value.copy(
             darkMode = SettingsPreferences.getDarkMode(this),
-            themeId = SettingsPreferences.getKeyboardTheme(this)
+            themeId = SettingsPreferences.getKeyboardTheme(this),
+            showBottomButtons = SettingsPreferences.showBottomButtons(this)
         )
     }
     
@@ -251,7 +253,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(300.dp),
+                            .height(290.dp),
                         color = MaterialTheme.colorScheme.surface
                     ) {
                         KeyboardView(
@@ -263,6 +265,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             enterKeyText = state.enterKeyText,
                             isDarkTheme = isDarkTheme,
                             themeId = state.themeId,
+                            showBottomButtons = state.showBottomButtons,
                             clipboardItems = clipboardItemsState.value,
                             quickSendItems = quickSendItemsState.value,
                             candidateComments = state.candidateComments,
