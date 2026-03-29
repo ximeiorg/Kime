@@ -103,7 +103,7 @@ fun AboutContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F1F3))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         TopAppBar(
             title = { Text("关于") },
@@ -130,7 +130,7 @@ fun AboutContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
                 ) {
                     Column(
                         modifier = Modifier
@@ -148,23 +148,23 @@ fun AboutContent(
                         Text(
                             text = "五笔输入法",
                             fontSize = 16.sp,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "版本 ${AppInfo.versionName} (${AppInfo.versionCode})",
                             fontSize = 14.sp,
-                            color = Color.DarkGray
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "构建: ${AppInfo.gitHash}",
                             fontSize = 12.sp,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             text = "构建时间: ${AppInfo.buildTime}",
                             fontSize = 12.sp,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -174,7 +174,7 @@ fun AboutContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
                 ) {
                     Column(
                         modifier = Modifier
@@ -208,13 +208,13 @@ fun AboutContent(
                                 Text(
                                     text = "github.com/kingzcheung",
                                     fontSize = 12.sp,
-                                    color = Color.Gray
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                                 contentDescription = null,
-                                tint = Color.Gray,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -230,7 +230,7 @@ fun AboutContent(
                         .clickable {
                             uriHandler.openUri("https://github.com/ximeiorg/Kime")
                         },
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
                 ) {
                     Row(
                         modifier = Modifier
@@ -253,13 +253,13 @@ fun AboutContent(
                             Text(
                                 text = "github.com/ximeiorg/Kime",
                                 fontSize = 12.sp,
-                                color = Color.Gray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                             contentDescription = null,
-                            tint = Color.Gray
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -269,7 +269,7 @@ fun AboutContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
                 ) {
                     Column {
                         SettingsItem(
@@ -277,7 +277,7 @@ fun AboutContent(
                             title = "隐私策略",
                             onClick = onNavigateToPrivacy
                         )
-                        HorizontalDivider(color = Color.LightGray)
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         SettingsItem(
                             icon = Icons.Default.Description,
                             title = "开源许可证",
@@ -291,7 +291,7 @@ fun AboutContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
                 ) {
                     Column(
                         modifier = Modifier
@@ -340,7 +340,7 @@ private fun SettingsItem(
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
-            tint = Color.Gray
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -356,12 +356,12 @@ private fun InfoRow(label: String, value: String) {
         Text(
             text = label,
             fontSize = 14.sp,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = value,
             fontSize = 14.sp,
-            color = Color.DarkGray
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -374,7 +374,7 @@ fun PrivacyPolicyContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F1F3))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         TopAppBar(
             title = { Text("隐私策略") },
@@ -400,7 +400,7 @@ fun PrivacyPolicyContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp)
@@ -446,7 +446,7 @@ fun PrivacyPolicyContent(
                         Text(
                             text = "更新日期：2026年3月",
                             fontSize = 12.sp,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -467,7 +467,7 @@ private fun PrivacySection(title: String, content: String) {
         Text(
             text = content,
             fontSize = 14.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colorScheme.onSurface,
             lineHeight = 20.sp
         )
     }
@@ -483,7 +483,7 @@ fun LicensesContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F1F3))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         TopAppBar(
             title = { Text("开源许可证") },
@@ -513,7 +513,7 @@ fun LicensesContent(
                         .clickable {
                             uriHandler.openUri(item.url)
                         },
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp)
@@ -531,7 +531,7 @@ fun LicensesContent(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.OpenInNew,
                                 contentDescription = null,
-                                tint = Color.Gray,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
                         }

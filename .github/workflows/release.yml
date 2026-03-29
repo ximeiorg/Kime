@@ -31,47 +31,10 @@ jobs:
           sdkmanager "ndk;27.3.13750724"
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.3.13750724" >> $GITHUB_ENV
           
-      - name: Clean incomplete Boost cache
+      - name: Create OpenCC header symlink
         run: |
-          rm -rf app/src/main/jni/boost app/src/main/jni/boost-*.tar.xz
-          
-      - name: Patch OpenCC to disable tools
-        run: |
-          sed -i 's/add_subdirectory(tools)/#add_subdirectory(tools)/' app/src/main/jni/librime/deps/opencc/src/CMakeLists.txt
-          
-      - name: Patch librime to skip find_package(Boost)
-        run: |
-          python3 << 'EOF'
-          import re
-          
-          with open('app/src/main/jni/librime/CMakeLists.txt', 'r') as f:
-              content = f.read()
-          
-          # Replace the Boost find_package block with our own setup
-          old_block = '''if(LINUX)
-            find_package(Boost 1.74.0 REQUIRED COMPONENTS regex)
-          else()
-            find_package(Boost 1.77.0)
-          endif()
-          if(Boost_FOUND)
-            include_directories(${Boost_INCLUDE_DIRS})
-            link_directories(${Boost_LIBRARY_DIRS})
-            add_definitions(-DBOOST_DLL_USE_STD_FS)
-          endif()'''
-          
-          new_block = '''# Boost is built from source via add_subdirectory
-            set(Boost_FOUND TRUE)
-            set(Boost_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/boost")
-            include_directories(${Boost_INCLUDE_DIRS})
-            add_definitions(-DBOOST_DLL_USE_STD_FS)'''
-          
-          content = content.replace(old_block, new_block)
-          
-          with open('app/src/main/jni/librime/CMakeLists.txt', 'w') as f:
-              f.write(content)
-          
-          print("Patched librime CMakeLists.txt")
-          EOF
+          cd app/src/main/jni/librime/deps/opencc/src
+          ln -sf . opencc
           
       - name: Cache CMake build
         uses: actions/cache@v4

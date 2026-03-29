@@ -132,12 +132,14 @@ fun EmojiKeyboardLayout(
         modifier = modifier
             .fillMaxWidth()
             .background(backgroundColor)
+            .padding(top = 8.dp, bottom = 36.dp, start = 4.dp, end = 4.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .padding(horizontal = 4.dp)
+                .padding(bottom = 4.dp)
         ) {
             val emojis = categories[selectedCategoryIndex].emojis
             val columns = 8
@@ -171,8 +173,8 @@ fun EmojiKeyboardLayout(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 4.dp, vertical = 4.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                .padding(horizontal = 4.dp, vertical = 0.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment =Alignment.CenterVertically
         ) {
             KeyButton(
                 text = "返回",
@@ -224,7 +226,7 @@ fun EmojiCategoryTab(
 ) {
     Box(
         modifier = modifier
-            .height(36.dp)
+            .height(30.dp)
             .clip(RoundedCornerShape(4.dp))
             .background(
                 if (isSelected) textColor.copy(alpha = 0.15f)

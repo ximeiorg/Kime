@@ -118,7 +118,7 @@ fun SettingsMainContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F1F3))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         TopAppBar(
             title = { Text("Kime 设置") },
@@ -267,7 +267,7 @@ fun SchemaSettingsContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F1F3))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         TopAppBar(
             title = { Text("输入方案") },
@@ -343,7 +343,7 @@ fun ThemeSettingsContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F1F3))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         TopAppBar(
             title = { Text("主题与定制") },
@@ -477,7 +477,7 @@ fun KeyEffectSettingsContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F1F3))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         TopAppBar(
             title = { Text("按键效果") },
@@ -674,7 +674,7 @@ fun DictionarySettingsContent(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F1F3))
+            .background(MaterialTheme.colorScheme.background)
     ) {
         TopAppBar(
             title = { 
