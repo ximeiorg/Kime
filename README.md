@@ -1,4 +1,10 @@
+<p align="center">
+  <img src="docs/logo.jpg" alt="Kime Logo" width="600"/>
+</p>
+
 # Kime - 安卓五笔输入法
+
+
 
 一款基于 [Rime](https://rime.im/) 引擎构建的 Android 五笔输入法，专注于简洁高效的中文输入体验。
 
