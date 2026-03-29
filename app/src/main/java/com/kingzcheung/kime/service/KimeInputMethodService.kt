@@ -29,6 +29,7 @@ import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.kingzcheung.kime.clipboard.ClipboardManager
 import com.kingzcheung.kime.rime.RimeConfigHelper
 import com.kingzcheung.kime.rime.RimeEngine
 import com.kingzcheung.kime.settings.SchemaConfigHelper
@@ -36,6 +37,11 @@ import com.kingzcheung.kime.settings.SettingsPreferences
 import com.kingzcheung.kime.ui.KeysConfigHelper
 import com.kingzcheung.kime.ui.theme.KimeTheme
 import com.kingzcheung.kime.ui.KeyboardView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import java.io.File
 
 /**
@@ -65,6 +71,12 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     // Rime 引擎实例
     private val rimeEngine = RimeEngine()
     
+    // 剪切板管理器
+    private lateinit var clipboardManager: ClipboardManager
+    
+    // 协程作用域
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    
     // 主线程 Handler
     private val mainHandler = Handler(Looper.getMainLooper())
     
@@ -76,6 +88,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     private val schemaNameState = mutableStateOf("")
     private val enterKeyTextState = mutableStateOf("发送")
     private val darkModeState = mutableStateOf(DARK_MODE_LIGHT)
+    private val clipboardItemsState = mutableStateOf<List<com.kingzcheung.kime.clipboard.ClipboardItem>>(emptyList())
     
     // 音频和振动
     private val audioManager: AudioManager by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
@@ -147,6 +160,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         
         loadDarkModePreference()
         initRimeEngine()
+        initClipboardManager()
     }
     
     /**
@@ -180,6 +194,26 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             Log.e(TAG, "initRimeEngine: Failed to initialize Rime engine", e)
         }
     }
+    
+    /**
+     * 初始化剪切板管理器
+     */
+    private fun initClipboardManager() {
+        Log.d(TAG, "initClipboardManager: Starting initialization...")
+        try {
+            clipboardManager = ClipboardManager.getInstance(this)
+            clipboardItemsState.value = clipboardManager.clipboardItems.value
+            
+            serviceScope.launch {
+                clipboardManager.clipboardItems.collect { items ->
+                    clipboardItemsState.value = items
+                }
+            }
+            Log.d(TAG, "initClipboardManager: Clipboard manager initialized successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "initClipboardManager: Failed to initialize clipboard manager", e)
+        }
+    }
 
     override fun onCreateInputView(): View {
         return ComposeView(this).apply {
@@ -200,6 +234,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             schemaName = schemaNameState.value,
                             enterKeyText = enterKeyTextState.value,
                             isDarkTheme = isDarkTheme,
+                            clipboardItems = clipboardItemsState.value,
                             onKeyPress = { key, isShifted ->
                                 handleKeyPress(key, isShifted)
                             },
@@ -210,8 +245,19 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                                 toggleDarkMode()
                             },
                             onClipboard = {
-                                // TODO: 实现剪贴板功能
                                 Log.d(TAG, "Clipboard clicked")
+                            },
+                            onClipboardSelect = { text ->
+                                selectClipboardItem(text)
+                            },
+                            onClipboardRemove = { id ->
+                                removeClipboardItem(id)
+                            },
+                            onClipboardTogglePin = { id ->
+                                toggleClipboardPin(id)
+                            },
+                            onClipboardClearAll = {
+                                clearClipboard()
                             },
                             onQuickSend = {
                                 // TODO: 实现快捷发送功能
@@ -281,6 +327,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     override fun onDestroy() {
         super.onDestroy()
         rimeEngine.destroy()
+        serviceScope.cancel()
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     }
@@ -572,5 +619,34 @@ patch:
 
     private fun commitText(text: String) {
         currentInputConnection?.commitText(text, 1)
+    }
+    
+    /**
+     * 选择剪切板项
+     */
+    private fun selectClipboardItem(text: String) {
+        commitText(text)
+        clipboardManager.copyToSystemClipboard(text)
+    }
+    
+    /**
+     * 删除剪切板项
+     */
+    private fun removeClipboardItem(id: Long) {
+        clipboardManager.removeItem(id)
+    }
+    
+    /**
+     * 切换剪切板项置顶状态
+     */
+    private fun toggleClipboardPin(id: Long) {
+        clipboardManager.togglePin(id)
+    }
+    
+    /**
+     * 清空剪切板
+     */
+    private fun clearClipboard() {
+        clipboardManager.clearAll()
     }
 }

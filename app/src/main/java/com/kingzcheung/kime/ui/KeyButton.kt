@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -321,5 +324,42 @@ fun KeyboardRow(
                 onSwipeStateChange = onSwipeStateChange
             )
         }
+    }
+}
+
+@Composable
+fun IconKeyButton(
+    icon: Painter,
+    onClick: () -> Unit,
+    backgroundColor: Color,
+    iconColor: Color,
+    modifier: Modifier = Modifier,
+    isHighlighted: Boolean = false,
+    iconSize: androidx.compose.ui.unit.Dp = 20.dp
+) {
+    var isPressed by remember { mutableStateOf(false) }
+    
+    Box(
+        modifier = modifier
+            .height(44.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .background(
+                if (isPressed) backgroundColor.copy(alpha = 0.7f)
+                else if (isHighlighted) backgroundColor.copy(alpha = 0.8f)
+                else backgroundColor
+            )
+            .clickable {
+                isPressed = true
+                onClick()
+                isPressed = false
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            painter = icon,
+            contentDescription = null,
+            tint = iconColor,
+            modifier = Modifier.size(iconSize)
+        )
     }
 }

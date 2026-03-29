@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -134,11 +136,11 @@ fun KeyboardLayout(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                KeyButton(
-                    text = "⇧",
+                IconKeyButton(
+                    icon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.ArrowUpward),
                     onClick = { onKeyPress("shift") },
                     backgroundColor = specialKeyBackgroundColor,
-                    textColor = keyTextColor,
+                    iconColor = keyTextColor,
                     modifier = Modifier.weight(1.2f),
                     isHighlighted = isShifted
                 )
@@ -181,11 +183,11 @@ fun KeyboardLayout(
                     }
                 }
                 
-                KeyButton(
-                    text = "⌫",
+                IconKeyButton(
+                    icon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.AutoMirrored.Filled.Backspace),
                     onClick = { onKeyPress("delete") },
                     backgroundColor = specialKeyBackgroundColor,
-                    textColor = keyTextColor,
+                    iconColor = keyTextColor,
                     modifier = Modifier.weight(1.2f)
                 )
             }

@@ -1,7 +1,0 @@
-<resources>
-    <string name="app_name">Kime</string>
-    <string name="subtype_label_wubi">五笔</string>
-    <string name="subtype_label_pinyin">拼音</string>
-    <string name="keyboard_name">Kime 输入法</string>
-    <string name="ime_service_label">Kime 输入法</string>
-</resources>

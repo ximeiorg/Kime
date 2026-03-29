@@ -27,9 +27,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kingzcheung.kime.R
 
 /**
  * 候选栏组件
@@ -78,14 +80,14 @@ fun CandidateBar(
                 )
             } else {
                 // 显示Logo
-                Text(
-                    text = "K",
-                    color = Color(0xFF1A73E8),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
+                Icon(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "Kime Logo",
+                    tint = Color.Unspecified,
                     modifier = Modifier
+                        .size(24.dp)
                         .clickable { onLogoClick?.invoke() }
-                        .padding(horizontal = 8.dp)
+                        .padding(horizontal = 4.dp)
                 )
             }
             

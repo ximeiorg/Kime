@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.kingzcheung.kime.clipboard.ClipboardItem
 import com.kingzcheung.kime.ui.theme.CandidateBarBackground
 import com.kingzcheung.kime.ui.theme.CandidateBarBackgroundDark
 import com.kingzcheung.kime.ui.theme.CandidateTextColor
@@ -33,10 +34,15 @@ fun KeyboardView(
     schemaName: String = "",
     enterKeyText: String = "发送",
     isDarkTheme: Boolean = false,
+    clipboardItems: List<ClipboardItem> = emptyList(),
     onKeyPress: (String, Boolean) -> Unit,
     onCandidateSelect: (Int) -> Unit,
     onToggleDarkMode: (() -> Unit)? = null,
     onClipboard: (() -> Unit)? = null,
+    onClipboardSelect: ((String) -> Unit)? = null,
+    onClipboardRemove: ((Long) -> Unit)? = null,
+    onClipboardTogglePin: ((Long) -> Unit)? = null,
+    onClipboardClearAll: (() -> Unit)? = null,
     onQuickSend: (() -> Unit)? = null,
     onHandwriting: (() -> Unit)? = null,
     onEmoji: (() -> Unit)? = null,
@@ -51,6 +57,7 @@ fun KeyboardView(
     var keyboardMode by remember { mutableStateOf(KeyboardMode.FULL) }
     var showMenu by remember { mutableStateOf(false) }
     var showCandidatePage by remember { mutableStateOf(false) }
+    var showClipboard by remember { mutableStateOf(false) }
     
     val keyBgColor = if (isDarkTheme) KeyBackgroundDark else KeyBackground
     val keyTextColor = if (isDarkTheme) KeyTextColorDark else KeyTextColor
@@ -81,14 +88,18 @@ fun KeyboardView(
                 onShowMoreCandidates = { showCandidatePage = true }
             )
             
-            // 显示菜单、候选词页面或键盘
+            // 显示菜单、剪切板、候选词页面或键盘
             when {
                 showMenu -> {
                     MenuBar(
                         isVisible = true,
                         isDarkTheme = isDarkTheme,
                         onDismiss = { showMenu = false },
-                        onClipboard = { onClipboard?.invoke(); showMenu = false },
+                        onClipboard = { 
+                            showClipboard = true
+                            showMenu = false
+                            onClipboard?.invoke() 
+                        },
                         onQuickSend = { onQuickSend?.invoke(); showMenu = false },
                         onHandwriting = { onHandwriting?.invoke(); showMenu = false },
                         onEmoji = { onEmoji?.invoke(); showMenu = false },
@@ -96,6 +107,21 @@ fun KeyboardView(
                         onSettings = { onSettings?.invoke(); showMenu = false },
                         onMixedInput = { onMixedInput?.invoke(); showMenu = false },
                         onToggleDarkMode = { onToggleDarkMode?.invoke() },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                showClipboard -> {
+                    ClipboardView(
+                        items = clipboardItems,
+                        isDarkTheme = isDarkTheme,
+                        onSelectItem = { text ->
+                            onClipboardSelect?.invoke(text)
+                            showClipboard = false
+                        },
+                        onRemoveItem = { id -> onClipboardRemove?.invoke(id) },
+                        onTogglePin = { id -> onClipboardTogglePin?.invoke(id) },
+                        onClearAll = { onClipboardClearAll?.invoke() },
+                        onDismiss = { showClipboard = false },
                         modifier = Modifier.weight(1f)
                     )
                 }

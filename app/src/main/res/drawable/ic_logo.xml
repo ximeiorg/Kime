@@ -1,0 +1,34 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    
+    <group
+        android:rotation="45"
+        android:pivotX="12"
+        android:pivotY="12"
+        android:translateX="0"
+        android:translateY="-1">
+        
+        <!-- 左上方块 - 深色 -->
+        <path
+            android:pathData="M 2 1 L 8 1 Q 9 1 9 2 L 9 8 Q 9 9 8 9 L 2 9 Q 1 9 1 8 L 1 2 Q 1 1 2 1 Z"
+            android:fillColor="#2C2F35"/>
+        
+        <!-- 左下方块 - 深色 -->
+        <path
+            android:pathData="M 2 10 L 8 10 Q 9 10 9 11 L 9 17 Q 9 18 8 18 L 2 18 Q 1 18 1 17 L 1 11 Q 1 10 2 10 Z"
+            android:fillColor="#2C2F35"/>
+        
+        <!-- 右下方块 - 深色 -->
+        <path
+            android:pathData="M 11 10 L 17 10 Q 18 10 18 11 L 18 17 Q 18 18 17 18 L 11 18 Q 10 18 10 17 L 10 11 Q 10 10 11 10 Z"
+            android:fillColor="#2C2F35"/>
+        
+        <!-- 右上方块 - 紫色圆角 -->
+        <path
+            android:pathData="M 17 6 C 17 7.5 18.5 8 19.5 7 L 22 4.5 C 23 3.5 22.5 2 21 2 L 18 2 C 17 2 17 2.5 17 3.5 L 17 6 Z"
+            android:fillColor="#8F73E2"/>
+    </group>
+</vector>
