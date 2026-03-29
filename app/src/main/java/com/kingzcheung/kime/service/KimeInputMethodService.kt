@@ -89,6 +89,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     private val enterKeyTextState = mutableStateOf("发送")
     private val darkModeState = mutableStateOf(DARK_MODE_LIGHT)
     private val clipboardItemsState = mutableStateOf<List<com.kingzcheung.kime.clipboard.ClipboardItem>>(emptyList())
+    private val quickSendItemsState = mutableStateOf<List<com.kingzcheung.kime.clipboard.ClipboardItem>>(emptyList())
     
     // 音频和振动
     private val audioManager: AudioManager by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
@@ -203,10 +204,17 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         try {
             clipboardManager = ClipboardManager.getInstance(this)
             clipboardItemsState.value = clipboardManager.clipboardItems.value
+            quickSendItemsState.value = clipboardManager.quickSendItems.value
             
             serviceScope.launch {
                 clipboardManager.clipboardItems.collect { items ->
                     clipboardItemsState.value = items
+                }
+            }
+            
+            serviceScope.launch {
+                clipboardManager.quickSendItems.collect { items ->
+                    quickSendItemsState.value = items
                 }
             }
             Log.d(TAG, "initClipboardManager: Clipboard manager initialized successfully")
@@ -235,6 +243,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             enterKeyText = enterKeyTextState.value,
                             isDarkTheme = isDarkTheme,
                             clipboardItems = clipboardItemsState.value,
+                            quickSendItems = quickSendItemsState.value,
                             onKeyPress = { key, isShifted ->
                                 handleKeyPress(key, isShifted)
                             },
@@ -259,8 +268,13 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             onClipboardClearAll = {
                                 clearClipboard()
                             },
+                            onAddToQuickSend = { id ->
+                                addToQuickSend(id)
+                            },
+                            onRemoveFromQuickSend = { id ->
+                                removeFromQuickSend(id)
+                            },
                             onQuickSend = {
-                                // TODO: 实现快捷发送功能
                                 Log.d(TAG, "QuickSend clicked")
                             },
                             onHandwriting = {
@@ -648,5 +662,19 @@ patch:
      */
     private fun clearClipboard() {
         clipboardManager.clearAll()
+    }
+    
+    /**
+     * 添加到快捷发送
+     */
+    private fun addToQuickSend(id: Long) {
+        clipboardManager.addToQuickSend(id)
+    }
+    
+    /**
+     * 从快捷发送移除
+     */
+    private fun removeFromQuickSend(id: Long) {
+        clipboardManager.removeFromQuickSend(id)
     }
 }

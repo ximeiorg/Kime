@@ -35,6 +35,7 @@ fun KeyboardView(
     enterKeyText: String = "发送",
     isDarkTheme: Boolean = false,
     clipboardItems: List<ClipboardItem> = emptyList(),
+    quickSendItems: List<ClipboardItem> = emptyList(),
     onKeyPress: (String, Boolean) -> Unit,
     onCandidateSelect: (Int) -> Unit,
     onToggleDarkMode: (() -> Unit)? = null,
@@ -43,6 +44,8 @@ fun KeyboardView(
     onClipboardRemove: ((Long) -> Unit)? = null,
     onClipboardTogglePin: ((Long) -> Unit)? = null,
     onClipboardClearAll: (() -> Unit)? = null,
+    onAddToQuickSend: ((Long) -> Unit)? = null,
+    onRemoveFromQuickSend: ((Long) -> Unit)? = null,
     onQuickSend: (() -> Unit)? = null,
     onHandwriting: (() -> Unit)? = null,
     onEmoji: (() -> Unit)? = null,
@@ -58,6 +61,7 @@ fun KeyboardView(
     var showMenu by remember { mutableStateOf(false) }
     var showCandidatePage by remember { mutableStateOf(false) }
     var showClipboard by remember { mutableStateOf(false) }
+    var clipboardTab by remember { mutableStateOf(0) }
     
     val keyBgColor = if (isDarkTheme) KeyBackgroundDark else KeyBackground
     val keyTextColor = if (isDarkTheme) KeyTextColorDark else KeyTextColor
@@ -83,9 +87,18 @@ fun KeyboardView(
                 onToggleDarkMode = onToggleDarkMode,
                 onLogoClick = { showMenu = true },
                 showMenu = showMenu,
-                onDismissMenu = { showMenu = false },
+                onDismissMenu = { 
+                    if (showClipboard) {
+                        showClipboard = false
+                    } else {
+                        showMenu = false
+                    }
+                },
                 onHideKeyboard = onHideKeyboard,
-                onShowMoreCandidates = { showCandidatePage = true }
+                onShowMoreCandidates = { showCandidatePage = true },
+                showClipboardTabs = showClipboard,
+                clipboardTab = clipboardTab,
+                onClipboardTabChange = { clipboardTab = it }
             )
             
             // 显示菜单、剪切板、候选词页面或键盘
@@ -112,7 +125,9 @@ fun KeyboardView(
                 }
                 showClipboard -> {
                     ClipboardView(
-                        items = clipboardItems,
+                        clipboardItems = clipboardItems,
+                        quickSendItems = quickSendItems,
+                        selectedTab = clipboardTab,
                         isDarkTheme = isDarkTheme,
                         onSelectItem = { text ->
                             onClipboardSelect?.invoke(text)
@@ -120,8 +135,8 @@ fun KeyboardView(
                         },
                         onRemoveItem = { id -> onClipboardRemove?.invoke(id) },
                         onTogglePin = { id -> onClipboardTogglePin?.invoke(id) },
-                        onClearAll = { onClipboardClearAll?.invoke() },
-                        onDismiss = { showClipboard = false },
+                        onAddToQuickSend = { id -> onAddToQuickSend?.invoke(id) },
+                        onRemoveFromQuickSend = { id -> onRemoveFromQuickSend?.invoke(id) },
                         modifier = Modifier.weight(1f)
                     )
                 }

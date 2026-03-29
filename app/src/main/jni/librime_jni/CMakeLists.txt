@@ -16,3 +16,6 @@ target_link_libraries(rime_jni
     rime-static
     log
 )
+
+# 支持 16 KB 页面大小对齐 (Android 15+ 要求)
+target_link_options(rime_jni PRIVATE "-Wl,-z,max-page-size=16384")

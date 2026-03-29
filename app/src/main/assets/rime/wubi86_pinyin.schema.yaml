@@ -3,7 +3,7 @@
 
 schema:
   schema_id: wubi86_pinyin
-  name: "五笔拼音混输"
+  name: "五笔拼音"
   version: "0.9"
   author:
     - 发明人 王永民先生
