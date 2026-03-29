@@ -5,7 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -43,18 +44,16 @@ fun CandidatePage(
             )
         }
         
-        // 候选词网格
+        // 候选词网格 - 四列
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 80.dp),
+            columns = GridCells.Fixed(4),
             modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            items(candidates) { candidate ->
-                val index = candidates.indexOf(candidate)
+            itemsIndexed(candidates) { index, candidate ->
                 CandidatePageItem(
                     text = candidate,
-                    index = index,
                     onClick = { onCandidateSelect(index) },
                     textColor = textColor
                 )
@@ -66,36 +65,26 @@ fun CandidatePage(
 @Composable
 fun CandidatePageItem(
     text: String,
-    index: Int,
     onClick: () -> Unit,
     textColor: Color,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    Box(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(6.dp))
             .background(textColor.copy(alpha = 0.1f))
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+            .padding(horizontal = 8.dp, vertical = 8.dp)
+            .fillMaxWidth(),
+        contentAlignment = Alignment.Center
     ) {
-        // 显示序号（1-9，超过9显示...）
-        if (index < 9) {
-            Text(
-                text = "${index + 1}.",
-                color = textColor.copy(alpha = 0.6f),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Normal
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-        }
-        // 显示候选词
         Text(
             text = text,
             color = textColor,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Normal
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Normal,
+            textAlign = TextAlign.Center,
+            maxLines = 1
         )
     }
 }

@@ -207,6 +207,26 @@ public:
         }
     }
 
+    void getCandidatesWithComments(std::vector<std::pair<std::string, std::string>>& candidates) {
+        if (!rime || !session_id_) return;
+        
+        RIME_STRUCT(RimeContext, context);
+        if (rime->get_context(session_id_, &context)) {
+            LOGD("getCandidatesWithComments: num_candidates=%d", context.menu.num_candidates);
+            if (context.menu.num_candidates > 0) {
+                for (int i = 0; i < context.menu.num_candidates; ++i) {
+                    const char* text = context.menu.candidates[i].text;
+                    const char* comment = context.menu.candidates[i].comment;
+                    candidates.push_back(std::make_pair(
+                        text ? text : "",
+                        comment ? comment : ""
+                    ));
+                }
+            }
+            rime->free_context(&context);
+        }
+    }
+
     bool selectCandidate(int index) {
         if (!rime || !session_id_) return false;
         return rime->select_candidate_on_current_page(session_id_, index);
@@ -468,6 +488,35 @@ Java_com_kingzcheung_kime_rime_RimeEngine_nativeGetCandidates(
         jstring str = env->NewStringUTF(candidates[i].c_str());
         env->SetObjectArrayElement(result, i, str);
         env->DeleteLocalRef(str);
+    }
+    
+    return result;
+}
+
+// 获取候选词列表（包含编码注释）
+JNIEXPORT jobjectArray JNICALL
+Java_com_kingzcheung_kime_rime_RimeEngine_nativeGetCandidatesWithComments(
+    JNIEnv* env,
+    jobject thiz
+) {
+    std::vector<std::pair<std::string, std::string>> candidates;
+    Rime::Instance().getCandidatesWithComments(candidates);
+    
+    jclass stringClass = env->FindClass("java/lang/String");
+    jclass stringArrayClass = env->FindClass("[Ljava/lang/String;");
+    
+    jobjectArray result = env->NewObjectArray(candidates.size(), stringArrayClass, nullptr);
+    
+    for (size_t i = 0; i < candidates.size(); ++i) {
+        jobjectArray pair = env->NewObjectArray(2, stringClass, nullptr);
+        jstring text = env->NewStringUTF(candidates[i].first.c_str());
+        jstring comment = env->NewStringUTF(candidates[i].second.c_str());
+        env->SetObjectArrayElement(pair, 0, text);
+        env->SetObjectArrayElement(pair, 1, comment);
+        env->SetObjectArrayElement(result, i, pair);
+        env->DeleteLocalRef(text);
+        env->DeleteLocalRef(comment);
+        env->DeleteLocalRef(pair);
     }
     
     return result;

@@ -1,7 +1,27 @@
+import java.text.SimpleDateFormat
+import java.util.Date
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+}
+
+// 获取 Git 提交哈希
+fun getGitHash(): String {
+    return try {
+        val process = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+            .directory(rootDir)
+            .start()
+        process.inputStream.bufferedReader().readText().trim()
+    } catch (e: Exception) {
+        "unknown"
+    }
+}
+
+// 获取构建时间
+fun getBuildTime(): String {
+    return SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Date())
 }
 
 android {
@@ -13,7 +33,7 @@ android {
         minSdk = 28
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -21,6 +41,10 @@ android {
         ndk {
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
         }
+        
+        // 构建信息
+        buildConfigField("String", "GIT_HASH", "\"${getGitHash()}\"")
+        buildConfigField("String", "BUILD_TIME", "\"${getBuildTime()}\"")
     }
 
     buildTypes {
@@ -43,6 +67,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     
     // NDK 构建配置

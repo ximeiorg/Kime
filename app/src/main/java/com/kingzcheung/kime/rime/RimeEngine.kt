@@ -2,10 +2,11 @@ package com.kingzcheung.kime.rime
 
 import android.util.Log
 
-/**
- * Rime 输入引擎封装类
- * 通过 JNI 调用 librime 库
- */
+data class RimeCandidate(
+    val text: String,
+    val comment: String
+)
+
 class RimeEngine {
     
     companion object {
@@ -102,6 +103,21 @@ class RimeEngine {
         val candidates = nativeGetCandidates() ?: emptyArray()
         Log.d(TAG, "getCandidates: ${candidates.size} candidates")
         return candidates
+    }
+    
+    /**
+     * 获取候选词列表（包含编码注释）
+     * @return 候选词列表，包含文本和编码注释
+     */
+    fun getCandidatesWithComments(): Array<RimeCandidate> {
+        val rawCandidates = nativeGetCandidatesWithComments() ?: emptyArray()
+        Log.d(TAG, "getCandidatesWithComments: ${rawCandidates.size} candidates")
+        return rawCandidates.map { pair ->
+            RimeCandidate(
+                text = pair.getOrElse(0) { "" },
+                comment = pair.getOrElse(1) { "" }
+            )
+        }.toTypedArray()
     }
     
     /**
@@ -223,6 +239,7 @@ class RimeEngine {
     private external fun nativeGetCurrentSchema(): String?
     private external fun nativeProcessKey(keycode: Int, mask: Int): Boolean
     private external fun nativeGetCandidates(): Array<String>?
+    private external fun nativeGetCandidatesWithComments(): Array<Array<String>>?
     private external fun nativeGetInput(): String?
     private external fun nativeSelectCandidate(index: Int): Boolean
     private external fun nativeCommit(): String?

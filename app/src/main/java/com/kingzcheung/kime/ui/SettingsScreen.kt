@@ -38,6 +38,9 @@ object SettingsRoutes {
     const val Theme = "theme"
     const val KeyEffect = "key_effect"
     const val Dictionary = "dictionary"
+    const val About = "about"
+    const val Privacy = "privacy"
+    const val Licenses = "licenses"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,7 +57,8 @@ fun SettingsScreen() {
                 onNavigateToSchema = { navController.navigate(SettingsRoutes.Schema) },
                 onNavigateToTheme = { navController.navigate(SettingsRoutes.Theme) },
                 onNavigateToKeyEffect = { navController.navigate(SettingsRoutes.KeyEffect) },
-                onNavigateToDictionary = { navController.navigate(SettingsRoutes.Dictionary) }
+                onNavigateToDictionary = { navController.navigate(SettingsRoutes.Dictionary) },
+                onNavigateToAbout = { navController.navigate(SettingsRoutes.About) }
             )
         }
         composable(SettingsRoutes.Schema) {
@@ -77,6 +81,23 @@ fun SettingsScreen() {
                 onBack = { navController.popBackStack() }
             )
         }
+        composable(SettingsRoutes.About) {
+            AboutContent(
+                onBack = { navController.popBackStack() },
+                onNavigateToPrivacy = { navController.navigate(SettingsRoutes.Privacy) },
+                onNavigateToLicenses = { navController.navigate(SettingsRoutes.Licenses) }
+            )
+        }
+        composable(SettingsRoutes.Privacy) {
+            PrivacyPolicyContent(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(SettingsRoutes.Licenses) {
+            LicensesContent(
+                onBack = { navController.popBackStack() }
+            )
+        }
     }
 }
 
@@ -86,7 +107,8 @@ fun SettingsMainContent(
     onNavigateToSchema: () -> Unit,
     onNavigateToTheme: () -> Unit,
     onNavigateToKeyEffect: () -> Unit,
-    onNavigateToDictionary: () -> Unit
+    onNavigateToDictionary: () -> Unit,
+    onNavigateToAbout: () -> Unit
 ) {
     val context = LocalContext.current
     
@@ -200,27 +222,13 @@ SettingsItem(
             
             item {
                 SettingsSection(title = "关于", content = {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Kime 输入法",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "版本 1.0.0",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "基于 Rime 引擎的五笔输入法",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    SettingsItem(
+                        icon = Icons.Outlined.Info,
+                        title = "关于 Kime",
+                        subtitle = "版本 ${com.kingzcheung.kime.BuildConfig.VERSION_NAME}",
+                        onClick = onNavigateToAbout,
+                        showArrow = true
+                    )
                 })
             }
         }

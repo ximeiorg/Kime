@@ -84,6 +84,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     
     // UI 状态
     private val candidatesState = mutableStateOf<Array<String>>(emptyArray())
+    private val candidateCommentsState = mutableStateOf<Array<String>>(emptyArray())
     private val inputTextState = mutableStateOf("")
     private val isComposingState = mutableStateOf(false)
     private val isAsciiModeState = mutableStateOf(false)
@@ -249,6 +250,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             themeId = themeIdState.value,
                             clipboardItems = clipboardItemsState.value,
                             quickSendItems = quickSendItemsState.value,
+                            candidateComments = candidateCommentsState.value,
                             onKeyPress = { key, isShifted ->
                                 handleKeyPress(key, isShifted)
                             },
@@ -377,7 +379,9 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
      */
     private fun updateUI() {
         inputTextState.value = rimeEngine.getInput()
-        candidatesState.value = rimeEngine.getCandidates()
+        val candidatesWithComments = rimeEngine.getCandidatesWithComments()
+        candidatesState.value = candidatesWithComments.map { it.text }.toTypedArray()
+        candidateCommentsState.value = candidatesWithComments.map { it.comment }.toTypedArray()
         isComposingState.value = inputTextState.value.isNotEmpty()
         isAsciiModeState.value = rimeEngine.isAsciiMode()
         Log.d(TAG, "updateUI: inputText='${inputTextState.value}', isComposing=${isComposingState.value}, candidates=${candidatesState.value.size}")
@@ -662,6 +666,11 @@ patch:
      * 选择剪切板项
      */
     private fun selectClipboardItem(text: String) {
+        // 如果正在组合中，先清除
+        if (isComposingState.value) {
+            rimeEngine.clearComposition()
+            updateUI()
+        }
         commitText(text)
         clipboardManager.copyToSystemClipboard(text)
     }

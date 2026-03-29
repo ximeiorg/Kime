@@ -27,6 +27,7 @@ import com.kingzcheung.kime.ui.theme.KeyboardThemes
 @Composable
 fun KeyboardView(
     candidates: Array<String> = emptyArray(),
+    candidateComments: Array<String> = emptyArray(),
     inputText: String = "",
     isComposing: Boolean = false,
     isAsciiMode: Boolean = false,
@@ -80,6 +81,7 @@ fun KeyboardView(
         ) {
 CandidateBar(
                 candidates = candidates.toList(),
+                candidateComments = candidateComments.toList(),
                 inputText = inputText,
                 isComposing = isComposing,
                 onCandidateSelect = onCandidateSelect,
@@ -105,7 +107,12 @@ CandidateBar(
                 onShowMoreCandidates = { showCandidatePage = true },
                 showClipboardTabs = showClipboard,
                 clipboardTab = clipboardTab,
-                onClipboardTabChange = { clipboardTab = it }
+                onClipboardTabChange = { clipboardTab = it },
+                onInputTextClick = {
+                    if (inputText.isNotEmpty()) {
+                        onClipboardSelect?.invoke(inputText)
+                    }
+                }
             )
             
             // 显示菜单、剪切板、候选词页面或键盘

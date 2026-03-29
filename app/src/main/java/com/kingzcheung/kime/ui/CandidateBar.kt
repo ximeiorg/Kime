@@ -70,6 +70,7 @@ fun TabButton(
 @Composable
 fun CandidateBar(
     candidates: List<String>,
+    candidateComments: List<String> = emptyList(),
     inputText: String,
     isComposing: Boolean,
     onCandidateSelect: (Int) -> Unit,
@@ -88,6 +89,7 @@ fun CandidateBar(
     showClipboardTabs: Boolean = false,
     clipboardTab: Int = 0,
     onClipboardTabChange: ((Int) -> Unit)? = null,
+    onInputTextClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val displayCandidates = candidates.take(5)
@@ -213,7 +215,11 @@ fun CandidateBar(
                     color = textColor,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(end = 8.dp)
+                    modifier = Modifier
+                        .clickable(enabled = onInputTextClick != null) { 
+                            onInputTextClick?.invoke() 
+                        }
+                        .padding(end = 8.dp)
                 )
                 
                 Box(
@@ -237,7 +243,8 @@ fun CandidateBar(
                         text = candidate,
                         index = index,
                         onClick = { onCandidateSelect(index) },
-                        textColor = textColor
+                        textColor = textColor,
+                        comment = candidateComments.getOrElse(index) { "" }
                     )
                 }
             }
@@ -295,7 +302,7 @@ Box(
 
 /**
  * 单个候选词项
- * 显示序号和候选词
+ * 显示候选词和编码
  */
 @Composable
 fun CandidateItem(
@@ -303,31 +310,34 @@ fun CandidateItem(
     index: Int,
     onClick: () -> Unit,
     textColor: Color,
+    comment: String = "",
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(4.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 6.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 显示序号（1-9，超过9显示...）
-        if (index < 9) {
-            Text(
-                text = "${index + 1}.",
-                color = textColor.copy(alpha = 0.6f),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Normal
-            )
-        }
-        Spacer(modifier = Modifier.width(2.dp))
         // 显示候选词
         Text(
             text = text,
             color = textColor,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Normal
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Normal,
+            maxLines = 1
         )
+        // 显示编码注释
+        if (comment.isNotEmpty()) {
+            Spacer(modifier = Modifier.width(3.dp))
+            Text(
+                text = comment,
+                color = textColor.copy(alpha = 0.5f),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Normal,
+                maxLines = 1
+            )
+        }
     }
 }
