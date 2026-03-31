@@ -28,8 +28,8 @@ jobs:
         
       - name: Install NDK
         run: |
-          sdkmanager "ndk;27.3.13750724"
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.3.13750724" >> $GITHUB_ENV
+          sdkmanager "ndk;28.2.13676358"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> $GITHUB_ENV
           
       - name: Cache CMake build
         uses: actions/cache@v4
@@ -52,10 +52,9 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
         
-      - name: Rename APK
-        run: |
-          mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/Kime-${{ steps.get_version.outputs.VERSION }}.apk
-          
+      - name: List APKs
+        run: ls -la app/build/outputs/apk/release/
+        
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -64,11 +63,15 @@ jobs:
             ## Kime ${{ steps.get_version.outputs.VERSION }}
             
             ### 下载
-            - [Kime-${{ steps.get_version.outputs.VERSION }}.apk](https://github.com/${{ github.repository }}/releases/download/${{ steps.get_version.outputs.VERSION }}/Kime-${{ steps.get_version.outputs.VERSION }}.apk)
+            选择对应架构的APK：
+            - **arm64-v8a**: 适用于大多数现代手机
+            - **armeabi-v7a**: 适用于旧款32位手机
+            - **x86_64**: 适用于模拟器
+            - **universal**: 包含所有架构，体积较大
             
             ### 更新说明
             请查看提交记录了解详细更新内容。
-          files: app/build/outputs/apk/release/Kime-${{ steps.get_version.outputs.VERSION }}.apk
+          files: app/build/outputs/apk/release/*.apk
           draft: false
           prerelease: false
         env:
