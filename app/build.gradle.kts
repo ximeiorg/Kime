@@ -1,5 +1,6 @@
 import java.text.SimpleDateFormat
 import java.util.Date
+import com.android.build.gradle.internal.api.BaseVariantOutputImpl
 
 plugins {
     alias(libs.plugins.android.application)
@@ -85,6 +86,24 @@ android {
         }
     }
     ndkVersion = "28.2.13676358"
+    
+    // 分架构打包
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            isUniversalApk = true
+        }
+    }
+}
+
+android.applicationVariants.all {
+    val appName = "Kime"
+    outputs.all {
+        val abi = filters.find { it.filterType.toString() == "ABI" }?.identifier ?: "universal"
+        (this as BaseVariantOutputImpl).outputFileName = "$appName-$versionName-$abi.apk"
+    }
 }
 
 dependencies {
