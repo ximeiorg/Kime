@@ -23,6 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,18 +35,39 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalDensity
+import coil.compose.AsyncImage
+import coil.decode.SvgDecoder
+import coil.request.ImageRequest
 import kotlin.math.roundToInt
 
 private val BubbleSize = 50.dp
-private val BubbleWidthDown = 160.dp
-private val BubbleHeightDown = 50.dp
-private val BubbleOffsetY = -45.dp
+private val BubbleWidthDown = 180.dp
+private val BubbleHeightDown = 40.dp
+private val BubbleOffsetY = -48.dp
+
+private fun calculateBubblePosition(
+    keyCenterX: Float,
+    keyTop: Float,
+    bubbleWidthPx: Float,
+    bubbleHeightPx: Float,
+    bubbleOffsetYPx: Float,
+    keyboardWidth: Float,
+    keyboardLeft: Float
+): IntOffset {
+    val bubbleLeft = keyCenterX - bubbleWidthPx / 2
+    val bubbleTop = keyTop + bubbleOffsetYPx
+    
+    val clampedLeft = bubbleLeft.coerceIn(keyboardLeft, keyboardLeft + keyboardWidth - bubbleWidthPx)
+    
+    return IntOffset(clampedLeft.roundToInt(), bubbleTop.roundToInt())
+}
 
 @Composable
 fun KeyboardLayout(
@@ -64,6 +86,12 @@ fun KeyboardLayout(
     modifier: Modifier = Modifier,
     onKeyPressDown: ((String) -> Unit)? = null
 ) {
+    val context = LocalContext.current
+    
+    LaunchedEffect(Unit) {
+        SubcharHelper.init(context)
+    }
+    
     var swipeState by remember { mutableStateOf(SwipeState()) }
     var bubblePosition by remember { mutableStateOf(IntOffset(0, 0)) }
     var keyboardBounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect(0f, 0f, 0f, 0f)) }
@@ -71,7 +99,35 @@ fun KeyboardLayout(
     val density = LocalDensity.current
     val bubbleSizePx = with(density) { BubbleSize.toPx() }
     val bubbleWidthDownPx = with(density) { BubbleWidthDown.toPx() }
+    val bubbleHeightDownPx = with(density) { BubbleHeightDown.toPx() }
     val bubbleOffsetYPx = with(density) { BubbleOffsetY.toPx() }
+    
+    fun processSwipeState(state: SwipeState, bounds: Rect) {
+        val newState = if (state.isSwipeDown && state.swipeText != null) {
+            state.copy(charInfos = SubcharHelper.parseSwipeDownText(state.swipeText))
+        } else {
+            state
+        }
+        swipeState = newState
+        
+        if (newState.isSwiping && keyboardBounds.width > 0) {
+            val relativeX = bounds.left - keyboardBounds.left
+            val relativeY = bounds.top - keyboardBounds.top
+            val keyCenterX = relativeX + bounds.width / 2
+            val currentBubbleWidthPx = if (newState.isSwipeDown) bubbleWidthDownPx else bubbleSizePx
+            val currentBubbleHeightPx = if (newState.isSwipeDown) bubbleHeightDownPx else bubbleSizePx
+            
+            bubblePosition = calculateBubblePosition(
+                keyCenterX = keyCenterX,
+                keyTop = relativeY,
+                bubbleWidthPx = currentBubbleWidthPx,
+                bubbleHeightPx = currentBubbleHeightPx,
+                bubbleOffsetYPx = bubbleOffsetYPx,
+                keyboardWidth = keyboardBounds.width,
+                keyboardLeft = 0f
+            )
+        }
+    }
     
     Box(
         modifier = modifier.onGloballyPositioned { coordinates ->
@@ -91,18 +147,7 @@ fun KeyboardLayout(
                 keyTextColor = keyTextColor,
                 isShifted = isShifted,
                 isAsciiMode = isAsciiMode,
-                onSwipeStateChange = { state, bounds ->
-                    swipeState = state
-                    if (state.isSwiping && keyboardBounds.width > 0) {
-                        val relativeX = bounds.left - keyboardBounds.left
-                        val relativeY = bounds.top - keyboardBounds.top
-                        val keyCenterX = relativeX + bounds.width / 2
-                        val currentBubbleWidthPx = if (state.isSwipeDown) bubbleWidthDownPx else bubbleSizePx
-                        val bubbleLeft = keyCenterX - currentBubbleWidthPx / 2
-                        val bubbleTop = relativeY + bubbleOffsetYPx
-                        bubblePosition = IntOffset(bubbleLeft.roundToInt(), bubbleTop.roundToInt())
-                    }
-                },
+                onSwipeStateChange = { state, bounds -> processSwipeState(state, bounds) },
                 onKeyPressDown = onKeyPressDown
             )
             
@@ -114,18 +159,7 @@ fun KeyboardLayout(
                 isShifted = isShifted,
                 isAsciiMode = isAsciiMode,
                 modifier = Modifier.padding(horizontal = 16.dp),
-                onSwipeStateChange = { state, bounds ->
-                    swipeState = state
-                    if (state.isSwiping && keyboardBounds.width > 0) {
-                        val relativeX = bounds.left - keyboardBounds.left
-                        val relativeY = bounds.top - keyboardBounds.top
-                        val keyCenterX = relativeX + bounds.width / 2
-                        val currentBubbleWidthPx = if (state.isSwipeDown) bubbleWidthDownPx else bubbleSizePx
-                        val bubbleLeft = keyCenterX - currentBubbleWidthPx / 2
-                        val bubbleTop = relativeY + bubbleOffsetYPx
-                        bubblePosition = IntOffset(bubbleLeft.roundToInt(), bubbleTop.roundToInt())
-                    }
-                },
+                onSwipeStateChange = { state, bounds -> processSwipeState(state, bounds) },
                 onKeyPressDown = onKeyPressDown
             )
             
@@ -176,18 +210,7 @@ Row(
                             swipeDownText = swipeDownText,
                             onSwipe = if (swipeUpText != null) onKeyPress else null,
                             onSwipeDown = if (isAsciiMode && swipeDownText != null) onKeyPress else null,
-                            onSwipeStateChange = { state, bounds ->
-                                swipeState = state
-                                if (state.isSwiping && keyboardBounds.width > 0) {
-                                    val relativeX = bounds.left - keyboardBounds.left
-                                    val relativeY = bounds.top - keyboardBounds.top
-                                    val keyCenterX = relativeX + bounds.width / 2
-                                    val currentBubbleWidthPx = if (state.isSwipeDown) bubbleWidthDownPx else bubbleSizePx
-                                    val bubbleLeft = keyCenterX - currentBubbleWidthPx / 2
-                                    val bubbleTop = relativeY + bubbleOffsetYPx
-                                    bubblePosition = IntOffset(bubbleLeft.roundToInt(), bubbleTop.roundToInt())
-                                }
-                            },
+                            onSwipeStateChange = { state, bounds -> processSwipeState(state, bounds) },
                             onPress = { onKeyPressDown?.invoke(key) }
                         )
                     }
@@ -245,18 +268,7 @@ Row(
                     modifier = Modifier.weight(0.8f),
                     swipeText = if (isAsciiMode) "." else "。",
                     onSwipe = { onSwipeText -> onKeyPress(onSwipeText) },
-                    onSwipeStateChange = { state, bounds ->
-                        swipeState = state
-                        if (state.isSwiping && keyboardBounds.width > 0) {
-                            val relativeX = bounds.left - keyboardBounds.left
-                            val relativeY = bounds.top - keyboardBounds.top
-                            val keyCenterX = relativeX + bounds.width / 2
-                            val currentBubbleWidthPx = if (state.isSwipeDown) bubbleWidthDownPx else bubbleSizePx
-                            val bubbleLeft = keyCenterX - currentBubbleWidthPx / 2
-                            val bubbleTop = relativeY + bubbleOffsetYPx
-                            bubblePosition = IntOffset(bubbleLeft.roundToInt(), bubbleTop.roundToInt())
-                        }
-                    },
+                    onSwipeStateChange = { state, bounds -> processSwipeState(state, bounds) },
                     onPress = { onKeyPressDown?.invoke(if (isAsciiMode) "." else "。") }
                 )
                 
@@ -307,23 +319,58 @@ Row(
                 val bubbleTextColor = if (isDarkTheme) Color(0xFFE8EAED) else Color(0xFF202124)
                 
                 if (swipeState.isSwipeDown) {
+                    val charInfos = swipeState.charInfos
+                    val hasSvgChars = charInfos.any { it.hasSvg }
+                    
                     Box(
                         modifier = Modifier
                             .offset { bubblePosition }
                             .shadow(6.dp, RoundedCornerShape(8.dp), ambientColor = Color(0x55000000), spotColor = Color(0x55000000))
                             .background(bubbleBgColor, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                            .padding(horizontal = 6.dp, vertical = 4.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = currentSwipeText,
-                            color = bubbleTextColor,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Normal,
-                            textAlign = TextAlign.Center,
-                            maxLines = 3,
-                            lineHeight = 18.sp
-                        )
+                        if (hasSvgChars) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                charInfos.forEach { charInfo ->
+                                    if (charInfo.hasSvg) {
+                                        val svgPath = SubcharHelper.getSvgPath(charInfo.char)
+                                        if (svgPath != null) {
+                                            AsyncImage(
+                                                model = ImageRequest.Builder(context)
+                                                    .data("file:///android_asset/$svgPath")
+                                                    .decoderFactory(SvgDecoder.Factory())
+                                                    .build(),
+                                                contentDescription = charInfo.char,
+                                                modifier = Modifier.size(18.dp),
+                                                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(bubbleTextColor)
+                                            )
+                                        }
+                                    } else {
+                                        Text(
+                                            text = charInfo.char,
+                                            color = bubbleTextColor,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Normal,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            Text(
+                                text = currentSwipeText,
+                                color = bubbleTextColor,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Normal,
+                                textAlign = TextAlign.Center,
+                                maxLines = 3,
+                                lineHeight = 18.sp
+                            )
+                        }
                     }
                 } else {
                     Box(

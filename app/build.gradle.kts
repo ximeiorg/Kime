@@ -116,6 +116,10 @@ dependencies {
     // SavedState
     implementation(libs.androidx.savedstate)
     
+    // Coil (Image Loading with SVG support)
+    implementation(libs.coil)
+    implementation(libs.coil.svg)
+    
     debugImplementation(libs.androidx.compose.ui.tooling)
     
     testImplementation(libs.junit)

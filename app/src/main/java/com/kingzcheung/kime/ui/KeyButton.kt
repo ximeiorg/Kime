@@ -38,7 +38,8 @@ import kotlinx.coroutines.delay
 data class SwipeState(
     val isSwiping: Boolean = false,
     val swipeText: String? = null,
-    val isSwipeDown: Boolean = false
+    val isSwipeDown: Boolean = false,
+    val charInfos: List<CharInfo> = emptyList()
 )
 
 @Composable

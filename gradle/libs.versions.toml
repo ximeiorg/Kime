@@ -12,6 +12,7 @@ lifecycleRuntime = "2.8.7"
 activityCompose = "1.9.3"
 savedstate = "1.2.1"
 navigationCompose = "2.8.5"
+coil = "2.7.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,6 +49,10 @@ androidx-activity-compose = { group = "androidx.activity", name = "activity-comp
 
 # SavedState
 androidx-savedstate = { group = "androidx.savedstate", name = "savedstate", version.ref = "savedstate" }
+
+# Coil (Image Loading with SVG support)
+coil = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+coil-svg = { group = "io.coil-kt", name = "coil-svg", version.ref = "coil" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
