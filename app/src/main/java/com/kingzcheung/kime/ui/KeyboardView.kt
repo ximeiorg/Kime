@@ -202,6 +202,7 @@ CandidateBar(
                                     when (key) {
                                         "shift" -> isShifted = !isShifted
                                         "mode_change" -> keyboardMode = KeyboardMode.NUMBER
+                                        "emoji" -> showEmoji = true
                                         else -> onKeyPress(key, isShifted)
                                     }
                                 },

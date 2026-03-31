@@ -160,7 +160,7 @@ fun KeyButton(
         Text(
             text = text,
             color = textColor,
-            fontSize = fontSize ?: if (text.length > 2) 14.sp else 16.sp,
+            fontSize = fontSize ?: if (text.length > 2) 16.sp else 18.sp,
             fontWeight = if (text.length > 2) FontWeight.Medium else FontWeight.Normal,
             textAlign = TextAlign.Center,
             maxLines = 1
@@ -302,7 +302,7 @@ fun SwipeableKeyButton(
         Text(
             text = text,
             color = textColor,
-            fontSize = if (text.length > 2) 14.sp else 18.sp,
+            fontSize = if (text.length > 2) 16.sp else 20.sp,
             fontWeight = if (text.length > 2) FontWeight.Medium else FontWeight.Normal,
             textAlign = TextAlign.Center,
             maxLines = 1

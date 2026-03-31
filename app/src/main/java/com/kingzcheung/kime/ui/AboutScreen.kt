@@ -130,7 +130,7 @@ fun AboutContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
                 ) {
                     Column(
                         modifier = Modifier
@@ -174,7 +174,7 @@ fun AboutContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
                 ) {
                     Column(
                         modifier = Modifier
@@ -230,7 +230,7 @@ fun AboutContent(
                         .clickable {
                             uriHandler.openUri("https://github.com/ximeiorg/Kime")
                         },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
                 ) {
                     Row(
                         modifier = Modifier
@@ -269,7 +269,7 @@ fun AboutContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
                 ) {
                     Column {
                         SettingsItem(
@@ -291,7 +291,7 @@ fun AboutContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
                 ) {
                     Column(
                         modifier = Modifier
@@ -400,7 +400,7 @@ fun PrivacyPolicyContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp)
@@ -513,7 +513,7 @@ fun LicensesContent(
                         .clickable {
                             uriHandler.openUri(item.url)
                         },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp)

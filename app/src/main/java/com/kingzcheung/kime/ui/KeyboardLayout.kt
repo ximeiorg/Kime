@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -128,19 +129,30 @@ fun KeyboardLayout(
                 onKeyPressDown = onKeyPressDown
             )
             
-            Row(
+Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-IconKeyButton(
-                    icon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.ArrowUpward),
-                    onClick = { onKeyPress("shift") },
-                    backgroundColor = specialKeyBackgroundColor,
-                    iconColor = keyTextColor,
-                    modifier = Modifier.weight(1.2f),
-                    isHighlighted = isShifted,
-                    onPress = { onKeyPressDown?.invoke("shift") }
-                )
+                if (isAsciiMode) {
+                    IconKeyButton(
+                        icon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.ArrowUpward),
+                        onClick = { onKeyPress("shift") },
+                        backgroundColor = specialKeyBackgroundColor,
+                        iconColor = keyTextColor,
+                        modifier = Modifier.weight(1.2f),
+                        isHighlighted = isShifted,
+                        onPress = { onKeyPressDown?.invoke("shift") }
+                    )
+                } else {
+                    IconKeyButton(
+                        icon = androidx.compose.ui.graphics.vector.rememberVectorPainter(Icons.Default.EmojiEmotions),
+                        onClick = { onKeyPress("emoji") },
+                        backgroundColor = specialKeyBackgroundColor,
+                        iconColor = keyTextColor,
+                        modifier = Modifier.weight(1.2f),
+                        onPress = { onKeyPressDown?.invoke("emoji") }
+                    )
+                }
                 
                 Row(
                     modifier = Modifier.weight(7f),
@@ -155,7 +167,7 @@ IconKeyButton(
                             KeysConfigHelper.getSwipeDownWubiText(key)
                         
                         SwipeableKeyButton(
-                            text = if (isShifted) key.uppercase() else key,
+                            text = if (isShifted || !isAsciiMode) key.uppercase() else key,
                             onClick = { onKeyPress(key) },
                             backgroundColor = keyBackgroundColor,
                             textColor = keyTextColor,
@@ -360,7 +372,7 @@ fun KeyboardRowWithConfig(
                 KeysConfigHelper.getSwipeDownWubiText(key)
             
             SwipeableKeyButton(
-                text = if (isShifted) key.uppercase() else key,
+                text = if (isShifted || !isAsciiMode) key.uppercase() else key,
                 onClick = { onKeyPress(key) },
                 backgroundColor = keyBackgroundColor,
                 textColor = keyTextColor,
