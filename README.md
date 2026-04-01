@@ -83,4 +83,4 @@ git submodule update --init --recursive
 
 ## 许可证
 
-MIT License
+GPLv3 License
