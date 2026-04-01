@@ -79,7 +79,7 @@ git submodule update --init --recursive
 
 - [Rime](https://rime.im/) - 中州韵输入法引擎
 - [Trime](https://github.com/osfans/trime) - 同文输入法，部分实现参考
-- [Linux Do](https://linux.do)
+- [Linux Do](https://linux.do) - 中文开发社区
 
 ## 许可证
 
