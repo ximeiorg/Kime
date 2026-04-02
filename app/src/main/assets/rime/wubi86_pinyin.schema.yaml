@@ -42,6 +42,10 @@ engine:
     - table_translator
 
 speller:
+  alphabet: "abcdefghijklmnopqrstuvwxyz"
+  delimiter: " '"
+  auto_select: false
+  auto_select_unique_candidate: false
 
 translator:
   dictionary: wubi86
@@ -64,6 +68,9 @@ abc_segmentor:
 
 reverse_lookup:
   dictionary: pinyin_simp
+  enable_completion: true
+  overwrite_comment: false
+  tips: "〔拼音〕"
   preedit_format:
     - xform/([nl])v/$1ü/
     - xform/([nl])ue/$1üe/
