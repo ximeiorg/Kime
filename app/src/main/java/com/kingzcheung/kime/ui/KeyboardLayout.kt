@@ -58,11 +58,9 @@ fun KeyboardLayout(
         SubcharHelper.init(context)
     }
     
-    var swipeState by remember { mutableStateOf(SwipeState()) }
-    var bubblePosition by remember { mutableStateOf(IntOffset(0, 0)) }
-    var keyboardBounds by remember { mutableStateOf(androidx.compose.ui.geometry.Rect(0f, 0f, 0f, 0f)) }
-    
-    val bubbleSizes = rememberBubbleSizes()
+        var swipeState by remember { mutableStateOf(SwipeState()) }
+    var keyboardBounds by remember { mutableStateOf(Rect(0f, 0f, 0f, 0f)) }
+    var lastKeyBounds by remember { mutableStateOf(Rect(0f, 0f, 0f, 0f)) }
     
     fun processSwipeState(state: SwipeState, bounds: Rect) {
         val newState = if (state.isSwipeDown && state.swipeText != null) {
@@ -72,23 +70,12 @@ fun KeyboardLayout(
         }
         swipeState = newState
         
-        if (newState.isSwiping && keyboardBounds.width > 0) {
-            val relativeX = bounds.left - keyboardBounds.left
-            val relativeY = bounds.top - keyboardBounds.top
-            val keyCenterX = relativeX + bounds.width / 2
-            val currentBubbleWidthPx = if (newState.isSwipeDown) bubbleSizes.bubbleWidthDownPx else bubbleSizes.bubbleSizePx
-            val currentBubbleHeightPx = if (newState.isSwipeDown) bubbleSizes.bubbleHeightDownPx else bubbleSizes.bubbleSizePx
-            
-            bubblePosition = calculateBubblePosition(
-                keyCenterX = keyCenterX,
-                keyTop = relativeY,
-                bubbleWidthPx = currentBubbleWidthPx,
-                bubbleHeightPx = currentBubbleHeightPx,
-                bubbleOffsetYPx = bubbleSizes.bubbleOffsetYPx,
-                keyboardWidth = keyboardBounds.width,
-                keyboardLeft = 0f
-            )
-        }
+        lastKeyBounds = Rect(
+            left = bounds.left - keyboardBounds.left,
+            top = bounds.top - keyboardBounds.top,
+            right = bounds.right - keyboardBounds.left,
+            bottom = bounds.bottom - keyboardBounds.top
+        )
     }
     
     Box(
@@ -276,8 +263,10 @@ Row(
         
         SwipeBubble(
             swipeState = swipeState,
-            bubblePosition = bubblePosition,
-            isDarkTheme = isDarkTheme
+            keyBounds = lastKeyBounds,
+            isDarkTheme = isDarkTheme,
+            keyWidth = if (swipeState.isSwiping) lastKeyBounds.width else 0f,
+            keyboardWidth = keyboardBounds.width
         )
     }
 }
