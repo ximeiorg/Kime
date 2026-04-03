@@ -63,63 +63,70 @@ private fun DrawScope.drawBubbleShape(
     val bodyBottom = bodyHeight
     val pointerBottom = bodyBottom + pointerHeight
     
-val leftGap = bodyLeft - pointerLeft
-val rightGap = pointerRight - bodyRight
-
-val alignLeft = leftGap >= 0 && leftGap <= radius
-val alignRight = rightGap >= 0 && rightGap <= radius
-
-android.util.Log.d("BubbleDraw", "bodyLeft=$bodyLeft, pointerLeft=$pointerLeft, leftGap=$leftGap, alignLeft=$alignLeft")
-android.util.Log.d("BubbleDraw", "bodyRight=$bodyRight, pointerRight=$pointerRight, rightGap=$rightGap, alignRight=$alignRight")
-
-val actualBodyLeft = if (alignLeft) pointerLeft else bodyLeft
-val actualBodyRight = if (alignRight) pointerRight else bodyRight
-
-path.moveTo(actualBodyLeft + if (alignLeft) 0f else radius, 0f)
-
-path.lineTo(actualBodyRight - if (alignRight) 0f else radius, 0f)
-if (!alignRight) {
+    val leftGap = bodyLeft - pointerLeft
+    val rightGap = bodyRight - pointerRight
+    
+    val alignLeft = leftGap >= 0 && leftGap <= radius
+    val alignRight = rightGap >= 0 && rightGap <= radius
+    
+    val actualBodyLeft = if (alignLeft) pointerLeft else bodyLeft
+    val actualBodyRight = if (alignRight) pointerRight else bodyRight
+    
+    path.moveTo(actualBodyLeft + radius, 0f)
+    
+    // 顶部
+    path.lineTo(actualBodyRight - radius, 0f)
     path.quadraticBezierTo(actualBodyRight, 0f, actualBodyRight, radius)
-    path.lineTo(actualBodyRight, bodyBottom - radius)
-    path.quadraticBezierTo(actualBodyRight, bodyBottom, actualBodyRight - radius, bodyBottom)
-} else {
-    path.lineTo(actualBodyRight, bodyBottom)
-}
-
-if (alignRight) {
-    path.lineTo(pointerRight, bodyBottom + pointerRadius)
-} else if (actualBodyRight > pointerRight) {
-    path.lineTo(pointerRight + pointerRadius, bodyBottom)
-    path.quadraticBezierTo(pointerRight, bodyBottom, pointerRight, bodyBottom + pointerRadius)
-} else if (rightGap <= 0) {
-    path.quadraticBezierTo(actualBodyRight, bodyBottom, pointerRight, bodyBottom + pointerRadius)
-}
-
-path.lineTo(pointerRight, pointerBottom - pointerRadius)
-path.quadraticBezierTo(pointerRight, pointerBottom, pointerRight - pointerRadius, pointerBottom)
-
-path.lineTo(pointerLeft + pointerRadius, pointerBottom)
-path.quadraticBezierTo(pointerLeft, pointerBottom, pointerLeft, pointerBottom - pointerRadius)
-
-if (alignLeft) {
-    path.lineTo(pointerLeft, bodyBottom + pointerRadius)
-    path.lineTo(actualBodyLeft, bodyBottom)
-} else if (actualBodyLeft < pointerLeft) {
-    path.lineTo(pointerLeft, bodyBottom + pointerRadius)
-    path.quadraticBezierTo(pointerLeft, bodyBottom, pointerLeft - pointerRadius, bodyBottom)
-    path.lineTo(actualBodyLeft + radius, bodyBottom)
-    path.quadraticBezierTo(actualBodyLeft, bodyBottom, actualBodyLeft, bodyBottom - radius)
-} else if (leftGap <= 0) {
-    path.lineTo(pointerLeft, bodyBottom + pointerRadius)
-    path.quadraticBezierTo(pointerLeft, bodyBottom, actualBodyLeft, bodyBottom - radius)
-}
-
-if (!alignLeft) {
+    
+    // 右边
+    if (alignRight) {
+        path.lineTo(actualBodyRight, bodyBottom)
+    } else {
+        path.lineTo(actualBodyRight, bodyBottom - radius)
+        path.quadraticBezierTo(actualBodyRight, bodyBottom, actualBodyRight - radius, bodyBottom)
+    }
+    
+    // 右下角到 pointer
+    if (alignRight) {
+        // 对齐时直接垂直向下
+        path.lineTo(actualBodyRight, pointerBottom - pointerRadius)
+        path.quadraticBezierTo(actualBodyRight, pointerBottom, actualBodyRight - pointerRadius, pointerBottom)
+    } else if (actualBodyRight > pointerRight) {
+        // 主体超出 pointer
+        path.lineTo(pointerRight + pointerRadius, bodyBottom)
+        path.quadraticBezierTo(pointerRight, bodyBottom, pointerRight, bodyBottom + pointerRadius)
+        path.lineTo(pointerRight, pointerBottom - pointerRadius)
+        path.quadraticBezierTo(pointerRight, pointerBottom, pointerRight - pointerRadius, pointerBottom)
+    } else {
+        // pointer 超出主体
+        path.quadraticBezierTo(actualBodyRight, bodyBottom, pointerRight, bodyBottom + pointerRadius)
+        path.lineTo(pointerRight, pointerBottom - pointerRadius)
+        path.quadraticBezierTo(pointerRight, pointerBottom, pointerRight - pointerRadius, pointerBottom)
+    }
+    
+    // pointer 底部
+    path.lineTo(pointerLeft + pointerRadius, pointerBottom)
+    path.quadraticBezierTo(pointerLeft, pointerBottom, pointerLeft, pointerBottom - pointerRadius)
+    
+    // 左下角到主体
+    if (alignLeft) {
+        // 对齐时直接垂直向上
+        path.lineTo(pointerLeft, bodyBottom)
+    } else if (actualBodyLeft < pointerLeft) {
+        // pointer 超出主体
+        path.lineTo(pointerLeft, bodyBottom + pointerRadius)
+        path.quadraticBezierTo(pointerLeft, bodyBottom, pointerLeft - pointerRadius, bodyBottom)
+        path.lineTo(actualBodyLeft + radius, bodyBottom)
+        path.quadraticBezierTo(actualBodyLeft, bodyBottom, actualBodyLeft, bodyBottom - radius)
+    } else {
+        // 主体超出 pointer
+        path.lineTo(pointerLeft, bodyBottom + pointerRadius)
+        path.quadraticBezierTo(pointerLeft, bodyBottom, actualBodyLeft, bodyBottom - radius)
+    }
+    
+    // 左边
     path.lineTo(actualBodyLeft, radius)
     path.quadraticBezierTo(actualBodyLeft, 0f, actualBodyLeft + radius, 0f)
-} else {
-    path.lineTo(actualBodyLeft, 0f)
-}
     
     path.close()
     
