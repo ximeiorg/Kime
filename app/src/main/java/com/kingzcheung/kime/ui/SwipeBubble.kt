@@ -1,22 +1,38 @@
 package com.kingzcheung.kime.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
@@ -27,33 +43,150 @@ import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import kotlin.math.roundToInt
 
-private val BubbleSize = 50.dp
-private val BubbleWidthDown = 180.dp
-private val BubbleHeightDown = 40.dp
-private val BubbleOffsetY = -48.dp
+private val BubbleBodyHeight = KeyboardDimensions.BubbleHeightDown
+private val BubblePointerHeight = KeyboardDimensions.BubblePointerHeight
+private val BubbleCornerRadius = KeyboardDimensions.BubbleCornerRadius
 
-fun calculateBubblePosition(
-    keyCenterX: Float,
-    keyTop: Float,
-    bubbleWidthPx: Float,
-    bubbleHeightPx: Float,
-    bubbleOffsetYPx: Float,
-    keyboardWidth: Float,
-    keyboardLeft: Float
-): IntOffset {
-    val bubbleLeft = keyCenterX - bubbleWidthPx / 2
-    val bubbleTop = keyTop + bubbleOffsetYPx
+private fun DrawScope.drawBubbleShape(
+    bodyLeft: Float,
+    bodyWidth: Float,
+    bodyHeight: Float,
+    pointerLeft: Float,
+    pointerWidth: Float,
+    pointerHeight: Float,
+    cornerRadius: Float,
+    color: Color
+) {
+    val path = Path()
+    val radius = cornerRadius.coerceAtMost(bodyWidth / 2f).coerceAtMost(bodyHeight / 2f)
+    val pointerRadius = cornerRadius.coerceAtMost(pointerWidth / 2f)
     
-    val clampedLeft = bubbleLeft.coerceIn(keyboardLeft, keyboardLeft + keyboardWidth - bubbleWidthPx)
+    val bodyRight = bodyLeft + bodyWidth
+    val pointerRight = pointerLeft + pointerWidth
+    val bodyBottom = bodyHeight
+    val pointerTop = bodyBottom
+    val pointerBottom = bodyBottom + pointerHeight
     
-    return IntOffset(clampedLeft.roundToInt(), bubbleTop.roundToInt())
+    // 从主体左上角开始（圆角后）
+    path.moveTo(bodyLeft + radius, 0f)
+    
+    // 主体上边 + 左上圆角
+    path.lineTo(bodyRight - radius, 0f)
+    path.quadraticBezierTo(bodyRight, 0f, bodyRight, radius)
+    
+    // 主体右边
+    path.lineTo(bodyRight, bodyBottom - radius)
+    
+    // 主体右下角到pointer衔接处的贝塞尔曲线
+    // 如果主体右边超出pointer右边，需要衔接
+    if (bodyRight > pointerRight) {
+        // 主体右下圆角
+        path.quadraticBezierTo(bodyRight, bodyBottom, bodyRight - radius, bodyBottom)
+        // 水平连接到pointer右边上方
+        path.lineTo(pointerRight + pointerRadius, bodyBottom)
+        // pointer右上圆角
+        path.quadraticBezierTo(pointerRight, bodyBottom, pointerRight, bodyBottom + pointerRadius)
+    } else {
+        // 直接用贝塞尔曲线从主体右下角连接到pointer右上角
+        path.quadraticBezierTo(
+            bodyRight, bodyBottom,
+            pointerRight, pointerTop + pointerRadius
+        )
+    }
+    
+    // pointer右边
+    path.lineTo(pointerRight, pointerBottom - pointerRadius)
+    
+    // pointer右下圆角
+    path.quadraticBezierTo(pointerRight, pointerBottom, pointerRight - pointerRadius, pointerBottom)
+    
+    // pointer下边
+    path.lineTo(pointerLeft + pointerRadius, pointerBottom)
+    
+    // pointer左下圆角
+    path.quadraticBezierTo(pointerLeft, pointerBottom, pointerLeft, pointerBottom - pointerRadius)
+    
+    // pointer左边
+    path.lineTo(pointerLeft, bodyBottom + pointerRadius)
+    
+    // 主体左边到pointer衔接处的贝塞尔曲线
+    if (bodyLeft < pointerLeft) {
+        // pointer左上圆角
+        path.quadraticBezierTo(pointerLeft, bodyBottom, pointerLeft - pointerRadius, bodyBottom)
+        // 水平连接到主体左边
+        path.lineTo(bodyLeft + radius, bodyBottom)
+        // 主体左下圆角
+        path.quadraticBezierTo(bodyLeft, bodyBottom, bodyLeft, bodyBottom - radius)
+    } else {
+        // 直接用贝塞尔曲线从pointer左上角连接到主体左下角
+        path.quadraticBezierTo(
+            pointerLeft, bodyBottom,
+            bodyLeft, bodyBottom - radius
+        )
+    }
+    
+    // 主体左边
+    path.lineTo(bodyLeft, radius)
+    
+    // 主体左上圆角
+    path.quadraticBezierTo(bodyLeft, 0f, bodyLeft + radius, 0f)
+    
+    path.close()
+    
+    drawPath(path, color)
+}
+
+data class BubbleLayoutInfo(
+    val boxLeft: Float,
+    val boxTop: Float,
+    val boxWidth: Float,
+    val bodyLeftInBox: Float,
+    val pointerLeftInBox: Float
+)
+
+fun calculateBubbleLayout(
+    keyBounds: Rect,
+    bodyWidth: Float,
+    bodyHeight: Float,
+    pointerHeight: Float,
+    keyboardWidth: Float
+): BubbleLayoutInfo {
+    val pointerWidth = keyBounds.width
+    val pointerLeft = keyBounds.left
+    val pointerCenterX = pointerLeft + pointerWidth / 2
+    
+    val idealBodyLeft = pointerCenterX - bodyWidth / 2
+    val clampedBodyLeft = idealBodyLeft.coerceIn(0f, keyboardWidth - bodyWidth)
+    
+    val bodyLeft = clampedBodyLeft
+    val bodyRight = bodyLeft + bodyWidth
+    val pointerRight = pointerLeft + pointerWidth
+    
+    val boxLeft = minOf(bodyLeft, pointerLeft)
+    val boxRight = maxOf(bodyRight, pointerRight)
+    val boxWidth = boxRight - boxLeft
+    
+    val bodyLeftInBox = bodyLeft - boxLeft
+    val pointerLeftInBox = pointerLeft - boxLeft
+    
+    val boxTop = keyBounds.top - bodyHeight
+    
+    return BubbleLayoutInfo(
+        boxLeft = boxLeft,
+        boxTop = boxTop,
+        boxWidth = boxWidth,
+        bodyLeftInBox = bodyLeftInBox,
+        pointerLeftInBox = pointerLeftInBox
+    )
 }
 
 @Composable
 fun SwipeBubble(
     swipeState: SwipeState,
-    bubblePosition: IntOffset,
+    keyBounds: Rect,
     isDarkTheme: Boolean,
+    keyWidth: Float,
+    keyboardWidth: Float,
     modifier: Modifier = Modifier
 ) {
     if (!swipeState.isSwiping || swipeState.swipeText == null) {
@@ -64,132 +197,102 @@ fun SwipeBubble(
     val bubbleBgColor = if (isDarkTheme) Color(0xFF45474A) else Color(0xFFF0F1F2)
     val bubbleTextColor = if (isDarkTheme) Color(0xFFE8EAED) else Color(0xFF202124)
     
-    if (swipeState.isSwipeDown) {
-        SwipeDownBubble(
-            charInfos = swipeState.charInfos,
-            text = currentSwipeText,
-            bubblePosition = bubblePosition,
-            bubbleBgColor = bubbleBgColor,
-            bubbleTextColor = bubbleTextColor,
-            modifier = modifier
-        )
-    } else {
-        SwipeUpBubble(
-            text = currentSwipeText,
-            bubblePosition = bubblePosition,
-            bubbleBgColor = bubbleBgColor,
-            bubbleTextColor = bubbleTextColor,
-            modifier = modifier
-        )
+    var actualBodyWidth by remember { mutableStateOf(0f) }
+    val density = LocalDensity.current
+    val bodyHeightPx = with(density) { BubbleBodyHeight.toPx() }
+    val pointerHeightPx = with(density) { BubblePointerHeight.toPx() }
+    val cornerRadiusPx = with(density) { BubbleCornerRadius.toPx() }
+    
+    val layoutInfo = remember(actualBodyWidth, keyBounds, keyboardWidth) {
+        if (actualBodyWidth > 0 && keyboardWidth > 0) {
+            calculateBubbleLayout(
+                keyBounds = keyBounds,
+                bodyWidth = actualBodyWidth,
+                bodyHeight = bodyHeightPx,
+                pointerHeight = pointerHeightPx,
+                keyboardWidth = keyboardWidth
+            )
+        } else {
+            BubbleLayoutInfo(0f, 0f, 0f, 0f, 0f)
+        }
     }
-}
-
-@Composable
-private fun SwipeDownBubble(
-    charInfos: List<CharInfo>,
-    text: String,
-    bubblePosition: IntOffset,
-    bubbleBgColor: Color,
-    bubbleTextColor: Color,
-    modifier: Modifier = Modifier
-) {
+    
     val context = LocalContext.current
-    val hasSvgChars = charInfos.any { it.hasSvg }
+    val hasSvgChars = swipeState.charInfos.any { it.hasSvg }
+    val keyWidthPx = keyWidth
+    val totalHeight = BubbleBodyHeight + BubblePointerHeight
     
     Box(
         modifier = modifier
-            .offset { bubblePosition }
-            .shadow(6.dp, RoundedCornerShape(8.dp), ambientColor = Color(0x55000000), spotColor = Color(0x55000000))
-            .background(bubbleBgColor, RoundedCornerShape(8.dp))
-            .padding(horizontal = 6.dp, vertical = 4.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        if (hasSvgChars) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                charInfos.forEach { charInfo ->
-                    if (charInfo.hasSvg) {
-                        val svgPath = SubcharHelper.getSvgPath(charInfo.char)
-                        if (svgPath != null) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(context)
-                                    .data("file:///android_asset/$svgPath")
-                                    .decoderFactory(SvgDecoder.Factory())
-                                    .build(),
-                                contentDescription = charInfo.char,
-                                modifier = Modifier.size(18.dp),
-                                colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(bubbleTextColor)
-                            )
-                        }
-                    } else {
-                        Text(
-                            text = charInfo.char,
-                            color = bubbleTextColor,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Normal,
-                            textAlign = TextAlign.Center
-                        )
-                    }
+            .offset { IntOffset(layoutInfo.boxLeft.roundToInt(), layoutInfo.boxTop.roundToInt()) }
+            .onGloballyPositioned { coordinates ->
+                actualBodyWidth = coordinates.size.width.toFloat()
+            }
+            .wrapContentWidth(unbounded = true, align = Alignment.Start)
+            .height(totalHeight)
+            .shadow(4.dp, RoundedCornerShape(BubbleCornerRadius), ambientColor = Color(0x22000000), spotColor = Color(0x22000000))
+            .drawBehind {
+                if (actualBodyWidth > 0) {
+                    drawBubbleShape(
+                        bodyLeft = layoutInfo.bodyLeftInBox,
+                        bodyWidth = actualBodyWidth,
+                        bodyHeight = bodyHeightPx,
+                        pointerLeft = layoutInfo.pointerLeftInBox,
+                        pointerWidth = keyWidthPx,
+                        pointerHeight = pointerHeightPx,
+                        cornerRadius = cornerRadiusPx,
+                        color = bubbleBgColor
+                    )
                 }
             }
-        } else {
-            Text(
-                text = text,
-                color = bubbleTextColor,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal,
-                textAlign = TextAlign.Center,
-                maxLines = 3,
-                lineHeight = 18.sp
-            )
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .height(BubbleBodyHeight)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (hasSvgChars) {
+                    swipeState.charInfos.forEach { charInfo ->
+                        if (charInfo.hasSvg) {
+                            val svgPath = SubcharHelper.getSvgPath(charInfo.char)
+                            if (svgPath != null) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data("file:///android_asset/$svgPath")
+                                        .decoderFactory(SvgDecoder.Factory())
+                                        .build(),
+                                    contentDescription = charInfo.char,
+                                    modifier = Modifier.size(16.dp),
+                                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(bubbleTextColor)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(2.dp))
+                        } else {
+                            Text(
+                                text = charInfo.char,
+                                color = bubbleTextColor,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                        }
+                    }
+                } else {
+                    Text(
+                        text = currentSwipeText,
+                        color = bubbleTextColor,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center,
+                        softWrap = false
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(BubblePointerHeight))
         }
     }
 }
-
-@Composable
-private fun SwipeUpBubble(
-    text: String,
-    bubblePosition: IntOffset,
-    bubbleBgColor: Color,
-    bubbleTextColor: Color,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .offset { bubblePosition }
-            .shadow(6.dp, RoundedCornerShape(8.dp), ambientColor = Color(0x55000000), spotColor = Color(0x55000000))
-            .background(bubbleBgColor, RoundedCornerShape(8.dp))
-            .size(BubbleSize),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = bubbleTextColor,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
-fun rememberBubbleSizes(): BubbleSizes {
-    val density = androidx.compose.ui.platform.LocalDensity.current
-    return remember(density) {
-        BubbleSizes(
-            bubbleSizePx = with(density) { BubbleSize.toPx() },
-            bubbleWidthDownPx = with(density) { BubbleWidthDown.toPx() },
-            bubbleHeightDownPx = with(density) { BubbleHeightDown.toPx() },
-            bubbleOffsetYPx = with(density) { BubbleOffsetY.toPx() }
-        )
-    }
-}
-
-data class BubbleSizes(
-    val bubbleSizePx: Float,
-    val bubbleWidthDownPx: Float,
-    val bubbleHeightDownPx: Float,
-    val bubbleOffsetYPx: Float
-)
