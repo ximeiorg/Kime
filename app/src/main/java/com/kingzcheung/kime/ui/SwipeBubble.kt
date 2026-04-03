@@ -43,6 +43,7 @@ import kotlin.math.roundToInt
 private val BubbleBodyHeight = KeyboardDimensions.BubbleHeightDown
 private val BubblePointerHeight = KeyboardDimensions.BubblePointerHeight
 private val BubbleCornerRadius = KeyboardDimensions.BubbleCornerRadius
+private val BubbleScreenMargin = 4.dp
 
 private fun DrawScope.drawBubbleShape(
     bodyLeft: Float,
@@ -146,18 +147,48 @@ fun calculateBubbleLayout(
     bodyWidth: Float,
     bodyHeight: Float,
     pointerHeight: Float,
-    keyboardWidth: Float
+    keyboardWidth: Float,
+    thresholdPx: Float,
+    screenMarginPx: Float
 ): BubbleLayoutInfo {
     val pointerWidth = keyBounds.width
     val pointerLeft = keyBounds.left
     val pointerCenterX = pointerLeft + pointerWidth / 2
+    val pointerRight = pointerLeft + pointerWidth
     
     val idealBodyLeft = pointerCenterX - bodyWidth / 2
-    val clampedBodyLeft = idealBodyLeft.coerceIn(0f, keyboardWidth - bodyWidth)
+    val maxBodyLeft = keyboardWidth - bodyWidth - screenMarginPx
+    val threshold = thresholdPx
     
-    val bodyLeft = clampedBodyLeft
+    val bodyLeft = when {
+        idealBodyLeft < screenMarginPx -> {
+            val clampedLeft = screenMarginPx
+            val bodyRight = clampedLeft + bodyWidth
+            val gap = bodyRight - pointerRight
+            android.util.Log.d("SwipeBubble", "Left edge: gap=$gap, threshold=$threshold, pointerLeft=$pointerLeft, pointerRight=$pointerRight, bodyWidth=$bodyWidth, bodyRight=$bodyRight")
+            if (gap < threshold) {
+                pointerLeft
+            } else {
+                clampedLeft
+            }
+        }
+        idealBodyLeft > maxBodyLeft -> {
+            val clampedLeft = maxBodyLeft
+            val bodyRight = clampedLeft + bodyWidth
+            val gap = bodyRight - pointerRight
+            android.util.Log.d("SwipeBubble", "Right edge: gap=$gap, threshold=$threshold, pointerLeft=$pointerLeft, pointerRight=$pointerRight, bodyWidth=$bodyWidth, bodyRight=$bodyRight")
+            if (gap < threshold) {
+                pointerRight - bodyWidth
+            } else {
+                clampedLeft
+            }
+        }
+        else -> {
+            android.util.Log.d("SwipeBubble", "Center: idealBodyLeft=$idealBodyLeft, pointerLeft=$pointerLeft, pointerRight=$pointerRight, bodyWidth=$bodyWidth")
+            idealBodyLeft
+        }
+    }
     val bodyRight = bodyLeft + bodyWidth
-    val pointerRight = pointerLeft + pointerWidth
     
     val boxLeft = minOf(bodyLeft, pointerLeft)
     val boxRight = maxOf(bodyRight, pointerRight)
@@ -197,6 +228,8 @@ fun SwipeBubble(
         return
     }
     
+    android.util.Log.d("SwipeBubble", "SwipeBubble called: keyBounds=$keyBounds, keyboardWidth=$keyboardWidth")
+    
     val bubbleBgColor = if (isDarkTheme) Color(0xFF45474A) else Color(0xFFF0F1F2)
     val bubbleTextColor = if (isDarkTheme) Color(0xFFE8EAED) else Color(0xFF202124)
     
@@ -205,15 +238,20 @@ fun SwipeBubble(
     val bodyHeightPx = with(density) { BubbleBodyHeight.toPx() }
     val pointerHeightPx = with(density) { BubblePointerHeight.toPx() }
     val cornerRadiusPx = with(density) { BubbleCornerRadius.toPx() }
+    val thresholdPx = with(density) { 5.dp.toPx() }
+    val screenMarginPx = with(density) { BubbleScreenMargin.toPx() }
     
     val layoutInfo = remember(actualBodyWidth, keyBounds, keyboardWidth) {
+        android.util.Log.d("SwipeBubble", "calculateBubbleLayout: actualBodyWidth=$actualBodyWidth, keyBounds=$keyBounds, keyboardWidth=$keyboardWidth")
         if (actualBodyWidth > 0 && keyboardWidth > 0) {
             calculateBubbleLayout(
                 keyBounds = keyBounds,
                 bodyWidth = actualBodyWidth,
                 bodyHeight = bodyHeightPx,
                 pointerHeight = pointerHeightPx,
-                keyboardWidth = keyboardWidth
+                keyboardWidth = keyboardWidth,
+                thresholdPx = thresholdPx,
+                screenMarginPx = screenMarginPx
             )
         } else {
             BubbleLayoutInfo(0f, 0f, 0f, 0f, 0f)
