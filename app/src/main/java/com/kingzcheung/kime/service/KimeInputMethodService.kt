@@ -453,10 +453,10 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                 }
                 "enter" -> {
                     if (state.isComposing) {
-                        val committedText = rimeEngine.commit()
-                        if (committedText.isNotEmpty()) {
+                        val input = state.inputText
+                        if (input.isNotEmpty()) {
                             withContext(Dispatchers.Main) {
-                                commitText(committedText)
+                                commitText(input)
                             }
                         }
                         rimeEngine.clearComposition()
