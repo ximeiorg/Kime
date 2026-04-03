@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -54,78 +55,71 @@ private fun DrawScope.drawBubbleShape(
     color: Color
 ) {
     val path = Path()
-    val radius = cornerRadius.coerceAtMost(bodyWidth / 2f).coerceAtMost(bodyHeight / 2f)
     val pointerRadius = cornerRadius.coerceAtMost(pointerWidth / 2f)
+    val radius = cornerRadius.coerceAtMost(bodyWidth / 2f).coerceAtMost(bodyHeight / 2f)
     
     val bodyRight = bodyLeft + bodyWidth
     val pointerRight = pointerLeft + pointerWidth
     val bodyBottom = bodyHeight
-    val pointerTop = bodyBottom
     val pointerBottom = bodyBottom + pointerHeight
     
-    // 从主体左上角开始（圆角后）
-    path.moveTo(bodyLeft + radius, 0f)
-    
-    // 主体上边 + 左上圆角
-    path.lineTo(bodyRight - radius, 0f)
-    path.quadraticBezierTo(bodyRight, 0f, bodyRight, radius)
-    
-    // 主体右边
-    path.lineTo(bodyRight, bodyBottom - radius)
-    
-    // 主体右下角到pointer衔接处的贝塞尔曲线
-    // 如果主体右边超出pointer右边，需要衔接
-    if (bodyRight > pointerRight) {
-        // 主体右下圆角
-        path.quadraticBezierTo(bodyRight, bodyBottom, bodyRight - radius, bodyBottom)
-        // 水平连接到pointer右边上方
-        path.lineTo(pointerRight + pointerRadius, bodyBottom)
-        // pointer右上圆角
-        path.quadraticBezierTo(pointerRight, bodyBottom, pointerRight, bodyBottom + pointerRadius)
-    } else {
-        // 直接用贝塞尔曲线从主体右下角连接到pointer右上角
-        path.quadraticBezierTo(
-            bodyRight, bodyBottom,
-            pointerRight, pointerTop + pointerRadius
-        )
-    }
-    
-    // pointer右边
-    path.lineTo(pointerRight, pointerBottom - pointerRadius)
-    
-    // pointer右下圆角
-    path.quadraticBezierTo(pointerRight, pointerBottom, pointerRight - pointerRadius, pointerBottom)
-    
-    // pointer下边
-    path.lineTo(pointerLeft + pointerRadius, pointerBottom)
-    
-    // pointer左下圆角
-    path.quadraticBezierTo(pointerLeft, pointerBottom, pointerLeft, pointerBottom - pointerRadius)
-    
-    // pointer左边
+val leftGap = bodyLeft - pointerLeft
+val rightGap = pointerRight - bodyRight
+
+val alignLeft = leftGap >= 0 && leftGap <= radius
+val alignRight = rightGap >= 0 && rightGap <= radius
+
+android.util.Log.d("BubbleDraw", "bodyLeft=$bodyLeft, pointerLeft=$pointerLeft, leftGap=$leftGap, alignLeft=$alignLeft")
+android.util.Log.d("BubbleDraw", "bodyRight=$bodyRight, pointerRight=$pointerRight, rightGap=$rightGap, alignRight=$alignRight")
+
+val actualBodyLeft = if (alignLeft) pointerLeft else bodyLeft
+val actualBodyRight = if (alignRight) pointerRight else bodyRight
+
+path.moveTo(actualBodyLeft + if (alignLeft) 0f else radius, 0f)
+
+path.lineTo(actualBodyRight - if (alignRight) 0f else radius, 0f)
+if (!alignRight) {
+    path.quadraticBezierTo(actualBodyRight, 0f, actualBodyRight, radius)
+    path.lineTo(actualBodyRight, bodyBottom - radius)
+    path.quadraticBezierTo(actualBodyRight, bodyBottom, actualBodyRight - radius, bodyBottom)
+} else {
+    path.lineTo(actualBodyRight, bodyBottom)
+}
+
+if (alignRight) {
+    path.lineTo(pointerRight, bodyBottom + pointerRadius)
+} else if (actualBodyRight > pointerRight) {
+    path.lineTo(pointerRight + pointerRadius, bodyBottom)
+    path.quadraticBezierTo(pointerRight, bodyBottom, pointerRight, bodyBottom + pointerRadius)
+} else if (rightGap <= 0) {
+    path.quadraticBezierTo(actualBodyRight, bodyBottom, pointerRight, bodyBottom + pointerRadius)
+}
+
+path.lineTo(pointerRight, pointerBottom - pointerRadius)
+path.quadraticBezierTo(pointerRight, pointerBottom, pointerRight - pointerRadius, pointerBottom)
+
+path.lineTo(pointerLeft + pointerRadius, pointerBottom)
+path.quadraticBezierTo(pointerLeft, pointerBottom, pointerLeft, pointerBottom - pointerRadius)
+
+if (alignLeft) {
     path.lineTo(pointerLeft, bodyBottom + pointerRadius)
-    
-    // 主体左边到pointer衔接处的贝塞尔曲线
-    if (bodyLeft < pointerLeft) {
-        // pointer左上圆角
-        path.quadraticBezierTo(pointerLeft, bodyBottom, pointerLeft - pointerRadius, bodyBottom)
-        // 水平连接到主体左边
-        path.lineTo(bodyLeft + radius, bodyBottom)
-        // 主体左下圆角
-        path.quadraticBezierTo(bodyLeft, bodyBottom, bodyLeft, bodyBottom - radius)
-    } else {
-        // 直接用贝塞尔曲线从pointer左上角连接到主体左下角
-        path.quadraticBezierTo(
-            pointerLeft, bodyBottom,
-            bodyLeft, bodyBottom - radius
-        )
-    }
-    
-    // 主体左边
-    path.lineTo(bodyLeft, radius)
-    
-    // 主体左上圆角
-    path.quadraticBezierTo(bodyLeft, 0f, bodyLeft + radius, 0f)
+    path.lineTo(actualBodyLeft, bodyBottom)
+} else if (actualBodyLeft < pointerLeft) {
+    path.lineTo(pointerLeft, bodyBottom + pointerRadius)
+    path.quadraticBezierTo(pointerLeft, bodyBottom, pointerLeft - pointerRadius, bodyBottom)
+    path.lineTo(actualBodyLeft + radius, bodyBottom)
+    path.quadraticBezierTo(actualBodyLeft, bodyBottom, actualBodyLeft, bodyBottom - radius)
+} else if (leftGap <= 0) {
+    path.lineTo(pointerLeft, bodyBottom + pointerRadius)
+    path.quadraticBezierTo(pointerLeft, bodyBottom, actualBodyLeft, bodyBottom - radius)
+}
+
+if (!alignLeft) {
+    path.lineTo(actualBodyLeft, radius)
+    path.quadraticBezierTo(actualBodyLeft, 0f, actualBodyLeft + radius, 0f)
+} else {
+    path.lineTo(actualBodyLeft, 0f)
+}
     
     path.close()
     
@@ -185,11 +179,17 @@ fun SwipeBubble(
     keyboardWidth: Float,
     modifier: Modifier = Modifier
 ) {
-    if (!swipeState.isSwiping || swipeState.swipeText == null) {
+    val shouldShowBubble = swipeState.isSwiping || swipeState.isPressed
+    val displayText = if (swipeState.isPressed) {
+        swipeState.pressedText
+    } else {
+        swipeState.swipeText
+    }
+    
+    if (!shouldShowBubble || displayText == null) {
         return
     }
     
-    val currentSwipeText = swipeState.swipeText
     val bubbleBgColor = if (isDarkTheme) Color(0xFF45474A) else Color(0xFFF0F1F2)
     val bubbleTextColor = if (isDarkTheme) Color(0xFFE8EAED) else Color(0xFF202124)
     
@@ -234,6 +234,13 @@ fun SwipeBubble(
             .shadow(4.dp, RoundedCornerShape(BubbleCornerRadius), ambientColor = Color(0x22000000), spotColor = Color(0x22000000))
             .drawBehind {
                 if (actualBodyWidth > 0) {
+                    val bodyLeft = layoutInfo.bodyLeftInBox
+                    val pointerLeft = layoutInfo.pointerLeftInBox
+                    val leftGap = bodyLeft - pointerLeft
+                    val rightGap = (pointerLeft + keyWidthPx) - (bodyLeft + actualBodyWidth)
+                    
+                    android.util.Log.d("SwipeBubble", "bodyLeft=$bodyLeft, pointerLeft=$pointerLeft, leftGap=$leftGap, rightGap=$rightGap, radius=$cornerRadiusPx")
+                    
                     drawBubbleShape(
                         bodyLeft = layoutInfo.bodyLeftInBox,
                         bodyWidth = actualBodyWidth,
@@ -251,14 +258,15 @@ fun SwipeBubble(
             Row(
                 modifier = Modifier
                     .height(BubbleBodyHeight)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .defaultMinSize(minWidth = 48.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = currentSwipeText,
+                    text = displayText,
                     color = bubbleTextColor,
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontFamily = chaiFontFamily,
                     fontWeight = FontWeight.Normal,
                     textAlign = TextAlign.Center,

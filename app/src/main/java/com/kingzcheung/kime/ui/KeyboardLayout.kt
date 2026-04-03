@@ -265,7 +265,7 @@ Row(
             swipeState = swipeState,
             keyBounds = lastKeyBounds,
             isDarkTheme = isDarkTheme,
-            keyWidth = if (swipeState.isSwiping) lastKeyBounds.width else 0f,
+            keyWidth = if (swipeState.isSwiping || swipeState.isPressed) lastKeyBounds.width else 0f,
             keyboardWidth = keyboardBounds.width
         )
     }
