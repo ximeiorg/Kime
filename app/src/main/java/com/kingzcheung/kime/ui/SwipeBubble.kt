@@ -7,11 +7,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,7 +21,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -33,14 +30,13 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.decode.SvgDecoder
-import coil.request.ImageRequest
 import kotlin.math.roundToInt
 
 private val BubbleBodyHeight = KeyboardDimensions.BubbleHeightDown
@@ -218,9 +214,14 @@ fun SwipeBubble(
     }
     
     val context = LocalContext.current
-    val hasSvgChars = swipeState.charInfos.any { it.hasSvg }
     val keyWidthPx = keyWidth
     val totalHeight = BubbleBodyHeight + BubblePointerHeight
+    
+    val chaiFontFamily = remember {
+        FontFamily(
+            androidx.compose.ui.text.font.Typeface(android.graphics.Typeface.createFromAsset(context.assets, "ChaiPUA-0.2.7-snow.ttf"))
+        )
+    }
     
     Box(
         modifier = modifier
@@ -254,43 +255,15 @@ fun SwipeBubble(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (hasSvgChars) {
-                    swipeState.charInfos.forEach { charInfo ->
-                        if (charInfo.hasSvg) {
-                            val svgPath = SubcharHelper.getSvgPath(charInfo.char)
-                            if (svgPath != null) {
-                                AsyncImage(
-                                    model = ImageRequest.Builder(context)
-                                        .data("file:///android_asset/$svgPath")
-                                        .decoderFactory(SvgDecoder.Factory())
-                                        .build(),
-                                    contentDescription = charInfo.char,
-                                    modifier = Modifier.size(16.dp),
-                                    colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(bubbleTextColor)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(2.dp))
-                        } else {
-                            Text(
-                                text = charInfo.char,
-                                color = bubbleTextColor,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Medium,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.width(2.dp))
-                        }
-                    }
-                } else {
-                    Text(
-                        text = currentSwipeText,
-                        color = bubbleTextColor,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center,
-                        softWrap = false
-                    )
-                }
+                Text(
+                    text = currentSwipeText,
+                    color = bubbleTextColor,
+                    fontSize = 13.sp,
+                    fontFamily = chaiFontFamily,
+                    fontWeight = FontWeight.Normal,
+                    textAlign = TextAlign.Center,
+                    softWrap = false
+                )
             }
             Spacer(modifier = Modifier.height(BubblePointerHeight))
         }
