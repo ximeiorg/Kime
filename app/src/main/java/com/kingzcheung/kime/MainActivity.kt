@@ -6,9 +6,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.kingzcheung.kime.settings.SettingsPreferences
 import com.kingzcheung.kime.ui.SettingsScreen
-import com.kingzcheung.kime.ui.theme.KimeTheme
+import com.kingzcheung.kime.ui.theme.SettingsTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,7 +21,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val openFragment = intent?.getStringExtra("open_fragment")
         setContent {
-            KimeTheme {
+            val context = this
+            var darkMode by remember { mutableIntStateOf(SettingsPreferences.getDarkMode(context)) }
+            
+            SettingsTheme(darkTheme = darkMode == 1) {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Surface(
                         modifier = Modifier
@@ -24,7 +32,10 @@ class MainActivity : ComponentActivity() {
                             .padding(innerPadding),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        SettingsScreen(initialRoute = openFragment)
+                        SettingsScreen(
+                            initialRoute = openFragment,
+                            onThemeChanged = { darkMode = SettingsPreferences.getDarkMode(context) }
+                        )
                     }
                 }
             }

@@ -61,7 +61,10 @@ object SettingsRoutes {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(initialRoute: String? = null) {
+fun SettingsScreen(
+    initialRoute: String? = null,
+    onThemeChanged: () -> Unit = {}
+) {
     val navController = rememberNavController()
     val startDestination = if (initialRoute == "manage_dict") SettingsRoutes.Dictionary else SettingsRoutes.Main
     
@@ -85,7 +88,8 @@ fun SettingsScreen(initialRoute: String? = null) {
         }
         composable(SettingsRoutes.Theme) {
             ThemeSettingsContent(
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
+                onThemeChanged = onThemeChanged
             )
         }
         composable(SettingsRoutes.KeyEffect) {
@@ -358,7 +362,8 @@ fun SchemaSettingsContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ThemeSettingsContent(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onThemeChanged: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var currentTheme by remember { mutableStateOf(SettingsPreferences.getDarkMode(context)) }
@@ -419,6 +424,7 @@ fun ThemeSettingsContent(
                         onClick = {
                             currentTheme = 0
                             SettingsPreferences.setDarkMode(context, 0)
+                            onThemeChanged()
                         },
                         modifier = Modifier.weight(1f)
                     )
@@ -429,6 +435,7 @@ fun ThemeSettingsContent(
                         onClick = {
                             currentTheme = 1
                             SettingsPreferences.setDarkMode(context, 1)
+                            onThemeChanged()
                         },
                         modifier = Modifier.weight(1f)
                     )
