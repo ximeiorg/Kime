@@ -43,7 +43,7 @@ fun SettingsSection(
                     spotColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
                 ),
             shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh
+            color = Color.White
         ) {
             Column(content = content)
         }
@@ -289,7 +289,7 @@ fun ThemeCard(
                     }
                 ),
 shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            color = Color.White,
             shadowElevation = 2.dp,
             onClick = onClick
         ) {
@@ -415,7 +415,7 @@ fun KeyboardThemeCard(
                     }
                 ),
 shape = RoundedCornerShape(12.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            color = Color.White,
             shadowElevation = 2.dp,
             onClick = onClick
         ) {

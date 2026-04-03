@@ -710,7 +710,7 @@ fun DictionarySettingsContent(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
                 tonalElevation = 2.dp,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh
+                color = Color.White
             ) {
                 Row(
                     modifier = Modifier

@@ -24,3 +24,4 @@ app/release
 *.tar.gz
 *.zip
 /.kilo
+/.kotlin
