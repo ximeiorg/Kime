@@ -3,7 +3,19 @@ package com.kingzcheung.kime.ui
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -106,7 +118,12 @@ fun AboutContent(
             .background(MaterialTheme.colorScheme.background)
     ) {
         TopAppBar(
-            title = { Text("关于") },
+            title = { 
+                Text(
+                    "关于",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(
@@ -116,9 +133,10 @@ fun AboutContent(
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                titleContentColor = MaterialTheme.colorScheme.onSurface
-            )
+                containerColor = MaterialTheme.colorScheme.background,
+                titleContentColor = MaterialTheme.colorScheme.onBackground
+            ),
+            windowInsets = WindowInsets(0.dp)
         )
         
         LazyColumn(
@@ -130,7 +148,7 @@ fun AboutContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(
                         modifier = Modifier
@@ -174,7 +192,7 @@ fun AboutContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(
                         modifier = Modifier
@@ -269,7 +287,7 @@ fun AboutContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column {
                         SettingsItem(
@@ -291,7 +309,7 @@ fun AboutContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(
                         modifier = Modifier
@@ -377,7 +395,12 @@ fun PrivacyPolicyContent(
             .background(MaterialTheme.colorScheme.background)
     ) {
         TopAppBar(
-            title = { Text("隐私策略") },
+            title = { 
+                Text(
+                    "隐私策略",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(
@@ -387,9 +410,10 @@ fun PrivacyPolicyContent(
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                titleContentColor = MaterialTheme.colorScheme.onSurface
-            )
+                containerColor = MaterialTheme.colorScheme.background,
+                titleContentColor = MaterialTheme.colorScheme.onBackground
+            ),
+            windowInsets = WindowInsets(0.dp)
         )
         
         LazyColumn(
@@ -400,7 +424,7 @@ fun PrivacyPolicyContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp)
@@ -486,7 +510,12 @@ fun LicensesContent(
             .background(MaterialTheme.colorScheme.background)
     ) {
         TopAppBar(
-            title = { Text("开源许可证") },
+            title = { 
+                Text(
+                    "开源许可证",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            },
             navigationIcon = {
                 IconButton(onClick = onBack) {
                     Icon(
@@ -496,9 +525,10 @@ fun LicensesContent(
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surface,
-                titleContentColor = MaterialTheme.colorScheme.onSurface
-            )
+                containerColor = MaterialTheme.colorScheme.background,
+                titleContentColor = MaterialTheme.colorScheme.onBackground
+            ),
+            windowInsets = WindowInsets(0.dp)
         )
         
         LazyColumn(

@@ -36,3 +36,7 @@ val DividerColorDark = Color(0xFF3C4043)
 // 强调色
 val AccentColor = Color(0xFF1A73E8)
 val AccentColorDark = Color(0xFF8AB4F8)
+
+// Surface 颜色（卡片背景）
+val SurfaceColor = Color(0xFFFFFFFF)  // 纯白色
+val SurfaceColorDark = Color(0xFF2D2D2D)  // 比背景色稍亮
