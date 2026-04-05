@@ -8,18 +8,32 @@
   一款基于 <a href="https://rime.im/">Rime</a> 引擎构建的 Android 五笔输入法，专注于简洁高效的中文输入体验。
 </p>
 
-<p align="center">
-  <img src="docs/Screenshot_20260405_215516.jpg" width="180">
-  <img src="docs/IMG_20260405_215809.jpg" width="180">
-  <img src="docs/IMG_20260405_215836.jpg" width="180">
-  <img src="docs/IMG_20260405_215901.jpg" width="180">
-  <img src="docs/IMG_20260405_215928.jpg" width="180">
-  <img src="docs/IMG_20260405_220026.jpg" width="180">
-  <img src="docs/Screenshot_20260405_215735.jpg" width="180">
-  <img src="docs/Screenshot_20260405_215740.jpg" width="180">
-  <img src="docs/Screenshot_20260405_220938.jpg" width="180">
-
-</p>
+<table align="center">
+  <tr>
+    <td><img src="docs/Screenshot/IMG_20260405_222005.jpg" width="180"></td>
+    <td><img src="docs/Screenshot/Screenshot_20260405_215516.jpg" width="180"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/Screenshot/Screenshot_20260405_221835.jpg" width="180"></td>
+    <td><img src="docs/Screenshot/Screenshot_20260405_215740.jpg" width="180"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/Screenshot/IMG_20260405_222014.jpg" width="180"></td>
+    <td><img src="docs/Screenshot/IMG_20260405_215901.jpg" width="180"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/Screenshot/IMG_20260405_220026.jpg" width="180"></td>
+    <td><img src="docs/Screenshot/IMG_20260405_215928.jpg" width="180"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/Screenshot/IMG_20260405_221956.jpg" width="180"></td>
+    <td><img src="docs/Screenshot/IMG_20260405_215809.jpg" width="180"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/Screenshot/Screenshot_20260405_222055.jpg" width="180"></td>
+    <td><img src="docs/Screenshot/Screenshot_20260405_215735.jpg" width="180"></td>
+  </tr>
+</table>
 
 > 这是专门为我的个人使用习惯而开发的五笔输入法，请勿用于商业用途。
 
