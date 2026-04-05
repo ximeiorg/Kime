@@ -9,11 +9,16 @@
 </p>
 
 <p align="center">
-  <img src="docs/Screenshot_20260329_194632.jpg" width="180">
-  <img src="docs/Screenshot_20260329_194638.jpg" width="180">
-  <img src="docs/Screenshot_20260329_194708.jpg" width="180">
-  <img src="docs/Screenshot_20260329_194717.jpg" width="180">
-  <img src="docs/Screenshot_20260329_194917.jpg" width="180">
+  <img src="docs/Screenshot_20260405_215516.jpg" width="180">
+  <img src="docs/IMG_20260405_215809.jpg" width="180">
+  <img src="docs/IMG_20260405_215836.jpg" width="180">
+  <img src="docs/IMG_20260405_215901.jpg" width="180">
+  <img src="docs/IMG_20260405_215928.jpg" width="180">
+  <img src="docs/IMG_20260405_220026.jpg" width="180">
+  <img src="docs/Screenshot_20260405_215735.jpg" width="180">
+  <img src="docs/Screenshot_20260405_215740.jpg" width="180">
+  <img src="docs/Screenshot_20260405_220938.jpg" width="180">
+
 </p>
 
 > 这是专门为我的个人使用习惯而开发的五笔输入法，请勿用于商业用途。

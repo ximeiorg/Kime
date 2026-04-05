@@ -248,7 +248,7 @@ fun AboutContent(
                         .clickable {
                             uriHandler.openUri("https://github.com/ximeiorg/Kime")
                         },
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Row(
                         modifier = Modifier
@@ -543,7 +543,7 @@ fun LicensesContent(
                         .clickable {
                             uriHandler.openUri(item.url)
                         },
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp)
