@@ -3,7 +3,7 @@ name: Build and Release APK
 on:
   push:
     tags:
-      - 'v*'
+      - '*'
 
 permissions:
   contents: write
