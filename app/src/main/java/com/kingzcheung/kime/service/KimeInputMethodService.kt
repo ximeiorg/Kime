@@ -39,6 +39,8 @@ import com.kingzcheung.kime.settings.SettingsPreferences
 import com.kingzcheung.kime.ui.KeysConfigHelper
 import com.kingzcheung.kime.ui.theme.KimeTheme
 import com.kingzcheung.kime.ui.KeyboardView
+import com.kingzcheung.kime.association.OnnxAssociationEngine
+import com.kingzcheung.kime.association.AssociationModelHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -57,7 +59,9 @@ data class InputUIState(
     val enterKeyText: String = "发送",
     val darkMode: Int = 0,
     val themeId: String = "ocean_blue",
-    val showBottomButtons: Boolean = false
+    val showBottomButtons: Boolean = false,
+    val associationCandidates: Array<String> = emptyArray(),
+    val associationEnabled: Boolean = false
 )
 
 /**
@@ -87,6 +91,9 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     // Rime 引擎实例
     private val rimeEngine = RimeEngine()
     
+    // 联想引擎实例（单例）
+    private val associationEngine = OnnxAssociationEngine
+    
     // 剪切板管理器
     private lateinit var clipboardManager: ClipboardManager
     
@@ -100,6 +107,9 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     private val uiState = mutableStateOf(InputUIState())
     private val clipboardItemsState = mutableStateOf<List<com.kingzcheung.kime.clipboard.ClipboardItem>>(emptyList())
     private val quickSendItemsState = mutableStateOf<List<com.kingzcheung.kime.clipboard.ClipboardItem>>(emptyList())
+    
+    // 最近上屏的文本（用于联想）
+    private var lastCommittedText = ""
     
     // 音频和振动
     private val audioManager: AudioManager by lazy { getSystemService(AUDIO_SERVICE) as AudioManager }
@@ -194,6 +204,64 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         loadDarkModePreference()
         initRimeEngine()
         initClipboardManager()
+        initAssociationEngine()
+    }
+    
+    /**
+     * 初始化联想引擎（仅在 onCreate 时检查）
+     */
+    private fun initAssociationEngine() {
+        val enabled = SettingsPreferences.isAssociationEnabled(this)
+        Log.i(TAG, "initAssociationEngine: enabled=$enabled")
+        
+        if (!enabled) {
+            Log.i(TAG, "Association feature disabled")
+            return
+        }
+        
+        if (associationEngine.isInitialized()) {
+            Log.i(TAG, "Association engine already initialized")
+            return
+        }
+        
+        Log.i(TAG, "initAssociationEngine: Starting initialization...")
+        serviceScope.launch(Dispatchers.IO) {
+            try {
+                val modelReady = AssociationModelHelper.isModelReady(this@KimeInputMethodService)
+                Log.i(TAG, "Model ready: $modelReady")
+                
+                if (!modelReady) {
+                    Log.i(TAG, "Copying model files from assets...")
+                    val copySuccess = AssociationModelHelper.copyModelFromAssets(this@KimeInputMethodService)
+                    Log.i(TAG, "Model copy result: $copySuccess")
+                }
+                
+                if (AssociationModelHelper.isModelReady(this@KimeInputMethodService)) {
+                    Log.i(TAG, "Creating AssociationEngine instance...")
+                    val success = associationEngine.initialize(this@KimeInputMethodService)
+                    Log.i(TAG, "Association engine initialized: $success")
+                } else {
+                    Log.e(TAG, "Model files not ready after copy")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to initialize association engine", e)
+            }
+        }
+    }
+    
+    /**
+     * 检查并初始化联想引擎（支持运行时动态开启）
+     */
+    private fun checkAndInitializeAssociationEngine() {
+        val enabled = SettingsPreferences.isAssociationEnabled(this)
+        
+        if (enabled && !associationEngine.isInitialized()) {
+            Log.i(TAG, "Association enabled in settings, initializing now...")
+            initAssociationEngine()
+        } else if (!enabled && associationEngine.isInitialized()) {
+            Log.i(TAG, "Association disabled in settings, releasing engine...")
+            associationEngine.release()
+        }
     }
     
     /**
@@ -338,6 +406,14 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                                 val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
                                 @Suppress("DEPRECATION")
                                 imm.showInputMethodPicker()
+                            },
+                            associationCandidates = state.associationCandidates,
+                            onAssociationSelect = { index ->
+                                if (index >= 0 && index < state.associationCandidates.size) {
+                                    val text = state.associationCandidates[index]
+                                    commitText(text)
+                                    updateUI()  // 更新 UI 以获取新的联想候选词
+                                }
                             }
                         )
                     }
@@ -350,6 +426,13 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         super.onStartInput(attribute, restarting)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
         loadDarkModePreference()
+        
+        // 清空上屏文本（新的输入开始）
+        lastCommittedText = ""
+        Log.d(TAG, "onStartInput: cleared lastCommittedText")
+        
+        // 动态检查联想功能设置（允许运行时开启，无需重启）
+        checkAndInitializeAssociationEngine()
         
         // 更新 Enter 键文字
         attribute?.let { updateEnterKeyText(it) }
@@ -392,6 +475,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     override fun onDestroy() {
         super.onDestroy()
         rimeEngine.destroy()
+        associationEngine.release()
         serviceScope.cancel()
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
@@ -407,7 +491,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     /**
      * 更新 UI 状态 - 合并所有状态更新，减少Compose重组次数
      */
-    private fun updateUI() {
+private fun updateUI() {
         val inputText = rimeEngine.getInput()
         val candidatesWithComments = rimeEngine.getCandidatesWithComments()
         
@@ -416,8 +500,23 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             candidates = candidatesWithComments.map { it.text }.toTypedArray(),
             candidateComments = candidatesWithComments.map { it.comment }.toTypedArray(),
             isComposing = inputText.isNotEmpty(),
-            isAsciiMode = rimeEngine.isAsciiMode()
+            isAsciiMode = rimeEngine.isAsciiMode(),
+            associationCandidates = emptyArray()
         )
+        
+        if (associationEngine.isInitialized() && lastCommittedText.isNotEmpty()) {
+            serviceScope.launch {
+                try {
+                    val candidates = associationEngine.predict(lastCommittedText, 10).map { it.text }.toTypedArray()
+                    Log.d(TAG, "Association candidates for '$lastCommittedText': ${candidates.joinToString()}")
+                    withContext(Dispatchers.Main) {
+                        uiState.value = uiState.value.copy(associationCandidates = candidates)
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Association prediction failed", e)
+                }
+            }
+        }
     }
     
     private fun updateSchemaName() {
@@ -442,6 +541,11 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             rimeEngine.clearComposition()
                         }
                     } else {
+                        // 删除已上屏文本时，同步更新 lastCommittedText
+                        if (lastCommittedText.isNotEmpty()) {
+                            lastCommittedText = lastCommittedText.dropLast(1)
+                            Log.d(TAG, "Delete committed text, remaining: '$lastCommittedText'")
+                        }
                         withContext(Dispatchers.Main) {
                             sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
                         }
@@ -493,6 +597,12 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                                 needsUIUpdate = true
                             }
                         }
+                    } else if (state.associationCandidates.isNotEmpty()) {
+                        // 如果有联想候选词，选择第一个
+                        withContext(Dispatchers.Main) {
+                            commitText(state.associationCandidates[0])
+                        }
+                        needsUIUpdate = true  // 更新 UI 以获取新的联想候选词
                     } else {
                         withContext(Dispatchers.Main) {
                             commitText(" ")
@@ -724,6 +834,14 @@ patch:
 
     private fun commitText(text: String) {
         currentInputConnection?.commitText(text, 1)
+        // 更新最近上屏文本（用于联想）
+        if (text.isNotEmpty()) {
+            lastCommittedText += text
+            // 保留最近 20 个字符
+            if (lastCommittedText.length > 20) {
+                lastCommittedText = lastCommittedText.takeLast(20)
+            }
+        }
     }
     
     /**

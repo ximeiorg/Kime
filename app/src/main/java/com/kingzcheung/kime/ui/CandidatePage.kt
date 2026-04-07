@@ -21,8 +21,10 @@ import androidx.compose.ui.unit.sp
 fun CandidatePage(
     candidates: List<String>,
     candidateComments: List<String> = emptyList(),
+    associationCandidates: List<String> = emptyList(),
     inputText: String,
     onCandidateSelect: (Int) -> Unit,
+    onAssociationSelect: ((Int) -> Unit)? = null,
     backgroundColor: Color,
     textColor: Color,
     modifier: Modifier = Modifier
@@ -43,19 +45,57 @@ fun CandidatePage(
             )
         }
         
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(4),
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            itemsIndexed(candidates) { index, candidate ->
-                CandidatePageItem(
-                    text = candidate,
-                    comment = candidateComments.getOrElse(index) { "" },
-                    onClick = { onCandidateSelect(index) },
-                    textColor = textColor
-                )
+        if (candidates.isNotEmpty()) {
+            Text(
+                text = "候选词",
+                color = textColor.copy(alpha = 0.7f),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(4),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                itemsIndexed(candidates) { index, candidate ->
+                    CandidatePageItem(
+                        text = candidate,
+                        comment = candidateComments.getOrElse(index) { "" },
+                        onClick = { onCandidateSelect(index) },
+                        textColor = textColor
+                    )
+                }
+            }
+        }
+        
+        if (associationCandidates.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Text(
+                text = "联想词",
+                color = textColor.copy(alpha = 0.7f),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(4),
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                itemsIndexed(associationCandidates) { index, candidate ->
+                    CandidatePageItem(
+                        text = candidate,
+                        comment = "",
+                        onClick = { onAssociationSelect?.invoke(index) },
+                        textColor = textColor
+                    )
+                }
             }
         }
     }

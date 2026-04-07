@@ -260,6 +260,24 @@ item {
                         onClick = onNavigateToDictionary,
                         showArrow = true
                     )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                    var associationEnabled by remember { mutableStateOf(SettingsPreferences.isAssociationEnabled(context)) }
+                    SettingsToggleItem(
+                        icon = Icons.Outlined.AutoAwesome,
+                        title = "智能联想",
+                        subtitle = "基于 AI 的词语联想功能（模型约 40MB）",
+                        checked = associationEnabled,
+                        onCheckedChange = { newValue ->
+                            associationEnabled = newValue
+                            SettingsPreferences.setAssociationEnabled(context, newValue)
+                            val msg = if (newValue) "已开启，下次输入时自动生效" else "已关闭"
+                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        }
+                    )
                 })
             }
             

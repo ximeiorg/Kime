@@ -90,10 +90,15 @@ fun CandidateBar(
     clipboardTab: Int = 0,
     onClipboardTabChange: ((Int) -> Unit)? = null,
     onInputTextClick: (() -> Unit)? = null,
+    associationCandidates: List<String> = emptyList(),
+    onAssociationSelect: ((Int) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val displayCandidates = candidates.take(5)
     val hasMoreCandidates = candidates.size >= 5
+    val displayAssociation = associationCandidates.take(5)
+    val hasMoreAssociation = associationCandidates.size >= 5
+    val hasAnyMore = hasMoreCandidates || hasMoreAssociation
     
     Row(
         modifier = modifier
@@ -245,6 +250,28 @@ fun CandidateBar(
                         comment = candidateComments.getOrElse(index) { "" }
                     )
                 }
+                
+                if (displayAssociation.isNotEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(20.dp)
+                                .background(dividerColor.copy(alpha = 0.5f))
+                                .padding(horizontal = 4.dp)
+                        )
+                    }
+                    
+                    itemsIndexed(displayAssociation) { index, candidate ->
+                        CandidateItem(
+                            text = candidate,
+                            index = -1,
+                            onClick = { onAssociationSelect?.invoke(index) },
+                            textColor = textColor,
+                            comment = ""
+                        )
+                    }
+                }
             }
             
 Box(
@@ -271,7 +298,7 @@ Box(
                     )
                 }
             } else {
-                if (hasMoreCandidates && onShowMoreCandidates != null) {
+                if (hasAnyMore && onShowMoreCandidates != null) {
                     Text(
                         text = "更多",
                         color = accentColor,

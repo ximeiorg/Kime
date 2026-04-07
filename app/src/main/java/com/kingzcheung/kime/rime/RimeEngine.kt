@@ -157,6 +157,18 @@ class RimeEngine {
         }
         return nativeDeploy()
     }
+
+    /**
+     * 查询词汇编码
+     * @param text 要查询的文本
+     * @return 编码（如果是空字符串表示未找到）
+     */
+    fun lookupText(text: String): String {
+        if (!isInitialized || text.isEmpty()) {
+            return ""
+        }
+        return nativeLookupText(text) ?: ""
+    }
     
     fun getAvailableSchemas(): Array<String> {
         return nativeGetAvailableSchemas() ?: emptyArray()
@@ -188,6 +200,7 @@ class RimeEngine {
     private external fun nativeIsAsciiMode(): Boolean
     private external fun nativeSwitchSchema(schemaId: String): Boolean
     private external fun nativeDeploy(): Boolean
+    private external fun nativeLookupText(text: String): String
     private external fun nativeGetAvailableSchemas(): Array<String>?
     private external fun nativeDestroy()
 }

@@ -362,6 +362,73 @@ public:
         }
     }
     
+    // 查找词汇的编码
+    // 通过模拟输入文本来获取候选词和编码
+    bool lookupText(const char* text, std::string& outCode) {
+        if (!rime || !session_id_ || !text) return false;
+        
+        // 保存当前输入状态
+        std::string saved_input = getInput();
+        rime->clear_composition(session_id_);
+        
+        // 逐字符输入文本
+        const char* p = text;
+        while (*p) {
+            // 将字符转换为按键码（对于汉字，需要用特殊的处理）
+            // 这里假设 text 是已经commit的文本，我们直接查询
+            // 使用 rime_predict 或者其他方式
+            
+            // 尝试直接通过 session 查找
+            RIME_STRUCT(RimeContext, context);
+            
+            // 获取当前候选词
+            if (rime->get_context(session_id_, &context)) {
+                if (context.menu.num_candidates > 0) {
+                    // 遍历候选词查找匹配的文本
+                    for (int i = 0; i < context.menu.num_candidates; i++) {
+                        const char* candidate_text = context.menu.candidates[i].text;
+                        if (candidate_text && strcmp(candidate_text, text) == 0) {
+                            // 找到匹配的候选词，获取编码（从 comment 中）
+                            const char* comment = context.menu.candidates[i].comment;
+                            if (comment && strlen(comment) > 0) {
+                                outCode = comment;
+                                LOGD("lookupText: found code '%s' for '%s'", comment, text);
+                            }
+                            rime->free_context(&context);
+                            
+                            // 恢复之前的状态
+                            if (!saved_input.empty()) {
+                                for (char c : saved_input) {
+                                    rime->process_key(session_id_, c, 0);
+                                }
+                            }
+                            return true;
+                        }
+                    }
+                }
+                rime->free_context(&context);
+            }
+            
+            // 输入下一个字符
+            rime->process_key(session_id_, *p, 0);
+            p++;
+        }
+        
+        // 如果上面的方法不行，尝试另一种方式：
+        // 从候选词列表末尾开始查找（通常是用户词库）
+        // 这种情况可能是词库中没有的词
+        
+        // 恢复之前的状态
+        rime->clear_composition(session_id_);
+        if (!saved_input.empty()) {
+            for (char c : saved_input) {
+                rime->process_key(session_id_, c, 0);
+            }
+        }
+        
+        return false;
+    }
+    
     bool deploy() {
         if (!rime) {
             LOGE("deploy: rime not available");
@@ -631,6 +698,24 @@ Java_com_kingzcheung_kime_rime_RimeEngine_nativeDeploy(
 ) {
     LOGI("Deploying Rime engine");
     return Rime::Instance().deploy() ? JNI_TRUE : JNI_FALSE;
+}
+
+// 查询词汇编码
+JNIEXPORT jstring JNICALL
+Java_com_kingzcheung_kime_rime_RimeEngine_nativeLookupText(
+    JNIEnv* env,
+    jobject thiz,
+    jstring text
+) {
+    const char* text_ptr = env->GetStringUTFChars(text, nullptr);
+    std::string code;
+    bool found = Rime::Instance().lookupText(text_ptr, code);
+    env->ReleaseStringUTFChars(text, text_ptr);
+    
+    if (found && !code.empty()) {
+        return env->NewStringUTF(code.c_str());
+    }
+    return env->NewStringUTF("");
 }
 
 } // extern "C"
