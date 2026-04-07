@@ -40,7 +40,7 @@ import com.kingzcheung.kime.ui.KeysConfigHelper
 import com.kingzcheung.kime.ui.theme.KimeTheme
 import com.kingzcheung.kime.ui.KeyboardView
 import com.kingzcheung.kime.association.OnnxAssociationEngine
-import com.kingzcheung.kime.association.AssociationModelHelper
+import com.kingzcheung.kime.association.ModelDownloadManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -227,21 +227,15 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         Log.i(TAG, "initAssociationEngine: Starting initialization...")
         serviceScope.launch(Dispatchers.IO) {
             try {
-                val modelReady = AssociationModelHelper.isModelReady(this@KimeInputMethodService)
-                Log.i(TAG, "Model ready: $modelReady")
+                val modelReady = ModelDownloadManager.isModelDownloaded(this@KimeInputMethodService)
+                Log.i(TAG, "Model downloaded: $modelReady")
                 
-                if (!modelReady) {
-                    Log.i(TAG, "Copying model files from assets...")
-                    val copySuccess = AssociationModelHelper.copyModelFromAssets(this@KimeInputMethodService)
-                    Log.i(TAG, "Model copy result: $copySuccess")
-                }
-                
-                if (AssociationModelHelper.isModelReady(this@KimeInputMethodService)) {
+                if (modelReady) {
                     Log.i(TAG, "Creating AssociationEngine instance...")
                     val success = associationEngine.initialize(this@KimeInputMethodService)
                     Log.i(TAG, "Association engine initialized: $success")
                 } else {
-                    Log.e(TAG, "Model files not ready after copy")
+                    Log.e(TAG, "Model not downloaded, please download in settings")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to initialize association engine", e)
