@@ -38,9 +38,11 @@ fun KeyboardView(
     showBottomButtons: Boolean = false,
     clipboardItems: List<ClipboardItem> = emptyList(),
     quickSendItems: List<ClipboardItem> = emptyList(),
+    associationCandidates: Array<String> = emptyArray(),
     onKeyPress: (String, Boolean) -> Unit,
     onKeyPressDown: ((String) -> Unit)? = null,
     onCandidateSelect: (Int) -> Unit,
+    onAssociationSelect: ((Int) -> Unit)? = null,
     onToggleDarkMode: (() -> Unit)? = null,
     onClipboard: (() -> Unit)? = null,
     onClipboardSelect: ((String) -> Unit)? = null,
@@ -114,7 +116,9 @@ CandidateBar(
                     if (inputText.isNotEmpty()) {
                         onClipboardSelect?.invoke(inputText)
                     }
-                }
+                },
+                associationCandidates = associationCandidates.toList(),
+                onAssociationSelect = onAssociationSelect
             )
             
             // 显示菜单、剪切板、候选词页面或键盘
@@ -184,9 +188,14 @@ CandidateBar(
                     CandidatePage(
                         candidates = candidates.toList(),
                         candidateComments = candidateComments.toList(),
+                        associationCandidates = associationCandidates.toList(),
                         inputText = inputText,
                         onCandidateSelect = { index ->
                             onCandidateSelect(index)
+                            showCandidatePage = false
+                        },
+                        onAssociationSelect = { index ->
+                            onAssociationSelect?.invoke(index)
                             showCandidatePage = false
                         },
                         backgroundColor = candidateBarBg,

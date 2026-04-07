@@ -1,6 +1,7 @@
 import java.text.SimpleDateFormat
 import java.util.Date
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+import java.net.URL
 
 plugins {
     alias(libs.plugins.android.application)
@@ -110,6 +111,9 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
+    
+    // ONNX Runtime
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:latest.release")
     
     // Jetpack Compose
     implementation(platform(libs.androidx.compose.bom))

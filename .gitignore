@@ -23,5 +23,9 @@ app/release
 *.tar.xz
 *.tar.gz
 *.zip
+
+# Association model weights (large files, manually placed)
+app/src/main/assets/association_model
+
 /.kilo
 /.kotlin

@@ -82,4 +82,14 @@ object SettingsPreferences {
     fun setShowBottomButtons(context: Context, show: Boolean) {
         getPrefs(context).edit().putBoolean(KEY_SHOW_BOTTOM_BUTTONS, show).apply()
     }
+    
+    private const val KEY_ASSOCIATION_ENABLED = "association_enabled"
+    
+    fun isAssociationEnabled(context: Context): Boolean {
+        return getPrefs(context).getBoolean(KEY_ASSOCIATION_ENABLED, false)
+    }
+    
+    fun setAssociationEnabled(context: Context, enabled: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_ASSOCIATION_ENABLED, enabled).commit()
+    }
 }
