@@ -54,6 +54,7 @@ object SettingsRoutes {
     const val Theme = "theme"
     const val KeyEffect = "key_effect"
     const val Dictionary = "dictionary"
+    const val Association = "association"
     const val About = "about"
     const val Privacy = "privacy"
     const val Licenses = "licenses"
@@ -78,6 +79,7 @@ fun SettingsScreen(
                 onNavigateToTheme = { navController.navigate(SettingsRoutes.Theme) },
                 onNavigateToKeyEffect = { navController.navigate(SettingsRoutes.KeyEffect) },
                 onNavigateToDictionary = { navController.navigate(SettingsRoutes.Dictionary) },
+                onNavigateToAssociation = { navController.navigate(SettingsRoutes.Association) },
                 onNavigateToAbout = { navController.navigate(SettingsRoutes.About) }
             )
         }
@@ -90,6 +92,11 @@ fun SettingsScreen(
             ThemeSettingsContent(
                 onBack = { navController.popBackStack() },
                 onThemeChanged = onThemeChanged
+            )
+        }
+        composable(SettingsRoutes.Association) {
+            AssociationSettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
         composable(SettingsRoutes.KeyEffect) {
@@ -129,6 +136,7 @@ fun SettingsMainContent(
     onNavigateToTheme: () -> Unit,
     onNavigateToKeyEffect: () -> Unit,
     onNavigateToDictionary: () -> Unit,
+    onNavigateToAssociation: () -> Unit,
     onNavigateToAbout: () -> Unit
 ) {
     val context = LocalContext.current
@@ -265,18 +273,12 @@ item {
                         thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
-                    var associationEnabled by remember { mutableStateOf(SettingsPreferences.isAssociationEnabled(context)) }
-                    SettingsToggleItem(
+                    SettingsItem(
                         icon = Icons.Outlined.AutoAwesome,
                         title = "智能联想",
-                        subtitle = "基于 AI 的词语联想功能（模型约 40MB）",
-                        checked = associationEnabled,
-                        onCheckedChange = { newValue ->
-                            associationEnabled = newValue
-                            SettingsPreferences.setAssociationEnabled(context, newValue)
-                            val msg = if (newValue) "已开启，下次输入时自动生效" else "已关闭"
-                            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                        }
+                        subtitle = "AI 预测下一个词（需下载模型）",
+                        onClick = onNavigateToAssociation,
+                        showArrow = true
                     )
                 })
             }
