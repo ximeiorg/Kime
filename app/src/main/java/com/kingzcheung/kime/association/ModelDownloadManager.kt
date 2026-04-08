@@ -13,12 +13,16 @@ object ModelDownloadManager {
     private const val TAG = "ModelDownloadManager"
     private const val MODEL_SUBDIR = "association_model"
     
-    private const val MODELSCOPE_URL = "https://modelscope.cn/models/bikeand/predictive-text-small/resolve/master"
+    private const val DEFAULT_MODEL_URL = "https://modelscope.cn/models/bikeand/predictive-text-small/resolve/master"
     
-    private val MODEL_FILES = listOf(
-        "model.onnx" to "$MODELSCOPE_URL/model_int8_dynamic.onnx",
-        "vocab.json" to "$MODELSCOPE_URL/vocab.json"
-    )
+    fun getModelFiles(baseUrl: String): List<Pair<String, String>> {
+        return listOf(
+            "model.onnx" to "$baseUrl/model_int8_dynamic.onnx",
+            "vocab.json" to "$baseUrl/vocab.json"
+        )
+    }
+    
+    fun getDefaultModelFiles(): List<Pair<String, String>> = getModelFiles(DEFAULT_MODEL_URL)
     
     data class DownloadProgress(
         val fileIndex: Int,
@@ -31,6 +35,7 @@ object ModelDownloadManager {
     
     suspend fun downloadModel(
         context: Context,
+        baseUrl: String,
         onProgress: (DownloadProgress) -> Unit
     ): Boolean = withContext(Dispatchers.IO) {
         try {
@@ -39,11 +44,12 @@ object ModelDownloadManager {
                 targetDir.mkdirs()
             }
             
-            MODEL_FILES.forEachIndexed { index, (fileName, url) ->
+            val modelFiles = getModelFiles(baseUrl)
+            modelFiles.forEachIndexed { index, (fileName, url) ->
                 Log.i(TAG, "Downloading $fileName from $url")
                 onProgress(DownloadProgress(
                     fileIndex = index,
-                    totalFiles = MODEL_FILES.size,
+                    totalFiles = modelFiles.size,
                     fileName = fileName,
                     progress = 0,
                     downloadedBytes = 0,
@@ -55,7 +61,7 @@ object ModelDownloadManager {
                     val progress = if (total > 0) ((downloaded * 100) / total).toInt() else 0
                     onProgress(DownloadProgress(
                         fileIndex = index,
-                        totalFiles = MODEL_FILES.size,
+                        totalFiles = modelFiles.size,
                         fileName = fileName,
                         progress = progress,
                         downloadedBytes = downloaded,
@@ -86,6 +92,9 @@ object ModelDownloadManager {
     ): Boolean {
         return try {
             val connection = URL(url).openConnection()
+            connection.connectTimeout = 30000
+            connection.readTimeout = 60000
+            connection.setRequestProperty("User-Agent", "Kime-IME/1.0")
             connection.connect()
             
             val totalBytes = connection.contentLengthLong
