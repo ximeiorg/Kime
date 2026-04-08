@@ -3,20 +3,25 @@ package com.kingzcheung.kime.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kingzcheung.kime.association.ModelDownloadManager
+import com.kingzcheung.kime.settings.SettingsPreferences
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,10 +39,14 @@ fun AssociationSettingsScreen(
     var downloadProgress by remember { mutableStateOf<ModelDownloadManager.DownloadProgress?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var associationEnabled by remember { mutableStateOf(SettingsPreferences.isAssociationEnabled(context)) }
+    var modelUrl by remember { mutableStateOf(SettingsPreferences.getAssociationModelUrl(context)) }
     
     LaunchedEffect(Unit) {
         isModelDownloaded = ModelDownloadManager.isModelDownloaded(context)
         modelSize = ModelDownloadManager.getModelSize(context)
+        associationEnabled = SettingsPreferences.isAssociationEnabled(context)
+        modelUrl = SettingsPreferences.getAssociationModelUrl(context)
     }
     
     if (showDeleteDialog) {
@@ -52,6 +61,8 @@ fun AssociationSettingsScreen(
                         if (success) {
                             isModelDownloaded = false
                             modelSize = 0
+                            associationEnabled = false
+                            SettingsPreferences.setAssociationEnabled(context, false)
                         } else {
                             errorMessage = "删除失败"
                         }
@@ -70,14 +81,28 @@ fun AssociationSettingsScreen(
     }
     
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("智能联想") },
+                title = { 
+                    Text(
+                        "智能联想",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "返回"
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                ),
+                windowInsets = WindowInsets(0.dp)
             )
         }
     ) { padding ->
@@ -90,11 +115,11 @@ fun AssociationSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             errorMessage?.let { error ->
-                Card(
+                Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shadowElevation = 2.dp
                 ) {
                     Row(
                         modifier = Modifier
@@ -124,8 +149,17 @@ fun AssociationSettingsScreen(
                 }
             }
             
-            Card(
-                modifier = Modifier.fillMaxWidth()
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(
+                        elevation = 4.dp,
+                        shape = RoundedCornerShape(12.dp),
+                        ambientColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.01f),
+                        spotColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                    ),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surface
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
@@ -141,11 +175,11 @@ fun AssociationSettingsScreen(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column(modifier = Modifier.weight(1f)) {
-Text(
-                            text = "AI \u667a\u80fd\u8054\u60f3",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                            Text(
+                                text = "AI 智能联想",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                             Text(
                                 text = "基于上下文预测下一个词",
                                 fontSize = 14.sp,
@@ -187,40 +221,180 @@ Text(
                             progress = downloadProgress?.progress ?: 0
                         )
                     } else {
-                        ModelStatusCard(
-                            icon = Icons.Default.CloudDownload,
-                            iconColor = MaterialTheme.colorScheme.primary,
-                            title = "模型未下载",
-                            subtitle = "约 17MB，从 ModelScope 下载",
-                            actionText = "下载模型",
-                            onAction = {
-                                scope.launch {
-                                    isDownloading = true
-                                    errorMessage = null
-                                    
-                                    val success = ModelDownloadManager.downloadModel(context) { progress ->
-                                        downloadProgress = progress
-                                    }
-                                    
-                                    isDownloading = false
-                                    downloadProgress = null
-                                    
-                                    if (success) {
-                                        isModelDownloaded = true
-                                        modelSize = ModelDownloadManager.getModelSize(context)
-                                    } else {
-                                        errorMessage = "下载失败，请检查网络连接后重试"
-                                    }
+                        Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    Icons.Default.CloudDownload,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "下载模型",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Text(
+                                        text = "约 17MB，需配置下载地址",
+                                        fontSize = 13.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
                                 }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Text(
+                                text = "模型地址",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ) {
+                                BasicTextField(
+                                    value = modelUrl,
+                                    onValueChange = { modelUrl = it },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    ),
+                                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                    decorationBox = { innerTextField ->
+                                        Box {
+                                            if (modelUrl.isEmpty()) {
+                                                Text(
+                                                    "modelscope.cn/models/bikeand/predictive-text-small",
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    style = MaterialTheme.typography.bodyLarge
+                                                )
+                                            }
+                                            innerTextField()
+                                        }
+                                    }
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Button(
+                                onClick = {
+                                    scope.launch {
+                                        isDownloading = true
+                                        errorMessage = null
+                                        
+                                        SettingsPreferences.setAssociationModelUrl(context, modelUrl)
+                                        
+                                        val success = ModelDownloadManager.downloadModel(context, modelUrl) { progress ->
+                                            downloadProgress = progress
+                                        }
+                                        
+                                        isDownloading = false
+                                        downloadProgress = null
+                                        
+                                        if (success) {
+                                            isModelDownloaded = true
+                                            modelSize = ModelDownloadManager.getModelSize(context)
+                                        } else {
+                                            errorMessage = "下载失败，请检查网络和URL地址"
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("开始下载")
+                            }
+                        }
+                    }
+                }
+            }
+            
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(
+                        elevation = 4.dp,
+                        shape = RoundedCornerShape(12.dp),
+                        ambientColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.01f),
+                        spotColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                    ),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "启用智能联想",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "开启后输入文字时会自动预测下一个词",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = associationEnabled,
+                            onCheckedChange = { enabled ->
+                                if (enabled && !isModelDownloaded) {
+                                    errorMessage = "请先下载模型"
+                                    return@Switch
+                                }
+                                associationEnabled = enabled
+                                SettingsPreferences.setAssociationEnabled(context, enabled)
                             },
-                            enabled = true
+                            enabled = isModelDownloaded
+                        )
+                    }
+                    
+                    if (!isModelDownloaded) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "需要先下载模型才能启用",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
             
-            Card(
-                modifier = Modifier.fillMaxWidth()
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(
+                        elevation = 4.dp,
+                        shape = RoundedCornerShape(12.dp),
+                        ambientColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.01f),
+                        spotColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                    ),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surface
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
@@ -238,7 +412,7 @@ Text(
                     )
                     InstructionItem(
                         number = "2",
-                        text = "在设置中开启"智能联想"开关"
+                        text = "启用智能联想开关"
                     )
                     InstructionItem(
                         number = "3",
@@ -251,8 +425,17 @@ Text(
                 }
             }
             
-            Card(
-                modifier = Modifier.fillMaxWidth()
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(
+                        elevation = 4.dp,
+                        shape = RoundedCornerShape(12.dp),
+                        ambientColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.01f),
+                        spotColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                    ),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surface
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp)
@@ -337,7 +520,8 @@ private fun ModelStatusCard(
                 modifier = Modifier.fillMaxWidth(),
                 colors = if (actionText == "删除模型") {
                     ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = Color.White
                     )
                 } else {
                     ButtonDefaults.buttonColors()
