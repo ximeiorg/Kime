@@ -85,8 +85,10 @@ object SettingsPreferences {
     
     private const val KEY_ASSOCIATION_ENABLED = "association_enabled"
     private const val KEY_ASSOCIATION_MODEL_URL = "association_model_url"
+    private const val KEY_ASSOCIATION_LAMBDA = "association_lambda"
     
     private const val DEFAULT_MODEL_URL = "https://modelscope.cn/models/bikeand/predictive-text-small/resolve/master"
+    private const val DEFAULT_LAMBDA = 0.7f
     
     fun isAssociationEnabled(context: Context): Boolean {
         return getPrefs(context).getBoolean(KEY_ASSOCIATION_ENABLED, false)
@@ -102,5 +104,13 @@ object SettingsPreferences {
     
     fun setAssociationModelUrl(context: Context, url: String) {
         getPrefs(context).edit().putString(KEY_ASSOCIATION_MODEL_URL, url).apply()
+    }
+    
+    fun getAssociationLambda(context: Context): Float {
+        return getPrefs(context).getFloat(KEY_ASSOCIATION_LAMBDA, DEFAULT_LAMBDA)
+    }
+    
+    fun setAssociationLambda(context: Context, lambda: Float) {
+        getPrefs(context).edit().putFloat(KEY_ASSOCIATION_LAMBDA, lambda).apply()
     }
 }

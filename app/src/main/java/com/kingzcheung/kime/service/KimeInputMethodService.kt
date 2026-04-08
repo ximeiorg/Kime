@@ -39,7 +39,7 @@ import com.kingzcheung.kime.settings.SettingsPreferences
 import com.kingzcheung.kime.ui.KeysConfigHelper
 import com.kingzcheung.kime.ui.theme.KimeTheme
 import com.kingzcheung.kime.ui.KeyboardView
-import com.kingzcheung.kime.association.OnnxAssociationEngine
+import com.kingzcheung.kime.association.AssociationManager
 import com.kingzcheung.kime.association.ModelDownloadManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -91,10 +91,6 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     // Rime 引擎实例
     private val rimeEngine = RimeEngine()
     
-    // 联想引擎实例（单例）
-    private val associationEngine = OnnxAssociationEngine
-    
-    // 剪切板管理器
     private lateinit var clipboardManager: ClipboardManager
     
     // 协程作用域
@@ -219,7 +215,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             return
         }
         
-        if (associationEngine.isInitialized()) {
+        if (AssociationManager.isInitialized()) {
             Log.i(TAG, "Association engine already initialized")
             return
         }
@@ -231,8 +227,8 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                 Log.i(TAG, "Model downloaded: $modelReady")
                 
                 if (modelReady) {
-                    Log.i(TAG, "Creating AssociationEngine instance...")
-                    val success = associationEngine.initialize(this@KimeInputMethodService)
+                    Log.i(TAG, "Creating AssociationManager instance...")
+                    val success = AssociationManager.initialize(this@KimeInputMethodService)
                     Log.i(TAG, "Association engine initialized: $success")
                 } else {
                     Log.e(TAG, "Model not downloaded, please download in settings")
@@ -249,12 +245,12 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     private fun checkAndInitializeAssociationEngine() {
         val enabled = SettingsPreferences.isAssociationEnabled(this)
         
-        if (enabled && !associationEngine.isInitialized()) {
+        if (enabled && !AssociationManager.isInitialized()) {
             Log.i(TAG, "Association enabled in settings, initializing now...")
             initAssociationEngine()
-        } else if (!enabled && associationEngine.isInitialized()) {
+        } else if (!enabled && AssociationManager.isInitialized()) {
             Log.i(TAG, "Association disabled in settings, releasing engine...")
-            associationEngine.release()
+            AssociationManager.release()
         }
     }
     
@@ -469,7 +465,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     override fun onDestroy() {
         super.onDestroy()
         rimeEngine.destroy()
-        associationEngine.release()
+        AssociationManager.release()
         serviceScope.cancel()
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
@@ -482,36 +478,43 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         requestHideSelf(0)
     }
     
-    /**
+/**
      * 更新 UI 状态 - 合并所有状态更新，减少Compose重组次数
+     * 预测应该使用当前输入框的文本作为 context
      */
 private fun updateUI() {
-        val inputText = rimeEngine.getInput()
-        val candidatesWithComments = rimeEngine.getCandidatesWithComments()
-        
-        uiState.value = uiState.value.copy(
-            inputText = inputText,
-            candidates = candidatesWithComments.map { it.text }.toTypedArray(),
-            candidateComments = candidatesWithComments.map { it.comment }.toTypedArray(),
-            isComposing = inputText.isNotEmpty(),
-            isAsciiMode = rimeEngine.isAsciiMode(),
-            associationCandidates = emptyArray()
-        )
-        
-        if (associationEngine.isInitialized() && lastCommittedText.isNotEmpty()) {
-            serviceScope.launch {
-                try {
-                    val candidates = associationEngine.predict(lastCommittedText, 10).map { it.text }.toTypedArray()
-                    Log.d(TAG, "Association candidates for '$lastCommittedText': ${candidates.joinToString()}")
+    val inputText = rimeEngine.getInput()
+    val candidatesWithComments = rimeEngine.getCandidatesWithComments()
+    
+    uiState.value = uiState.value.copy(
+        inputText = inputText,
+        candidates = candidatesWithComments.map { it.text }.toTypedArray(),
+        candidateComments = candidatesWithComments.map { it.comment }.toTypedArray(),
+        isComposing = inputText.isNotEmpty(),
+        isAsciiMode = rimeEngine.isAsciiMode(),
+        associationCandidates = emptyArray()
+    )
+    
+    // 预测使用当前输入框的文本作为 context（如用户输入 "比"，就用 "比" 来预测）
+    // 同时也用 lastCommittedText（已上屏的文本）来预测
+    if (AssociationManager.isInitialized() && (inputText.isNotEmpty() || lastCommittedText.isNotEmpty())) {
+        serviceScope.launch {
+            try {
+                // 优先使用当前输入，如果有的话
+                val contextForPrediction = if (inputText.isNotEmpty()) inputText else lastCommittedText
+                if (contextForPrediction.isNotEmpty()) {
+                    val candidates = AssociationManager.predict(contextForPrediction, 10).map { it.text }.toTypedArray()
+                    Log.d(TAG, "Association candidates for '$contextForPrediction': ${candidates.joinToString()}")
                     withContext(Dispatchers.Main) {
                         uiState.value = uiState.value.copy(associationCandidates = candidates)
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Association prediction failed", e)
                 }
+            } catch (e: Exception) {
+                Log.e(TAG, "Association prediction failed", e)
             }
         }
     }
+}
     
     private fun updateSchemaName() {
         val currentSchemaId = rimeEngine.getCurrentSchema()
@@ -672,9 +675,18 @@ private fun updateUI() {
     }
     
     private suspend fun selectCandidateAsync(index: Int) {
+        val currentInput = uiState.value.inputText  // 用户当前正在输入的文本（如 "比"）
+        val selectedCandidate = if (index < uiState.value.candidates.size) {
+            uiState.value.candidates[index]
+        } else null
+        
         if (rimeEngine.selectCandidate(index)) {
             val committedText = rimeEngine.commit()
             if (committedText.isNotEmpty()) {
+                // 记录 bigram：当前输入 + 选择的候选词（如 "比" + "较" = "比较"）
+                if (AssociationManager.isInitialized() && selectedCandidate != null && currentInput.isNotEmpty()) {
+                    AssociationManager.recordInput(currentInput + selectedCandidate)
+                }
                 withContext(Dispatchers.Main) {
                     commitText(committedText)
                 }
@@ -834,6 +846,13 @@ patch:
             // 保留最近 20 个字符
             if (lastCommittedText.length > 20) {
                 lastCommittedText = lastCommittedText.takeLast(20)
+            }
+            
+            // 异步保存缓存
+            if (AssociationManager.isInitialized()) {
+                serviceScope.launch {
+                    AssociationManager.saveUserData()
+                }
             }
         }
     }

@@ -448,7 +448,7 @@ fun PrivacyPolicyContent(
                         
                         PrivacySection(
                             title = "网络权限",
-                            content = "Kime 不需要网络权限，应用完全在离线状态下运行。"
+                            content = "Kime 需要网络权限用于下载联想模型。下载完成后，模型将在本地运行，您的输入内容不会被上传。"
                         )
                         
                         PrivacySection(
@@ -468,7 +468,7 @@ fun PrivacyPolicyContent(
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "更新日期：2026年3月",
+                            text = "更新日期：2026年4月",
                             fontSize = 12.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

@@ -194,7 +194,54 @@ fun SettingsMainContent(
                 })
             }
             
-item {
+            item {
+                var testText by remember { mutableStateOf("") }
+                SettingsSection(title = "测试输入", content = {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = testText,
+                            onValueChange = { testText = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { 
+                                Text(
+                                    "点击此处开始输入测试...",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                ) 
+                            },
+                            singleLine = false,
+                            maxLines = 3,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            )
+                        )
+                        if (testText.isNotEmpty()) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(onClick = { testText = "" }) {
+                                    Text(
+                                        "清除",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+                        }
+                    }
+                })
+            }
+            
+            item {
                 SettingsSection(title = "功能设置", content = {
                     var showBottomButtons by remember { mutableStateOf(SettingsPreferences.showBottomButtons(context)) }
                     
