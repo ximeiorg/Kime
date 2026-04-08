@@ -20,9 +20,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.kingzcheung.kime.association.AssociationManager
 import com.kingzcheung.kime.association.ModelDownloadManager
 import com.kingzcheung.kime.settings.SettingsPreferences
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,12 +43,18 @@ fun AssociationSettingsScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var associationEnabled by remember { mutableStateOf(SettingsPreferences.isAssociationEnabled(context)) }
     var modelUrl by remember { mutableStateOf(SettingsPreferences.getAssociationModelUrl(context)) }
+    var lambdaValue by remember { mutableStateOf(SettingsPreferences.getAssociationLambda(context)) }
+    var cacheSize by remember { mutableStateOf(0) }
     
     LaunchedEffect(Unit) {
         isModelDownloaded = ModelDownloadManager.isModelDownloaded(context)
         modelSize = ModelDownloadManager.getModelSize(context)
         associationEnabled = SettingsPreferences.isAssociationEnabled(context)
         modelUrl = SettingsPreferences.getAssociationModelUrl(context)
+        lambdaValue = SettingsPreferences.getAssociationLambda(context)
+        if (AssociationManager.isInitialized()) {
+            cacheSize = AssociationManager.getCacheSize()
+        }
     }
     
     if (showDeleteDialog) {
@@ -258,7 +266,134 @@ fun AssociationSettingsScreen(
                             
                             Spacer(modifier = Modifier.height(8.dp))
                             
-                            Surface(
+Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(
+                        elevation = 4.dp,
+                        shape = RoundedCornerShape(12.dp),
+                        ambientColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.01f),
+                        spotColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                    ),
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "个性化设置",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "模型权重",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = String.format(Locale.getDefault(), "%.1f", lambdaValue),
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Text(
+                        text = "调节模型预测和用户习惯的融合比例",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    Slider(
+                        value = lambdaValue,
+                        onValueChange = { lambdaValue = it },
+                        onValueChangeFinished = {
+                            SettingsPreferences.setAssociationLambda(context, lambdaValue)
+                            AssociationManager.setFusionLambda(lambdaValue)
+                        },
+                        valueRange = 0.6f..0.8f,
+                        steps = 4,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "偏重用户习惯",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "偏重模型预测",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    HorizontalDivider()
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "用户缓存大小",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "记录用户最近输入的组合以提升个性化",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Text(
+                            text = "$cacheSize 条",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    
+                    if (cacheSize > 0) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        OutlinedButton(
+                            onClick = {
+                                AssociationManager.clearUserCache()
+                                cacheSize = 0
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.DeleteOutline, contentDescription = null)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("清除用户缓存")
+                        }
+                    }
+                }
+            }
+            
+            Surface(
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(8.dp),
                                 color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
