@@ -502,6 +502,7 @@ private fun updateUI() {
             try {
                 // 优先使用当前输入，如果有的话
                 val contextForPrediction = if (inputText.isNotEmpty()) inputText else lastCommittedText
+                Log.d(TAG, "Predicting: inputText='$inputText', lastCommittedText='$lastCommittedText', using='$contextForPrediction'")
                 if (contextForPrediction.isNotEmpty()) {
                     val candidates = AssociationManager.predict(contextForPrediction, 10).map { it.text }.toTypedArray()
                     Log.d(TAG, "Association candidates for '$contextForPrediction': ${candidates.joinToString()}")
@@ -675,7 +676,6 @@ private fun updateUI() {
     }
     
     private suspend fun selectCandidateAsync(index: Int) {
-        val currentInput = uiState.value.inputText  // 用户当前正在输入的文本（如 "比"）
         val selectedCandidate = if (index < uiState.value.candidates.size) {
             uiState.value.candidates[index]
         } else null
@@ -683,9 +683,14 @@ private fun updateUI() {
         if (rimeEngine.selectCandidate(index)) {
             val committedText = rimeEngine.commit()
             if (committedText.isNotEmpty()) {
-                // 记录 bigram：当前输入 + 选择的候选词（如 "比" + "较" = "比较"）
-                if (AssociationManager.isInitialized() && selectedCandidate != null && currentInput.isNotEmpty()) {
-                    AssociationManager.recordInput(currentInput + selectedCandidate)
+                // 记录 bigram：用上屏文本的最后一个字 + 当前候选词
+                if (AssociationManager.isInitialized() && selectedCandidate != null) {
+                    if (lastCommittedText.isNotEmpty()) {
+                        // 用上屏文本的最后一个字作为前缀
+                        val lastChar = lastCommittedText.last().toString()
+                        AssociationManager.recordInput(lastChar + selectedCandidate)
+                        Log.d(TAG, "Recorded bigram: '$lastChar' + '$selectedCandidate'")
+                    }
                 }
                 withContext(Dispatchers.Main) {
                     commitText(committedText)

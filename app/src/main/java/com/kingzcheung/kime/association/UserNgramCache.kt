@@ -43,8 +43,6 @@ class UserNgramCache(private val context: Context) {
         val tokens = tokenize(text)
         if (tokens.isEmpty()) return
         
-        Log.d(TAG, "Recording input: '$text' -> tokens: $tokens")
-        
         updateRecentInputs(tokens)
         
         tokens.windowed(2).forEach { window ->
@@ -54,8 +52,6 @@ class UserNgramCache(private val context: Context) {
         tokens.windowed(3).forEach { window ->
             trigramTrie.insert(window)
         }
-        
-        Log.d(TAG, "After recording: ${bigramTrie.size()} bigrams, ${trigramTrie.size()} trigrams")
         
         trimIfNeeded()
     }
@@ -92,10 +88,7 @@ class UserNgramCache(private val context: Context) {
         val tokens = tokenize(context)
         if (tokens.isEmpty()) return 0f
         
-        Log.d(TAG, "Getting score for context: '$context' -> tokens: $tokens, candidate: '$candidate'")
-        
         // 使用最后一个 token 作为前缀来查询 bigram
-        // 例如 context = "比", tokens = ["比"], 查询 ("比", candidate)
         val lastToken = tokens.last()
         val bigramScore = getBigramScore(lastToken, candidate)
         
@@ -106,25 +99,31 @@ class UserNgramCache(private val context: Context) {
             0f
         }
         
-        val score = maxOf(bigramScore, trigramScore)
-        Log.d(TAG, "Bigram score for ('$lastToken', '$candidate'): $bigramScore, Trigram score: $trigramScore, Final: $score")
-        
-        return score
+        return maxOf(bigramScore, trigramScore)
     }
     
     fun getUserCandidates(context: String, topK: Int = 5): List<Pair<String, Float>> {
         val tokens = tokenize(context)
-        if (tokens.isEmpty()) return emptyList()
+        if (tokens.isEmpty()) {
+            Log.d(TAG, "getUserCandidates: context is empty")
+            return emptyList()
+        }
         
         val lastToken = tokens.last()
+        Log.d(TAG, "getUserCandidates: context='$context', tokens=$tokens, lastToken='$lastToken'")
+        
         val candidates = mutableListOf<Pair<String, Float>>()
         
         // 从 bigram 中查找以 lastToken 开头的所有候选词
-        bigramTrie.getAllEntries().forEach { (ngram, count) ->
+        val allBigrams = bigramTrie.getAllEntries()
+        Log.d(TAG, "getUserCandidates: total bigrams=${allBigrams.size}")
+        
+        allBigrams.forEach { (ngram, count) ->
             if (ngram.size == 2 && ngram[0] == lastToken) {
                 val score = getBigramScore(ngram[0], ngram[1])
                 if (score > 0) {
                     candidates.add(ngram[1] to score)
+                    Log.d(TAG, "Found bigram candidate: ${ngram[0]}->${ngram[1]}, score=$score")
                 }
             }
         }
@@ -165,13 +164,6 @@ class UserNgramCache(private val context: Context) {
     }
     
     fun getCacheSize(): Int = bigramTrie.size() + trigramTrie.size()
-    
-    fun debugPrint() {
-        Log.d(TAG, "=== Bigram Trie ===")
-        bigramTrie.debugPrint()
-        Log.d(TAG, "=== Trigram Trie ===")
-        trigramTrie.debugPrint()
-    }
     
     private fun toJson(): JSONObject {
         val json = JSONObject()
