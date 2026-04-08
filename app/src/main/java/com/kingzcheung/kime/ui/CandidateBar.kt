@@ -2,6 +2,8 @@ package com.kingzcheung.kime.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -274,7 +276,9 @@ fun CandidateBar(
                 }
             }
             
-Box(
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            Box(
                 modifier = Modifier
                     .width(1.dp)
                     .height(28.dp)
@@ -299,26 +303,63 @@ Box(
                 }
             } else {
                 if (hasAnyMore && onShowMoreCandidates != null) {
-                    Text(
-                        text = "更多",
-                        color = accentColor,
-                        fontSize = 14.sp,
+                    val moreInteractionSource = remember { MutableInteractionSource() }
+                    val isMorePressed by moreInteractionSource.collectIsPressedAsState()
+                    
+                    Spacer(modifier = Modifier.width(4.dp))
+                    
+                    Box(
                         modifier = Modifier
-                            .clickable { onShowMoreCandidates() }
-                            .padding(horizontal = 8.dp)
-                    )
+                            .width(30.dp)
+                            .height(24.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(
+                                if (isMorePressed) (if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.1f))
+                                else Color.Transparent
+                            )
+                            .clickable(
+                                interactionSource = moreInteractionSource,
+                                indication = null,
+                                onClick = { onShowMoreCandidates() }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "更多",
+                            color = if (isMorePressed) textColor.copy(alpha = 0.6f) else textColor,
+                            fontSize = 11.sp
+                        )
+                    }
                 }
                 
                 if (onHideKeyboard != null) {
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowDown,
-                        contentDescription = "收起键盘",
-                        tint = textColor,
+                    val hideKeyboardInteractionSource = remember { MutableInteractionSource() }
+                    val isHideKeyboardPressed by hideKeyboardInteractionSource.collectIsPressedAsState()
+                    
+                    Spacer(modifier = Modifier.width(4.dp))
+                    
+                    Box(
                         modifier = Modifier
-                            .size(20.dp)
-                            .clickable { onHideKeyboard() }
-                            .padding(horizontal = 4.dp)
-                    )
+                            .size(24.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(
+                                if (isHideKeyboardPressed) (if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.1f))
+                                else Color.Transparent
+                            )
+                            .clickable(
+                                interactionSource = hideKeyboardInteractionSource,
+                                indication = null,
+                                onClick = { onHideKeyboard() }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = "收起键盘",
+                            tint = if (isHideKeyboardPressed) textColor.copy(alpha = 0.6f) else textColor,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
             }
         }
