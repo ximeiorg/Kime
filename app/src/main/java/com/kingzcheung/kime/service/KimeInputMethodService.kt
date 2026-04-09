@@ -479,43 +479,39 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     }
     
 /**
-     * 更新 UI 状态 - 合并所有状态更新，减少Compose重组次数
-     * 预测应该使用当前输入框的文本作为 context
-     */
-private fun updateUI() {
-    val inputText = rimeEngine.getInput()
-    val candidatesWithComments = rimeEngine.getCandidatesWithComments()
-    
-    uiState.value = uiState.value.copy(
-        inputText = inputText,
-        candidates = candidatesWithComments.map { it.text }.toTypedArray(),
-        candidateComments = candidatesWithComments.map { it.comment }.toTypedArray(),
-        isComposing = inputText.isNotEmpty(),
-        isAsciiMode = rimeEngine.isAsciiMode(),
-        associationCandidates = emptyArray()
-    )
-    
-    // 预测使用当前输入框的文本作为 context（如用户输入 "比"，就用 "比" 来预测）
-    // 同时也用 lastCommittedText（已上屏的文本）来预测
-    if (AssociationManager.isInitialized() && (inputText.isNotEmpty() || lastCommittedText.isNotEmpty())) {
-        serviceScope.launch {
-            try {
-                // 优先使用当前输入，如果有的话
-                val contextForPrediction = if (inputText.isNotEmpty()) inputText else lastCommittedText
-                Log.d(TAG, "Predicting: inputText='$inputText', lastCommittedText='$lastCommittedText', using='$contextForPrediction'")
-                if (contextForPrediction.isNotEmpty()) {
-                    val candidates = AssociationManager.predict(contextForPrediction, 10).map { it.text }.toTypedArray()
-                    Log.d(TAG, "Association candidates for '$contextForPrediction': ${candidates.joinToString()}")
-                    withContext(Dispatchers.Main) {
-                        uiState.value = uiState.value.copy(associationCandidates = candidates)
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Association prediction failed", e)
-            }
-        }
-    }
-}
+      * 更新 UI 状态 - 合并所有状态更新，减少Compose重组次数
+      * 联想预测只使用已上屏的文本(lastCommittedText)
+      */
+ private fun updateUI() {
+     val inputText = rimeEngine.getInput()
+     val candidatesWithComments = rimeEngine.getCandidatesWithComments()
+     
+     uiState.value = uiState.value.copy(
+         inputText = inputText,
+         candidates = candidatesWithComments.map { it.text }.toTypedArray(),
+         candidateComments = candidatesWithComments.map { it.comment }.toTypedArray(),
+         isComposing = inputText.isNotEmpty(),
+         isAsciiMode = rimeEngine.isAsciiMode(),
+         associationCandidates = emptyArray()
+     )
+     
+     // 联想预测只在已上屏文本存在且没有正在输入编码时触发
+     // 正确逻辑：只有上屏后才应该显示联想词
+     if (AssociationManager.isInitialized() && inputText.isEmpty() && lastCommittedText.isNotEmpty()) {
+         serviceScope.launch {
+             try {
+                 Log.d(TAG, "Predicting association for lastCommittedText='$lastCommittedText'")
+                 val candidates = AssociationManager.predict(lastCommittedText, 10).map { it.text }.toTypedArray()
+                 Log.d(TAG, "Association candidates: ${candidates.joinToString()}")
+                 withContext(Dispatchers.Main) {
+                     uiState.value = uiState.value.copy(associationCandidates = candidates)
+                 }
+             } catch (e: Exception) {
+                 Log.e(TAG, "Association prediction failed", e)
+             }
+         }
+     }
+ }
     
     private fun updateSchemaName() {
         val currentSchemaId = rimeEngine.getCurrentSchema()
@@ -532,26 +528,48 @@ private fun updateUI() {
             when (key) {
                 "delete" -> {
                     if (state.isComposing || state.inputText.isNotEmpty()) {
+                        // 第一步：删除编码字符
                         rimeEngine.processKey(0xff08, 0)
-                        needsUIUpdate = true
                         
-                        if (!rimeEngine.getInput().isNotEmpty()) {
+                        // 检查编码是否已清空
+                        val currentInput = rimeEngine.getInput()
+                        if (currentInput.isEmpty()) {
+                            // 第二步：编码清空后，清空候选词栏
                             rimeEngine.clearComposition()
+                            Log.d(TAG, "Delete: encoding cleared, cleared composition and candidates")
                         }
+                        
+                        needsUIUpdate = true
                     } else {
-                        // 删除已上屏文本时，同步更新 lastCommittedText
+                        // 第三步：没有编码时，删除输入框的已上屏文本
+                        // 同时清空候选词栏（包括联想词）
                         if (lastCommittedText.isNotEmpty()) {
                             lastCommittedText = lastCommittedText.dropLast(1)
                             Log.d(TAG, "Delete committed text, remaining: '$lastCommittedText'")
                         }
+                        
+                        // 清空候选词栏
+                        uiState.value = uiState.value.copy(
+                            candidates = emptyArray(),
+                            candidateComments = emptyArray(),
+                            associationCandidates = emptyArray()
+                        )
+                        
                         withContext(Dispatchers.Main) {
                             sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
                         }
                     }
                 }
                 "clear_composition" -> {
+                    // 上滑清空：清空编码、候选词栏和联想词
                     rimeEngine.clearComposition()
+                    uiState.value = uiState.value.copy(
+                        candidates = emptyArray(),
+                        candidateComments = emptyArray(),
+                        associationCandidates = emptyArray()
+                    )
                     needsUIUpdate = true
+                    Log.d(TAG, "Clear composition: cleared encoding, candidates and association candidates")
                 }
                 "enter" -> {
                     if (state.isComposing) {
@@ -583,6 +601,7 @@ private fun updateUI() {
                 }
                 "space" -> {
                     if (state.isComposing) {
+                        // 有编码时：空格键上屏第一个候选词或编码
                         if (state.candidates.isNotEmpty()) {
                             selectCandidateAsync(0)
                         } else {
@@ -595,13 +614,8 @@ private fun updateUI() {
                                 needsUIUpdate = true
                             }
                         }
-                    } else if (state.associationCandidates.isNotEmpty()) {
-                        // 如果有联想候选词，选择第一个
-                        withContext(Dispatchers.Main) {
-                            commitText(state.associationCandidates[0])
-                        }
-                        needsUIUpdate = true  // 更新 UI 以获取新的联想候选词
                     } else {
+                        // 没有编码时：直接输入空格（联想词只能通过点选上屏，不能用空格键）
                         withContext(Dispatchers.Main) {
                             commitText(" ")
                         }
