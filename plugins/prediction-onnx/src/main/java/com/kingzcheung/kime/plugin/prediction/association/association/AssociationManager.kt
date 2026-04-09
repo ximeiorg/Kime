@@ -15,10 +15,11 @@ object AssociationManager {
     private val mutex = Mutex()
     
     private lateinit var fusionEngine: NgramFusionEngine
+    private var context: Context? = null
     
-    suspend fun initialize(context: Context): Boolean = withContext(Dispatchers.IO) {
+    suspend fun initialize(ctx: Context): Boolean = withContext(Dispatchers.IO) {
+        context = ctx
         if (isInitialized) {
-            Log.d(TAG, "AssociationManager already initialized")
             return@withContext true
         }
         
@@ -28,9 +29,9 @@ object AssociationManager {
             }
             
             try {
-                fusionEngine = NgramFusionEngine(context)
+                fusionEngine = NgramFusionEngine(ctx)
                 
-                val modelInit = OnnxAssociationEngine.initialize(context)
+                val modelInit = OnnxAssociationEngine.initialize(ctx)
                 val cacheInit = fusionEngine.initialize()
                 
                 isInitialized = modelInit
@@ -45,20 +46,19 @@ object AssociationManager {
         }
     }
     
-    suspend fun predict(context: String, topK: Int = 5): List<AssociationCandidate> = withContext(Dispatchers.Default) {
+    suspend fun predict(contextText: String, topK: Int = 5): List<AssociationCandidate> = withContext(Dispatchers.Default) {
         if (!isInitialized) {
-            Log.w(TAG, "AssociationManager not initialized")
             return@withContext emptyList()
         }
         
         try {
-            val modelCandidates = OnnxAssociationEngine.predict(context, topK * 2)
+            val modelCandidates = OnnxAssociationEngine.predict(contextText, topK * 2)
             
             if (modelCandidates.isEmpty()) {
                 return@withContext emptyList()
             }
             
-            val fusedCandidates = fusionEngine.fuseCandidates(modelCandidates, context)
+            val fusedCandidates = fusionEngine.fuseCandidates(modelCandidates, contextText)
             
             fusedCandidates.take(topK)
             
@@ -78,16 +78,6 @@ object AssociationManager {
         fusionEngine.saveCache()
     }
     
-    fun setFusionLambda(lambda: Float) {
-        if (!isInitialized) return
-        fusionEngine.setLambda(lambda)
-    }
-    
-    fun clearUserCache() {
-        if (!isInitialized) return
-        fusionEngine.clearCache()
-    }
-    
     fun getCacheSize(): Int {
         return if (isInitialized) fusionEngine.getCacheSize() else 0
     }
@@ -98,6 +88,7 @@ object AssociationManager {
         if (isInitialized) {
             OnnxAssociationEngine.release()
             isInitialized = false
+            context = null
             Log.d(TAG, "AssociationManager released")
         }
     }

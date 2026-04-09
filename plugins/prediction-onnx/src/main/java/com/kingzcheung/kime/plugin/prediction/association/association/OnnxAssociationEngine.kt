@@ -9,25 +9,60 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
-import java.nio.LongBuffer
 
 object OnnxAssociationEngine {
     private const val TAG = "OnnxAssociationEngine"
+    private const val MODEL_DIR = "association_model"
     private var environment: OrtEnvironment? = null
     private var session: OrtSession? = null
     private var vocab: Map<String, Int> = emptyMap()
     private var id2word: Map<Int, String> = emptyMap()
     private var isInitialized = false
 
+    private fun extractModelFromAssets(context: Context): Boolean {
+        val modelDir = File(context.filesDir, MODEL_DIR)
+        
+        if (modelDir.exists() && modelDir.listFiles()?.isNotEmpty() == true) {
+            Log.d(TAG, "Model already extracted")
+            return true
+        }
+        
+        return try {
+            modelDir.mkdirs()
+            
+            val assets = context.assets
+            val filesToCopy = listOf("vocab.json", "model.onnx")
+            
+            filesToCopy.forEach { fileName ->
+                val inputStream = assets.open("$MODEL_DIR/$fileName")
+                val outputFile = File(modelDir, fileName)
+                inputStream.use { input ->
+                    outputFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                Log.d(TAG, "Extracted $fileName to ${outputFile.absolutePath}")
+            }
+            
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to extract model from assets", e)
+            false
+        }
+    }
+
     suspend fun initialize(context: Context): Boolean = withContext(Dispatchers.IO) {
         if (isInitialized) return@withContext true
 
         try {
-            val modelDir = File(context.filesDir, "association_model")
-            if (!modelDir.exists()) {
-                Log.e(TAG, "Model directory not found: ${modelDir.absolutePath}")
+            // 从 assets 解压模型
+            val extracted = extractModelFromAssets(context)
+            if (!extracted) {
+                Log.e(TAG, "Failed to extract model from assets")
                 return@withContext false
             }
+            
+            val modelDir = File(context.filesDir, MODEL_DIR)
 
             val vocabFile = File(modelDir, "vocab.json")
             if (!vocabFile.exists()) {
@@ -46,7 +81,6 @@ object OnnxAssociationEngine {
                 Log.e(TAG, "Model file not found")
                 return@withContext false
             }
-            Log.d(TAG, "Using model: ${modelFile.name} (${modelFile.length()} bytes)")
 
             environment = OrtEnvironment.getEnvironment()
             val sessionOptions = OrtSession.SessionOptions()
@@ -54,14 +88,9 @@ object OnnxAssociationEngine {
             
             session = environment?.createSession(modelFile.absolutePath, sessionOptions)
             
-            if (session != null) {
-                isInitialized = true
-                Log.i(TAG, "ONNX Runtime initialized successfully")
-                true
-            } else {
-                Log.e(TAG, "Failed to create ONNX session")
-                false
-            }
+            isInitialized = session != null
+            Log.i(TAG, "ONNX Runtime initialized: $isInitialized")
+            isInitialized
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize ONNX Runtime", e)
             false
@@ -70,18 +99,14 @@ object OnnxAssociationEngine {
 
     suspend fun predict(inputText: String, topK: Int = 5): List<AssociationCandidate> = withContext(Dispatchers.Default) {
         if (!isInitialized || session == null) {
-            Log.e(TAG, "Engine not initialized")
             return@withContext emptyList()
         }
 
         try {
             val inputIds = encodeText(inputText)
             if (inputIds.isEmpty()) {
-                Log.d(TAG, "Empty input encoding for: '$inputText'")
                 return@withContext emptyList()
             }
-
-            Log.d(TAG, "Predicting for: '$inputText', tokens: $inputIds")
 
             val inputArray = Array(1) { inputIds.map { it.toLong() }.toLongArray() }
             val inputTensor = OnnxTensor.createTensor(environment, inputArray)
@@ -96,7 +121,6 @@ object OnnxAssociationEngine {
             results?.close()
 
             if (outputArray == null) {
-                Log.e(TAG, "Failed to get output")
                 return@withContext emptyList()
             }
 
@@ -115,9 +139,7 @@ object OnnxAssociationEngine {
                 }
             }
 
-            Log.d(TAG, "Predicted ${candidates.size} candidates: ${candidates.map { it.text }}")
             candidates
-
         } catch (e: Exception) {
             Log.e(TAG, "Prediction failed", e)
             emptyList()

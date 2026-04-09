@@ -24,3 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Kime"
 include(":app")
+include(":plugin-api")
+include(":plugins:prediction-onnx")

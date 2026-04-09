@@ -55,6 +55,7 @@ object SettingsRoutes {
     const val KeyEffect = "key_effect"
     const val Dictionary = "dictionary"
     const val Association = "association"
+    const val Plugins = "plugins"
     const val About = "about"
     const val Privacy = "privacy"
     const val Licenses = "licenses"
@@ -80,6 +81,7 @@ fun SettingsScreen(
                 onNavigateToKeyEffect = { navController.navigate(SettingsRoutes.KeyEffect) },
                 onNavigateToDictionary = { navController.navigate(SettingsRoutes.Dictionary) },
                 onNavigateToAssociation = { navController.navigate(SettingsRoutes.Association) },
+                onNavigateToPlugins = { navController.navigate(SettingsRoutes.Plugins) },
                 onNavigateToAbout = { navController.navigate(SettingsRoutes.About) }
             )
         }
@@ -97,6 +99,11 @@ fun SettingsScreen(
         composable(SettingsRoutes.Association) {
             AssociationSettingsScreen(
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(SettingsRoutes.Plugins) {
+            PluginsSettingsContent(
+                onBack = { navController.popBackStack() }
             )
         }
         composable(SettingsRoutes.KeyEffect) {
@@ -137,6 +144,7 @@ fun SettingsMainContent(
     onNavigateToKeyEffect: () -> Unit,
     onNavigateToDictionary: () -> Unit,
     onNavigateToAssociation: () -> Unit,
+    onNavigateToPlugins: () -> Unit,
     onNavigateToAbout: () -> Unit
 ) {
     val context = LocalContext.current
@@ -325,6 +333,18 @@ fun SettingsMainContent(
                         title = "智能联想",
                         subtitle = "AI 预测下一个词（需下载模型）",
                         onClick = onNavigateToAssociation,
+                        showArrow = true
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                    SettingsItem(
+                        icon = Icons.Outlined.AddBox,
+                        title = "插件管理",
+                        subtitle = "管理已安装的插件",
+                        onClick = onNavigateToPlugins,
                         showArrow = true
                     )
                 })

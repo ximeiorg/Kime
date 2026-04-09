@@ -88,11 +88,9 @@ class UserNgramCache(private val context: Context) {
         val tokens = tokenize(context)
         if (tokens.isEmpty()) return 0f
         
-        // 使用最后一个 token 作为前缀来查询 bigram
         val lastToken = tokens.last()
         val bigramScore = getBigramScore(lastToken, candidate)
         
-        // 如果有多个 token，也尝试 trigram
         val trigramScore = if (tokens.size >= 2) {
             getTrigramScore(tokens[tokens.size - 2], lastToken, candidate)
         } else {
@@ -105,30 +103,21 @@ class UserNgramCache(private val context: Context) {
     fun getUserCandidates(context: String, topK: Int = 5): List<Pair<String, Float>> {
         val tokens = tokenize(context)
         if (tokens.isEmpty()) {
-            Log.d(TAG, "getUserCandidates: context is empty")
             return emptyList()
         }
         
         val lastToken = tokens.last()
-        Log.d(TAG, "getUserCandidates: context='$context', tokens=$tokens, lastToken='$lastToken'")
-        
         val candidates = mutableListOf<Pair<String, Float>>()
         
-        // 从 bigram 中查找以 lastToken 开头的所有候选词
-        val allBigrams = bigramTrie.getAllEntries()
-        Log.d(TAG, "getUserCandidates: total bigrams=${allBigrams.size}")
-        
-        allBigrams.forEach { (ngram, count) ->
+        bigramTrie.getAllEntries().forEach { (ngram, count) ->
             if (ngram.size == 2 && ngram[0] == lastToken) {
                 val score = getBigramScore(ngram[0], ngram[1])
                 if (score > 0) {
                     candidates.add(ngram[1] to score)
-                    Log.d(TAG, "Found bigram candidate: ${ngram[0]}->${ngram[1]}, score=$score")
                 }
             }
         }
         
-        // 从 trigram 中查找
         if (tokens.size >= 2) {
             trigramTrie.getAllEntries().forEach { (ngram, count) ->
                 if (ngram.size == 3 && ngram[0] == tokens[tokens.size - 2] && ngram[1] == lastToken) {
@@ -147,7 +136,6 @@ class UserNgramCache(private val context: Context) {
         try {
             val json = toJson()
             cacheFile.writeText(json.toString(2))
-            Log.d(TAG, "Cache saved: ${bigramTrie.size()} bigrams, ${trigramTrie.size()} trigrams")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save cache", e)
         }
@@ -160,7 +148,6 @@ class UserNgramCache(private val context: Context) {
         if (cacheFile.exists()) {
             cacheFile.delete()
         }
-        Log.d(TAG, "Cache cleared")
     }
     
     fun getCacheSize(): Int = bigramTrie.size() + trigramTrie.size()

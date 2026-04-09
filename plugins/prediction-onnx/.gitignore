@@ -13,7 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
-
 # librime and its dependencies
 app/src/main/jni/librime/
 app/src/main/jni/snappy/
