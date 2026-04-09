@@ -4,6 +4,18 @@
 
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.INTERNET" />
+    
+    <!-- Android 11+ 需要此权限才能查询其他应用 -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+    
+    <!-- 查询已安装的插件应用 -->
+    <queries>
+        <intent>
+            <action android:name="com.kingzcheung.kime.plugin.EXTENSION" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"

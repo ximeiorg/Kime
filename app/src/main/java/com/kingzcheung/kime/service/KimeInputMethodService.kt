@@ -41,6 +41,10 @@ import com.kingzcheung.kime.ui.theme.KimeTheme
 import com.kingzcheung.kime.ui.KeyboardView
 import com.kingzcheung.kime.association.AssociationManager
 import com.kingzcheung.kime.association.ModelDownloadManager
+import com.kingzcheung.kime.plugin.ExtensionManager
+import com.kingzcheung.kime.plugin.api.ExtensionType
+import com.kingzcheung.kime.plugin.api.ExtensionInput
+import com.kingzcheung.kime.plugin.api.ExtensionResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -215,27 +219,15 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             return
         }
         
-        if (AssociationManager.isInitialized()) {
-            Log.i(TAG, "Association engine already initialized")
-            return
+        if (!ExtensionManager.isInitialized()) {
+            Log.i(TAG, "Initializing ExtensionManager...")
+            ExtensionManager.initialize(this)
         }
         
-        Log.i(TAG, "initAssociationEngine: Starting initialization...")
-        serviceScope.launch(Dispatchers.IO) {
-            try {
-                val modelReady = ModelDownloadManager.isModelDownloaded(this@KimeInputMethodService)
-                Log.i(TAG, "Model downloaded: $modelReady")
-                
-                if (modelReady) {
-                    Log.i(TAG, "Creating AssociationManager instance...")
-                    val success = AssociationManager.initialize(this@KimeInputMethodService)
-                    Log.i(TAG, "Association engine initialized: $success")
-                } else {
-                    Log.e(TAG, "Model not downloaded, please download in settings")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to initialize association engine", e)
-            }
+        if (ExtensionManager.hasExtensionsOfType(ExtensionType.PREDICTION)) {
+            Log.i(TAG, "Prediction extensions available")
+        } else {
+            Log.w(TAG, "No prediction extensions available")
         }
     }
     
@@ -245,12 +237,12 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     private fun checkAndInitializeAssociationEngine() {
         val enabled = SettingsPreferences.isAssociationEnabled(this)
         
-        if (enabled && !AssociationManager.isInitialized()) {
+        if (enabled && !ExtensionManager.isInitialized()) {
             Log.i(TAG, "Association enabled in settings, initializing now...")
-            initAssociationEngine()
-        } else if (!enabled && AssociationManager.isInitialized()) {
-            Log.i(TAG, "Association disabled in settings, releasing engine...")
-            AssociationManager.release()
+            ExtensionManager.initialize(this)
+        } else if (!enabled && ExtensionManager.isInitialized()) {
+            Log.i(TAG, "Association disabled in settings, releasing extensions...")
+            ExtensionManager.release()
         }
     }
     
@@ -465,7 +457,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     override fun onDestroy() {
         super.onDestroy()
         rimeEngine.destroy()
-        AssociationManager.release()
+        ExtensionManager.release()
         serviceScope.cancel()
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
@@ -497,20 +489,34 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
      
      // 联想预测只在已上屏文本存在且没有正在输入编码时触发
      // 正确逻辑：只有上屏后才应该显示联想词
-     if (AssociationManager.isInitialized() && inputText.isEmpty() && lastCommittedText.isNotEmpty()) {
-         serviceScope.launch {
-             try {
-                 Log.d(TAG, "Predicting association for lastCommittedText='$lastCommittedText'")
-                 val candidates = AssociationManager.predict(lastCommittedText, 10).map { it.text }.toTypedArray()
-                 Log.d(TAG, "Association candidates: ${candidates.joinToString()}")
-                 withContext(Dispatchers.Main) {
-                     uiState.value = uiState.value.copy(associationCandidates = candidates)
-                 }
-             } catch (e: Exception) {
-                 Log.e(TAG, "Association prediction failed", e)
-             }
-         }
-     }
+if (ExtensionManager.hasExtensionsOfType(ExtensionType.PREDICTION) && inputText.isEmpty() && lastCommittedText.isNotEmpty()) {
+          serviceScope.launch {
+              try {
+                  Log.d(TAG, "Predicting association for lastCommittedText='$lastCommittedText'")
+                  
+                  val result = ExtensionManager.processFirst(
+                      ExtensionType.PREDICTION,
+                      ExtensionInput(text = lastCommittedText, topK = 10)
+                  )
+                  
+                  val candidates = when (result) {
+                      is ExtensionResult.Text -> result.candidates.toTypedArray()
+                      is ExtensionResult.Error -> {
+                          Log.e(TAG, "Prediction error: ${result.message}")
+                          emptyArray()
+                      }
+                      else -> emptyArray()
+                  }
+                  
+                  Log.d(TAG, "Association candidates: ${candidates.joinToString()}")
+                  withContext(Dispatchers.Main) {
+                      uiState.value = uiState.value.copy(associationCandidates = candidates)
+                  }
+              } catch (e: Exception) {
+                  Log.e(TAG, "Association prediction failed", e)
+              }
+          }
+      }
  }
     
     private fun updateSchemaName() {
@@ -697,13 +703,16 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         if (rimeEngine.selectCandidate(index)) {
             val committedText = rimeEngine.commit()
             if (committedText.isNotEmpty()) {
-                // 记录 bigram：用上屏文本的最后一个字 + 当前候选词
-                if (AssociationManager.isInitialized() && selectedCandidate != null) {
+                // 学习用户输入
+                if (ExtensionManager.hasExtensionsOfType(ExtensionType.PREDICTION) && selectedCandidate != null) {
                     if (lastCommittedText.isNotEmpty()) {
-                        // 用上屏文本的最后一个字作为前缀
-                        val lastChar = lastCommittedText.last().toString()
-                        AssociationManager.recordInput(lastChar + selectedCandidate)
-                        Log.d(TAG, "Recorded bigram: '$lastChar' + '$selectedCandidate'")
+                        val predictionExt = ExtensionManager.getExtensionsByType(ExtensionType.PREDICTION).firstOrNull()
+                        
+                        if (predictionExt != null) {
+                            val lastChar = lastCommittedText.last().toString()
+                            predictionExt.learn(lastChar + selectedCandidate)
+                            Log.d(TAG, "Learned: '$lastChar' + '$selectedCandidate'")
+                        }
                     }
                 }
                 withContext(Dispatchers.Main) {
@@ -859,18 +868,16 @@ patch:
 
     private fun commitText(text: String) {
         currentInputConnection?.commitText(text, 1)
-        // 更新最近上屏文本（用于联想）
         if (text.isNotEmpty()) {
             lastCommittedText += text
-            // 保留最近 20 个字符
             if (lastCommittedText.length > 20) {
                 lastCommittedText = lastCommittedText.takeLast(20)
             }
             
-            // 异步保存缓存
-            if (AssociationManager.isInitialized()) {
+            if (ExtensionManager.hasExtensionsOfType(ExtensionType.PREDICTION)) {
                 serviceScope.launch {
-                    AssociationManager.saveUserData()
+                    val predictionExt = ExtensionManager.getExtensionsByType(ExtensionType.PREDICTION).firstOrNull()
+                    predictionExt?.saveLearnedData()
                 }
             }
         }

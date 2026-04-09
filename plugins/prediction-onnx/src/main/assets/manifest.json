@@ -1,0 +1,10 @@
+{
+  "model": "small",
+  "vocab_size": 8192,
+  "quant_mode": "dynamic",
+  "quant_type": "int8",
+  "files": {
+    "model_int8_dynamic.onnx": 16.284822463989258,
+    "model.onnx": 0.0344390869140625
+  }
+}

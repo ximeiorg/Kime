@@ -108,12 +108,13 @@ android.applicationVariants.all {
 }
 
 dependencies {
+    implementation(project(":plugin-api"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     
     // ONNX Runtime
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:latest.release")
+    implementation(libs.onnxruntime.android)
     
     // Jetpack Compose
     implementation(platform(libs.androidx.compose.bom))
