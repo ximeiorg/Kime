@@ -3,7 +3,13 @@ package com.kingzcheung.kime.service
 import android.content.Intent
 import android.inputmethodservice.InputMethodService
 import android.media.AudioManager
+import android.net.Uri
 import android.os.Build
+import android.view.inputmethod.InputConnection
+import android.view.inputmethod.InputContentInfo
+import androidx.core.content.FileProvider
+import java.io.File
+import java.io.FileInputStream
 import android.os.Handler
 import android.os.Looper
 import android.os.VibrationEffect
@@ -49,7 +55,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
 data class InputUIState(
     val candidates: Array<String> = emptyArray(),
@@ -439,6 +444,17 @@ serviceScope.launch {
                                     val text = state.associationCandidates[index]
                                     commitText(text)
                                     updateUI()  // 更新 UI 以获取新的联想候选词
+                                }
+                            },
+                            onCommitImage = { imagePath ->
+                                val success = commitImage(imagePath)
+                                if (!success) {
+                                    android.widget.Toast.makeText(
+                                        this@KimeInputMethodService,
+                                        "发送失败，已复制到剪贴板",
+                                        android.widget.Toast.LENGTH_SHORT
+                                    ).show()
+                                    clipboardManager.copyImageToSystemClipboard(imagePath)
                                 }
                             }
                         )
@@ -928,6 +944,52 @@ private fun commitText(text: String) {
         
         // 获取联想词
         getPredictionFromPlugin(text)
+    }
+    
+    private fun commitImage(imagePath: String, mimeType: String = "image/jpeg"): Boolean {
+        return try {
+            val imageFile = File(imagePath)
+            if (!imageFile.exists()) {
+                Log.e(TAG, "Image file not found: $imagePath")
+                return false
+            }
+            
+            val cacheDir = File(cacheDir, "emoji_cache")
+            if (!cacheDir.exists()) {
+                cacheDir.mkdirs()
+            }
+            
+            val cacheFile = File(cacheDir, imageFile.name)
+            FileInputStream(imageFile).use { input ->
+                cacheFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+            
+            val uri = FileProvider.getUriForFile(
+                this,
+                "$packageName.fileprovider",
+                cacheFile
+            )
+            
+            val inputContentInfo = InputContentInfo(
+                uri,
+                android.content.ClipDescription("emoji_image", arrayOf(mimeType)),
+                null
+            )
+            
+            val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+                InputConnection.INPUT_CONTENT_GRANT_READ_URI_PERMISSION
+            } else {
+                0
+            }
+            
+            currentInputConnection?.commitContent(inputContentInfo, flags, null) ?: false
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to commit image", e)
+            false
+        }
     }
     
     /**
