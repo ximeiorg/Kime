@@ -12,12 +12,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kingzcheung.kime.association.AssociationManager
-import com.kingzcheung.kime.association.OnnxAssociationEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,34 +39,27 @@ fun PredictionSettingsScreen(
     
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.background
-            ) {
-                TopAppBar(
-                    title = { 
-                        Text(
-                            "ONNX 联想插件",
-                            style = MaterialTheme.typography.titleMedium
+            TopAppBar(
+                title = { 
+                    Text(
+                        "ONNX 联想插件",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "返回"
                         )
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "返回"
-                            )
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground
-                    ),
-                    windowInsets = WindowInsets(0.dp)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
                 )
-            }
+            )
         }
     ) { padding ->
         Column(
@@ -79,56 +70,6 @@ fun PredictionSettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(
-                        elevation = 4.dp,
-                        shape = RoundedCornerShape(12.dp),
-                        ambientColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.01f),
-                        spotColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
-                    ),
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.AutoAwesome,
-                            contentDescription = null,
-                            tint = if (isInitialized) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(32.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "插件状态",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = if (isInitialized) "已初始化并正常运行" else "未初始化",
-                                fontSize = 14.sp,
-                                color = if (isInitialized) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                    
-                    if (!isInitialized) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "插件初始化失败，请检查模型文件是否正确放置在 assets/association_model 目录下",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-            
             if (isInitialized) {
                 Surface(
                     modifier = Modifier
@@ -306,65 +247,6 @@ fun PredictionSettingsScreen(
                         number = "4",
                         text = "输入文字时自动显示联想候选词"
                     )
-                }
-            }
-            
-            // 卸载插件
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 2.dp
-            ) {
-                val context = LocalContext.current
-                
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "插件管理",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "卸载插件",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "卸载后将无法使用联想功能",
-                                fontSize = 13.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        
-                        OutlinedButton(
-                            onClick = {
-                                val intent = android.content.Intent(android.content.Intent.ACTION_DELETE)
-                                intent.data = android.net.Uri.parse("package:com.kingzcheung.kime.plugin.prediction")
-                                context.startActivity(intent)
-                                onNavigateBack()
-                            },
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
-                            )
-                        ) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("卸载")
-                        }
-                    }
                 }
             }
         }

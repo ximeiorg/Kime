@@ -12,6 +12,7 @@
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/plugin-api" />
             <option value="$PROJECT_DIR$/plugins" />
+            <option value="$PROJECT_DIR$/plugins/emoji-sticker" />
             <option value="$PROJECT_DIR$/plugins/prediction-onnx" />
           </set>
         </option>

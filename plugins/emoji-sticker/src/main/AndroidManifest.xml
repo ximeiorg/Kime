@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <application
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:supportsRtl="true">
+        
+        <activity
+            android:name=".PluginDeclaration"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.kingzcheung.kime.plugin.EXTENSION" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        
+        <activity
+            android:name=".PluginSettingsActivity"
+            android:exported="true"
+            android:label="恶搞兔表情包设置"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        </activity>
+        
+        <meta-data
+            android:name="com.kingzcheung.kime.extension.factory.class"
+            android:value="com.kingzcheung.kime.plugin.emoji.EmojiPluginFactory" />
+        
+    </application>
+
+</manifest>
