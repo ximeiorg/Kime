@@ -16,6 +16,9 @@
       <SelectionState runConfigName="plugins.prediction-onnx">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
+      <SelectionState runConfigName="plugins.emoji-sticker">
+        <option name="selectionMode" value="DROPDOWN" />
+      </SelectionState>
     </selectionStates>
   </component>
 </project>
