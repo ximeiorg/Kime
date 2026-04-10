@@ -16,6 +16,14 @@
             </intent-filter>
         </activity>
         
+        <!-- 插件设置界面 -->
+        <activity
+            android:name=".PluginSettingsActivity"
+            android:exported="true"
+            android:label="ONNX 联想插件设置"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        </activity>
+        
         <!-- 插件工厂类 -->
         <meta-data
             android:name="com.kingzcheung.kime.extension.factory.class"

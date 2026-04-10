@@ -1,6 +1,9 @@
 package com.kingzcheung.kime.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,12 +22,14 @@ import androidx.compose.ui.unit.dp
 import com.kingzcheung.kime.plugin.ExtensionManager
 import com.kingzcheung.kime.plugin.api.ExtensionType
 import com.kingzcheung.kime.plugin.api.KimeExtension
+import com.kingzcheung.kime.settings.SettingsPreferences
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PluginsSettingsContent(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onNavigateToPluginSettings: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -36,19 +41,11 @@ fun PluginsSettingsContent(
     LaunchedEffect(Unit) {
         scope.launch {
             try {
-                android.util.Log.d("PluginsSettings", "Starting to load extensions...")
-                
                 // 强制重新扫描
                 val initSuccess = ExtensionManager.reload(context)
-                android.util.Log.d("PluginsSettings", "ExtensionManager reloaded: $initSuccess")
-                
                 extensions = ExtensionManager.getExtensions()
-                android.util.Log.d("PluginsSettings", "Loaded ${extensions.size} extensions")
-                extensions.forEach { ext ->
-                    android.util.Log.d("PluginsSettings", "  - ${ext.id}: ${ext.name}")
-                }
             } catch (e: Exception) {
-                android.util.Log.e("PluginsSettings", "Failed to load extensions", e)
+                e.printStackTrace()
                 errorMsg = e.message
             } finally {
                 isLoading = false
@@ -56,76 +53,52 @@ fun PluginsSettingsContent(
         }
     }
     
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        TopAppBar(
-            title = {
-                Text(
-                    "插件管理",
-                    style = MaterialTheme.typography.titleMedium
-                )
-            },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "返回"
-                    )
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = { Text("插件管理") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "返回"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                ),
+                windowInsets = WindowInsets(0.dp)
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(MaterialTheme.colorScheme.background),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(16.dp)
+        ) {
+            if (isLoading) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background,
-                titleContentColor = MaterialTheme.colorScheme.onBackground
-            ),
-            windowInsets = WindowInsets(0.dp)
-        )
-        
-        if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else if (errorMsg != null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Error,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = MaterialTheme.colorScheme.error
-                    )
+            } else if (errorMsg != null) {
+                item {
                     Text(
-                        text = "加载插件失败",
-                        style = MaterialTheme.typography.bodyLarge,
+                        text = "加载失败: $errorMsg",
                         color = MaterialTheme.colorScheme.error
                     )
-                    Text(
-                        text = errorMsg ?: "未知错误",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            } else {
                 item {
                     Text(
                         text = "已安装插件 (${extensions.size})",
@@ -166,26 +139,26 @@ fun PluginsSettingsContent(
                         }
                     }
                 } else {
-                    val groupedExtensions = extensions.groupBy { it.type }
-                    
-                    groupedExtensions.forEach { (type, typeExtensions) ->
-                        item {
-                            SettingsSection(
-                                title = getTypeName(type),
-                                content = {
-                                    typeExtensions.forEachIndexed { index, extension ->
-                                        ExtensionItem(extension = extension)
-                                        if (index < typeExtensions.size - 1) {
-                                            HorizontalDivider(
-                                                modifier = Modifier.padding(start = 56.dp),
-                                                thickness = 0.5.dp,
-                                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                                            )
+                    item {
+                        SettingsSection(title = "插件列表", content = {
+                            extensions.forEachIndexed { index, extension ->
+                                ExtensionItem(
+                                    extension = extension,
+                                    onClick = {
+                                        if (extension.hasSettings()) {
+                                            onNavigateToPluginSettings(extension.id)
                                         }
                                     }
+                                )
+                                if (index < extensions.size - 1) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(start = 56.dp),
+                                        thickness = 0.5.dp,
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                    )
                                 }
-                            )
-                        }
+                            }
+                        })
                     }
                 }
                 
@@ -205,77 +178,131 @@ fun PluginsSettingsContent(
 }
 
 @Composable
-private fun ExtensionItem(extension: KimeExtension) {
-    Row(
+private fun ExtensionItem(
+    extension: KimeExtension,
+    onClick: () -> Unit = {}
+) {
+    val context = LocalContext.current
+    var isEnabled by remember { mutableStateOf(SettingsPreferences.isPluginEnabled(context, extension.id)) }
+    
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = getTypeIcon(extension.type),
-            contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        
-        Spacer(modifier = Modifier.width(16.dp))
-        
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = extension.name,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "v${extension.version}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "•",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                )
-                Text(
-                    text = extension.id,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                )
+            .clickable { 
+                if (extension.hasSettings()) {
+                    onClick()
+                }
             }
+            .padding(16.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = extension.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    
+                    if (extension.hasSettings()) {
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            contentDescription = "点击查看设置",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+                
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = getTypeName(extension.type),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "•",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                    Text(
+                        text = "v${extension.version}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                if (extension.description.isNotEmpty()) {
+                    Text(
+                        text = extension.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            
+            Switch(
+                checked = isEnabled,
+                onCheckedChange = { enabled ->
+                    isEnabled = enabled
+                    SettingsPreferences.setPluginEnabled(context, extension.id, enabled)
+                },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            )
         }
         
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = if (extension.id.startsWith("builtin_")) {
-                MaterialTheme.colorScheme.secondaryContainer
-            } else {
-                MaterialTheme.colorScheme.tertiaryContainer
-            }
-        ) {
-            Text(
-                text = if (extension.id.startsWith("builtin_")) "内置" else "外部",
-                style = MaterialTheme.typography.labelSmall,
-                color = if (extension.id.startsWith("builtin_")) {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onTertiaryContainer
-                },
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        OutlinedButton(
+            onClick = {
+                try {
+                    val packageName = when (extension.id) {
+                        "plugin_prediction_onnx" -> "com.kingzcheung.kime.plugin.prediction"
+                        else -> extension.id
+                    }
+                    
+                    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    intent.data = Uri.parse("package:$packageName")
+                    context.startActivity(intent)
+                    
+                    android.widget.Toast.makeText(context, "请在应用信息页面卸载插件", android.widget.Toast.LENGTH_LONG).show()
+                } catch (e: Exception) {
+                    android.widget.Toast.makeText(context, "无法打开应用详情: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.error
             )
+        ) {
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("卸载插件")
         }
     }
 }
 
 private fun getTypeName(type: ExtensionType): String {
     return when (type) {
-        ExtensionType.PREDICTION -> "联想词预测"
+        ExtensionType.PREDICTION -> "联想词"
         ExtensionType.SPEECH -> "语音转文字"
-        ExtensionType.EMOJI -> "表情输入"
+        ExtensionType.EMOJI -> "表情推荐"
     }
 }
 

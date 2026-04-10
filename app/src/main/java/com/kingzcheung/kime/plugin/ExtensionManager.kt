@@ -7,6 +7,7 @@ import com.kingzcheung.kime.plugin.api.KimeExtension
 import com.kingzcheung.kime.plugin.api.ExtensionInput
 import com.kingzcheung.kime.plugin.api.ExtensionResult
 import com.kingzcheung.kime.plugin.builtin.BuiltinExtensionFactory
+import com.kingzcheung.kime.settings.SettingsPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -29,8 +30,10 @@ object ExtensionManager {
             Log.d(TAG, "Loaded ${builtinExtensions.size} builtin extensions")
             extensions.addAll(builtinExtensions)
             
+            android.util.Log.e(TAG, "About to load installed extensions...")
             val systemExtensions = ExtensionLoader.loadInstalledExtensions(context)
             Log.d(TAG, "Loaded ${systemExtensions.size} system extensions")
+            android.util.Log.e(TAG, "Loaded ${systemExtensions.size} system extensions")
             extensions.addAll(systemExtensions)
             
             val privateExtensions = ExtensionLoader.loadExtensionsFromPrivateDir(context)
@@ -47,6 +50,7 @@ object ExtensionManager {
             return true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize ExtensionManager", e)
+            android.util.Log.e(TAG, "Failed to initialize ExtensionManager: ${e.message}")
             return false
         }
     }
@@ -69,7 +73,8 @@ object ExtensionManager {
     
     suspend fun process(
         type: ExtensionType,
-        input: ExtensionInput
+        input: ExtensionInput,
+        context: Context? = null
     ): List<ExtensionResult> = withContext(Dispatchers.Default) {
         val targetExtensions = getExtensionsByType(type)
         
@@ -78,7 +83,24 @@ object ExtensionManager {
             return@withContext emptyList()
         }
         
-        targetExtensions.map { extension ->
+        // 过滤出已启用的插件
+        val enabledExtensions = if (context != null) {
+            targetExtensions.filter { extension ->
+                val enabled = SettingsPreferences.isPluginEnabled(context, extension.id)
+                Log.d(TAG, "Extension ${extension.id} enabled: $enabled")
+                enabled
+            }
+        } else {
+            Log.w(TAG, "No context provided, skipping enabled check")
+            targetExtensions
+        }
+        
+        if (enabledExtensions.isEmpty()) {
+            Log.d(TAG, "No enabled extensions for type: $type")
+            return@withContext emptyList()
+        }
+        
+        enabledExtensions.map { extension ->
             try {
                 Log.d(TAG, "Processing with extension: ${extension.id}")
                 extension.process(input)
@@ -91,9 +113,10 @@ object ExtensionManager {
     
     suspend fun processFirst(
         type: ExtensionType,
-        input: ExtensionInput
+        input: ExtensionInput,
+        context: Context? = null
     ): ExtensionResult? = withContext(Dispatchers.Default) {
-        val results = process(type, input)
+        val results = process(type, input, context)
         results.firstOrNull { it !is ExtensionResult.Error }
     }
     

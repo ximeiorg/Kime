@@ -1,6 +1,7 @@
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -21,9 +22,20 @@ android {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
+    
+    buildFeatures {
+        compose = true
+    }
+    
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.15"
+    }
 }
 
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.core)
+    
+    implementation(platform(libs.androidx.compose.bom))
+    implementation("androidx.compose.runtime:runtime")
 }

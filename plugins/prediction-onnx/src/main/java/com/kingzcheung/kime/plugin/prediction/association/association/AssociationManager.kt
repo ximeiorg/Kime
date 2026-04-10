@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.io.File
 
 object AssociationManager {
     private const val TAG = "AssociationManager"
@@ -17,7 +18,7 @@ object AssociationManager {
     private lateinit var fusionEngine: NgramFusionEngine
     private var context: Context? = null
     
-    suspend fun initialize(ctx: Context): Boolean = withContext(Dispatchers.IO) {
+    suspend fun initialize(ctx: Context, customFilesDir: File? = null): Boolean = withContext(Dispatchers.IO) {
         context = ctx
         if (isInitialized) {
             return@withContext true
