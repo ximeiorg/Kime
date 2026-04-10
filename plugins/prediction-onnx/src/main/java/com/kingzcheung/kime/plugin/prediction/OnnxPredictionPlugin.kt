@@ -27,15 +27,18 @@ class OnnxPredictionPlugin : KimeExtension {
     }
     
     override fun initialize(context: Context): Boolean {
+        return initialize(context, null)
+    }
+    
+    override fun initialize(context: Context, apkPath: String?): Boolean {
         if (isInitialized) {
             Log.d(TAG, "Already initialized")
             return true
         }
         
         Log.d(TAG, "Initializing ONNX prediction plugin...")
-        Log.e(TAG, "Plugin context package: ${context.packageName}")
+        Log.d(TAG, "Plugin context: ${context.packageName}, APK: $apkPath")
         
-        // 关键：使用主应用的filesDir来存储模型（通过路径硬编码）
         val mainAppFilesDir = File("/data/data/com.kingzcheung.kime/files")
         if (!mainAppFilesDir.exists()) {
             mainAppFilesDir.mkdirs()
@@ -43,7 +46,7 @@ class OnnxPredictionPlugin : KimeExtension {
         
         return try {
             val success = runBlocking(Dispatchers.IO) {
-                AssociationManager.initialize(context, mainAppFilesDir)
+                AssociationManager.initialize(context, mainAppFilesDir, apkPath)
             }
             
             isInitialized = success

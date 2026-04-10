@@ -5,6 +5,7 @@ import android.content.Intent
 import android.util.Log
 import com.kingzcheung.kime.plugin.api.*
 import java.io.File
+import java.util.zip.ZipFile
 
 class EmojiStickerPlugin : KimeExtension {
     
@@ -15,6 +16,7 @@ class EmojiStickerPlugin : KimeExtension {
     override val version: String = "1.0.0"
     
     private lateinit var context: Context
+    private var apkPath: String? = null
     private var emojiList: List<EmojiItem> = emptyList()
     
     companion object {
@@ -22,9 +24,15 @@ class EmojiStickerPlugin : KimeExtension {
     }
     
     override fun initialize(context: Context): Boolean {
+        return initialize(context, null)
+    }
+    
+    override fun initialize(context: Context, apkPath: String?): Boolean {
         this.context = context
+        this.apkPath = apkPath
         try {
             Log.d(TAG, "Initializing with context: ${context.packageName}")
+            Log.d(TAG, "APK path: $apkPath")
             
             val mainAppFilesDir = File("/data/data/com.kingzcheung.kime/files")
             if (!mainAppFilesDir.exists()) {
@@ -70,8 +78,33 @@ class EmojiStickerPlugin : KimeExtension {
     private fun copyEmojisFromAssets(emojisDir: File) {
         emojisDir.mkdirs()
         
+        val actualApkPath = apkPath ?: context.applicationInfo?.sourceDir
+        
+        if (actualApkPath != null) {
+            Log.d(TAG, "Extracting emojis from APK: $actualApkPath")
+            try {
+                ZipFile(File(actualApkPath)).use { zipFile ->
+                    val entries = zipFile.entries().asSequence()
+                        .filter { it.name.startsWith("assets/emojis/") && !it.isDirectory }
+                    
+                    for (entry in entries) {
+                        val fileName = entry.name.substringAfter("assets/emojis/")
+                        Log.d(TAG, "Copying: $fileName")
+                        zipFile.getInputStream(entry).use { input ->
+                            File(emojisDir, fileName).outputStream().use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                    }
+                }
+                Log.d(TAG, "Copy from APK completed")
+                return
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to copy emojis from APK", e)
+            }
+        }
+        
         try {
-            // 关键：使用插件的context来访问插件的assets
             val pluginContext = context.createPackageContext(
                 "com.kingzcheung.kime.plugin.emoji",
                 Context.CONTEXT_INCLUDE_CODE or Context.CONTEXT_IGNORE_SECURITY

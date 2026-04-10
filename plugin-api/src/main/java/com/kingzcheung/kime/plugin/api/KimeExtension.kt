@@ -13,6 +13,10 @@ interface KimeExtension {
     
     fun initialize(context: Context): Boolean
     
+    fun initialize(context: Context, apkPath: String?): Boolean {
+        return initialize(context)
+    }
+    
     suspend fun process(input: ExtensionInput): ExtensionResult
     
     fun release()

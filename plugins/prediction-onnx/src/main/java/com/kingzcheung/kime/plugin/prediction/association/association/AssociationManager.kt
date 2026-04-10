@@ -18,7 +18,7 @@ object AssociationManager {
     private lateinit var fusionEngine: NgramFusionEngine
     private var context: Context? = null
     
-    suspend fun initialize(ctx: Context, customFilesDir: File? = null): Boolean = withContext(Dispatchers.IO) {
+    suspend fun initialize(ctx: Context, customFilesDir: File? = null, apkPath: String? = null): Boolean = withContext(Dispatchers.IO) {
         context = ctx
         if (isInitialized) {
             return@withContext true
@@ -32,7 +32,7 @@ object AssociationManager {
             try {
                 fusionEngine = NgramFusionEngine(ctx)
                 
-                val modelInit = OnnxAssociationEngine.initialize(ctx)
+                val modelInit = OnnxAssociationEngine.initialize(ctx, apkPath)
                 val cacheInit = fusionEngine.initialize()
                 
                 isInitialized = modelInit
