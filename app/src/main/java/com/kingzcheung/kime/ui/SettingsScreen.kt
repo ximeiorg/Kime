@@ -42,11 +42,14 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
 import com.kingzcheung.kime.settings.DictionaryHelper
 import com.kingzcheung.kime.settings.DictEntry
 import com.kingzcheung.kime.settings.SchemaConfigHelper
 import com.kingzcheung.kime.settings.SettingsPreferences
 import com.kingzcheung.kime.ui.theme.KeyboardThemes
+import com.kingzcheung.kime.plugin.ExtensionManager
 
 object SettingsRoutes {
     const val Main = "main"
@@ -54,8 +57,8 @@ object SettingsRoutes {
     const val Theme = "theme"
     const val KeyEffect = "key_effect"
     const val Dictionary = "dictionary"
-    const val Association = "association"
     const val Plugins = "plugins"
+    const val PluginSettings = "plugin_settings"
     const val About = "about"
     const val Privacy = "privacy"
     const val Licenses = "licenses"
@@ -80,7 +83,6 @@ fun SettingsScreen(
                 onNavigateToTheme = { navController.navigate(SettingsRoutes.Theme) },
                 onNavigateToKeyEffect = { navController.navigate(SettingsRoutes.KeyEffect) },
                 onNavigateToDictionary = { navController.navigate(SettingsRoutes.Dictionary) },
-                onNavigateToAssociation = { navController.navigate(SettingsRoutes.Association) },
                 onNavigateToPlugins = { navController.navigate(SettingsRoutes.Plugins) },
                 onNavigateToAbout = { navController.navigate(SettingsRoutes.About) }
             )
@@ -96,13 +98,21 @@ fun SettingsScreen(
                 onThemeChanged = onThemeChanged
             )
         }
-        composable(SettingsRoutes.Association) {
-            AssociationSettingsScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
         composable(SettingsRoutes.Plugins) {
             PluginsSettingsContent(
+                onBack = { navController.popBackStack() },
+                onNavigateToPluginSettings = { pluginId ->
+                    navController.navigate("${SettingsRoutes.PluginSettings}/$pluginId")
+                }
+            )
+        }
+        composable(
+            route = "${SettingsRoutes.PluginSettings}/{pluginId}",
+            arguments = listOf(navArgument("pluginId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val pluginId = backStackEntry.arguments?.getString("pluginId")
+            PluginSettingsContent(
+                pluginId = pluginId ?: "",
                 onBack = { navController.popBackStack() }
             )
         }
@@ -143,7 +153,6 @@ fun SettingsMainContent(
     onNavigateToTheme: () -> Unit,
     onNavigateToKeyEffect: () -> Unit,
     onNavigateToDictionary: () -> Unit,
-    onNavigateToAssociation: () -> Unit,
     onNavigateToPlugins: () -> Unit,
     onNavigateToAbout: () -> Unit
 ) {
@@ -321,18 +330,6 @@ fun SettingsMainContent(
                         title = "词库管理",
                         subtitle = "管理用户词库",
                         onClick = onNavigateToDictionary,
-                        showArrow = true
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 56.dp),
-                        thickness = 0.5.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    )
-                    SettingsItem(
-                        icon = Icons.Outlined.AutoAwesome,
-                        title = "智能联想",
-                        subtitle = "AI 预测下一个词（需下载模型）",
-                        onClick = onNavigateToAssociation,
                         showArrow = true
                     )
                     HorizontalDivider(
@@ -964,6 +961,95 @@ fun DictEntryItem(entry: DictEntry) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PluginSettingsContent(
+    pluginId: String,
+    onBack: () -> Unit
+) {
+    val context = LocalContext.current
+    val extension = remember(pluginId) {
+        ExtensionManager.getExtensionById(pluginId)
+    }
+    
+    if (extension == null) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            TopAppBar(
+                title = { Text("插件设置") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "返回"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                ),
+                windowInsets = WindowInsets(0.dp)
+            )
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("插件未找到")
+            }
+        }
+        return
+    }
+    
+    if (!extension.hasSettings()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            TopAppBar(
+                title = { Text(extension.name) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "返回"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                ),
+                windowInsets = WindowInsets(0.dp)
+            )
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("该插件没有设置界面")
+            }
+        }
+        return
+    }
+    
+    val settingsIntent = extension.createSettingsIntent(context)
+    if (settingsIntent != null) {
+        LaunchedEffect(Unit) {
+            try {
+                context.startActivity(settingsIntent)
+                onBack()
+            } catch (e: Exception) {
+                android.widget.Toast.makeText(context, "无法打开插件设置: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                onBack()
+            }
         }
     }
 }

@@ -83,34 +83,11 @@ object SettingsPreferences {
         getPrefs(context).edit().putBoolean(KEY_SHOW_BOTTOM_BUTTONS, show).apply()
     }
     
-    private const val KEY_ASSOCIATION_ENABLED = "association_enabled"
-    private const val KEY_ASSOCIATION_MODEL_URL = "association_model_url"
-    private const val KEY_ASSOCIATION_LAMBDA = "association_lambda"
-    
-    private const val DEFAULT_MODEL_URL = "https://modelscope.cn/models/bikeand/predictive-text-small/resolve/master"
-    private const val DEFAULT_LAMBDA = 0.7f
-    
-    fun isAssociationEnabled(context: Context): Boolean {
-        return getPrefs(context).getBoolean(KEY_ASSOCIATION_ENABLED, false)
+    fun isPluginEnabled(context: Context, pluginId: String): Boolean {
+        return getPrefs(context).getBoolean("plugin_enabled_$pluginId", false)
     }
     
-    fun setAssociationEnabled(context: Context, enabled: Boolean) {
-        getPrefs(context).edit().putBoolean(KEY_ASSOCIATION_ENABLED, enabled).commit()
-    }
-    
-    fun getAssociationModelUrl(context: Context): String {
-        return getPrefs(context).getString(KEY_ASSOCIATION_MODEL_URL, DEFAULT_MODEL_URL) ?: DEFAULT_MODEL_URL
-    }
-    
-    fun setAssociationModelUrl(context: Context, url: String) {
-        getPrefs(context).edit().putString(KEY_ASSOCIATION_MODEL_URL, url).apply()
-    }
-    
-    fun getAssociationLambda(context: Context): Float {
-        return getPrefs(context).getFloat(KEY_ASSOCIATION_LAMBDA, DEFAULT_LAMBDA)
-    }
-    
-    fun setAssociationLambda(context: Context, lambda: Float) {
-        getPrefs(context).edit().putFloat(KEY_ASSOCIATION_LAMBDA, lambda).apply()
+    fun setPluginEnabled(context: Context, pluginId: String, enabled: Boolean) {
+        getPrefs(context).edit().putBoolean("plugin_enabled_$pluginId", enabled).apply()
     }
 }

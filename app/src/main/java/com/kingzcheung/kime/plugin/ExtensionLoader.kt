@@ -23,36 +23,25 @@ object ExtensionLoader {
     
     fun loadExtensionsFromApk(context: Context, apkPath: String): List<KimeExtension> {
         return try {
-            Log.d(TAG, "Loading extensions from APK: $apkPath")
-            
             val packageInfo = context.packageManager.getPackageArchiveInfo(
                 apkPath,
                 PACKAGE_FLAGS
-            )
+            ) ?: return emptyList()
             
-            if (packageInfo == null) {
-                Log.e(TAG, "Failed to get package info for: $apkPath")
-                return emptyList()
-            }
+            val appInfo = packageInfo.applicationInfo ?: return emptyList()
             
-            val appInfo = packageInfo.applicationInfo
-            if (appInfo == null) {
-                Log.e(TAG, "ApplicationInfo is null for: $apkPath")
-                return emptyList()
-            }
             appInfo.sourceDir = apkPath
             appInfo.publicSourceDir = apkPath
             
             val classNames = getExtensionFactoryClassNames(apkPath, context)
             if (classNames.isEmpty()) {
-                Log.d(TAG, "No extension factory classes found in: $apkPath")
                 return emptyList()
             }
             
             val classLoader = PathClassLoader(apkPath, context.classLoader)
             
             classNames.flatMap { className ->
-                loadExtensionsFromClass(classLoader, className, context)
+                loadExtensionsFromClass(classLoader, className, context, packageInfo.packageName)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load extensions from APK: $apkPath", e)
@@ -71,13 +60,11 @@ object ExtensionLoader {
             if (metaData != null && metaData.containsKey(EXTENSION_FACTORY_CLASS_META)) {
                 val className = metaData.getString(EXTENSION_FACTORY_CLASS_META)
                 if (className != null) {
-                    Log.d(TAG, "Found extension factory class: $className")
                     listOf(className)
                 } else {
                     emptyList()
                 }
             } else {
-                Log.d(TAG, "No extension factory metadata found")
                 emptyList()
             }
         } catch (e: Exception) {
@@ -89,31 +76,34 @@ object ExtensionLoader {
     private fun loadExtensionsFromClass(
         classLoader: PathClassLoader,
         className: String,
-        context: Context
+        context: Context,
+        pluginPackageName: String? = null
     ): List<KimeExtension> {
         return try {
-            Log.d(TAG, "Loading class: $className")
-            
             val clazz = classLoader.loadClass(className)
             
             if (!KimeExtensionFactory::class.java.isAssignableFrom(clazz)) {
-                Log.e(TAG, "Class $className does not implement KimeExtensionFactory")
                 return emptyList()
             }
             
             val factory = clazz.getDeclaredConstructor().newInstance() as KimeExtensionFactory
             val extensions = factory.createExtensions()
             
-            Log.d(TAG, "Created ${extensions.size} extensions from factory")
-            
             extensions.map { extension ->
                 try {
-                    val initSuccess = extension.initialize(context)
+                    val pluginContext = if (pluginPackageName != null && pluginPackageName != context.packageName) {
+                        context.createPackageContext(
+                            pluginPackageName,
+                            Context.CONTEXT_INCLUDE_CODE or Context.CONTEXT_IGNORE_SECURITY
+                        )
+                    } else {
+                        context
+                    }
+                    
+                    val initSuccess = extension.initialize(pluginContext)
                     if (initSuccess) {
-                        Log.d(TAG, "Extension ${extension.id} initialized successfully")
                         extension
                     } else {
-                        Log.e(TAG, "Extension ${extension.id} initialization failed")
                         extension.release()
                         null
                     }
@@ -134,9 +124,6 @@ object ExtensionLoader {
         
         val pm = context.packageManager
         
-        // 通过 Intent Filter 查找插件（类似 fcitx-android 方案）
-        Log.d(TAG, "Querying packages with intent: $EXTENSION_ACTION")
-        
         val intent = Intent(EXTENSION_ACTION)
         val resolveInfos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             pm.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(0))
@@ -144,11 +131,8 @@ object ExtensionLoader {
             pm.queryIntentActivities(intent, 0)
         }
         
-        Log.d(TAG, "Found ${resolveInfos.size} packages with plugin intent")
-        
         resolveInfos.forEach { resolveInfo ->
             val packageName = resolveInfo.activityInfo.packageName
-            Log.d(TAG, "Found plugin package: $packageName")
             
             try {
                 val pkgInfo = pm.getPackageInfo(packageName, PACKAGE_FLAGS)
@@ -162,7 +146,6 @@ object ExtensionLoader {
             }
         }
         
-        Log.d(TAG, "Total extensions loaded: ${extensions.size}")
         return extensions
     }
     
@@ -171,13 +154,11 @@ object ExtensionLoader {
         
         val extDir = File(context.filesDir, "extensions")
         if (!extDir.exists()) {
-            Log.d(TAG, "Extensions directory does not exist")
             return emptyList()
         }
         
         extDir.listFiles()?.forEach { file ->
             if (file.isFile && file.name.endsWith(".apk")) {
-                Log.d(TAG, "Loading extension from private dir: ${file.absolutePath}")
                 extensions.addAll(loadExtensionsFromApk(context, file.absolutePath))
             }
         }

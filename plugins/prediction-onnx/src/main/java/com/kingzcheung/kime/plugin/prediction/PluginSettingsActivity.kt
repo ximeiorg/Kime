@@ -1,0 +1,42 @@
+package com.kingzcheung.kime.plugin.prediction
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Color
+import com.kingzcheung.kime.plugin.prediction.ui.PredictionSettingsScreen
+
+class PluginSettingsActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        
+        setContent {
+            val darkTheme = isSystemInDarkTheme()
+            
+            MaterialTheme(
+                colorScheme = if (darkTheme) {
+                    darkColorScheme(
+                        primary = Color(0xFF81D4FA),
+                        secondary = Color(0xFF81D4FA),
+                        tertiary = Color(0xFF81D4FA)
+                    )
+                } else {
+                    lightColorScheme(
+                        primary = Color(0xFF0288D1),
+                        secondary = Color(0xFF0288D1),
+                        tertiary = Color(0xFF0288D1)
+                    )
+                }
+            ) {
+                PredictionSettingsScreen(
+                    onNavigateBack = { finish() }
+                )
+            }
+        }
+    }
+}

@@ -6,8 +6,6 @@ import com.kingzcheung.kime.plugin.api.KimeExtensionFactory
 class BuiltinExtensionFactory : KimeExtensionFactory {
     
     override fun createExtensions(): List<KimeExtension> {
-        return listOf(
-            SpeechToTextExtension()
-        )
+        return emptyList()
     }
 }

@@ -39,8 +39,6 @@ import com.kingzcheung.kime.settings.SettingsPreferences
 import com.kingzcheung.kime.ui.KeysConfigHelper
 import com.kingzcheung.kime.ui.theme.KimeTheme
 import com.kingzcheung.kime.ui.KeyboardView
-import com.kingzcheung.kime.association.AssociationManager
-import com.kingzcheung.kime.association.ModelDownloadManager
 import com.kingzcheung.kime.plugin.ExtensionManager
 import com.kingzcheung.kime.plugin.api.ExtensionType
 import com.kingzcheung.kime.plugin.api.ExtensionInput
@@ -207,17 +205,12 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         initAssociationEngine()
     }
     
-    /**
-     * 初始化联想引擎（仅在 onCreate 时检查）
+/**
+     * 初始化插件系统（包括联想插件）
      */
     private fun initAssociationEngine() {
-        val enabled = SettingsPreferences.isAssociationEnabled(this)
-        Log.i(TAG, "initAssociationEngine: enabled=$enabled")
-        
-        if (!enabled) {
-            Log.i(TAG, "Association feature disabled")
-            return
-        }
+        // 初始化文件日志系统
+        com.kingzcheung.kime.util.FileLogger.init(this)
         
         if (!ExtensionManager.isInitialized()) {
             Log.i(TAG, "Initializing ExtensionManager...")
@@ -232,17 +225,68 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     }
     
     /**
-     * 检查并初始化联想引擎（支持运行时动态开启）
+     * 检查并初始化插件系统
      */
     private fun checkAndInitializeAssociationEngine() {
-        val enabled = SettingsPreferences.isAssociationEnabled(this)
+        // 初始化文件日志系统
+        if (!com.kingzcheung.kime.util.FileLogger.isInitialized()) {
+            com.kingzcheung.kime.util.FileLogger.init(this)
+        }
         
-        if (enabled && !ExtensionManager.isInitialized()) {
-            Log.i(TAG, "Association enabled in settings, initializing now...")
+        if (!ExtensionManager.isInitialized()) {
+            Log.i(TAG, "ExtensionManager not initialized, initializing now...")
             ExtensionManager.initialize(this)
-        } else if (!enabled && ExtensionManager.isInitialized()) {
-            Log.i(TAG, "Association disabled in settings, releasing extensions...")
-            ExtensionManager.release()
+        }
+    }
+    
+    /**
+     * 从插件获取联想词
+     */
+    private fun getPredictionFromPlugin(contextText: String) {
+        if (contextText.isEmpty()) {
+            uiState.value = uiState.value.copy(associationCandidates = emptyArray())
+            return
+        }
+        
+        // 检查是否有启用的联想插件
+        val enabledPlugins = ExtensionManager.getExtensionsByType(ExtensionType.PREDICTION)
+            .filter { SettingsPreferences.isPluginEnabled(this, it.id) }
+        
+        Log.d(TAG, "getPredictionFromPlugin: ${enabledPlugins.size} enabled plugins")
+        
+        if (enabledPlugins.isEmpty()) {
+            Log.d(TAG, "No enabled prediction plugins, clearing candidates")
+            uiState.value = uiState.value.copy(associationCandidates = emptyArray())
+            return
+        }
+        
+serviceScope.launch {
+            try {
+                val input = ExtensionInput(text = contextText, topK = 5)
+                val results = ExtensionManager.process(ExtensionType.PREDICTION, input, this@KimeInputMethodService)
+                
+                val candidates = mutableListOf<String>()
+                results.forEach { result ->
+                    when (result) {
+                        is ExtensionResult.Text -> candidates.addAll(result.candidates)
+                        is ExtensionResult.Error -> Log.e(TAG, "Plugin error: ${result.message}")
+                        is ExtensionResult.Emojis -> {} // 不处理表情
+                    }
+                }
+                
+                Log.d(TAG, "getPredictionFromPlugin: got ${candidates.size} candidates")
+                
+                withContext(Dispatchers.Main) {
+                    uiState.value = uiState.value.copy(
+                        associationCandidates = candidates.take(5).toTypedArray()
+                    )
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to get prediction from plugin", e)
+                withContext(Dispatchers.Main) {
+                    uiState.value = uiState.value.copy(associationCandidates = emptyArray())
+                }
+            }
         }
     }
     
@@ -494,10 +538,11 @@ if (ExtensionManager.hasExtensionsOfType(ExtensionType.PREDICTION) && inputText.
               try {
                   Log.d(TAG, "Predicting association for lastCommittedText='$lastCommittedText'")
                   
-                  val result = ExtensionManager.processFirst(
-                      ExtensionType.PREDICTION,
-                      ExtensionInput(text = lastCommittedText, topK = 10)
-                  )
+val result = ExtensionManager.processFirst(
+                            type = ExtensionType.PREDICTION,
+                            input = ExtensionInput(text = lastCommittedText, topK = 5),
+                            context = this@KimeInputMethodService
+                        )
                   
                   val candidates = when (result) {
                       is ExtensionResult.Text -> result.candidates.toTypedArray()
@@ -866,21 +911,23 @@ patch:
         }
     }
 
-    private fun commitText(text: String) {
+private fun commitText(text: String) {
         currentInputConnection?.commitText(text, 1)
-        if (text.isNotEmpty()) {
-            lastCommittedText += text
-            if (lastCommittedText.length > 20) {
-                lastCommittedText = lastCommittedText.takeLast(20)
-            }
-            
-            if (ExtensionManager.hasExtensionsOfType(ExtensionType.PREDICTION)) {
-                serviceScope.launch {
-                    val predictionExt = ExtensionManager.getExtensionsByType(ExtensionType.PREDICTION).firstOrNull()
-                    predictionExt?.saveLearnedData()
-                }
+        lastCommittedText = text
+        
+        // 调用插件学习用户输入
+        serviceScope.launch {
+            try {
+                ExtensionManager.getExtensionsByType(ExtensionType.PREDICTION)
+                    .filter { SettingsPreferences.isPluginEnabled(this@KimeInputMethodService, it.id) }
+                    .forEach { it.learn(text) }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to learn from plugin", e)
             }
         }
+        
+        // 获取联想词
+        getPredictionFromPlugin(text)
     }
     
     /**
