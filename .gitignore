@@ -15,6 +15,11 @@
 .externalNativeBuild
 .cxx
 local.properties
+signing-key-base64.txt
+# APK签名密钥文件（不要提交到Git）
+*.keystore
+*.jks
+keystore-base64.txt
 
 # librime and its dependencies
 app/src/main/jni/librime/
