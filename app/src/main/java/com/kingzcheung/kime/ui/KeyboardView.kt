@@ -59,6 +59,7 @@ fun KeyboardView(
     onMixedInput: (() -> Unit)? = null,
     onHideKeyboard: (() -> Unit)? = null,
     onSwitchKeyboard: (() -> Unit)? = null,
+    onCommitImage: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var isShifted by remember { mutableStateOf(false) }
@@ -178,6 +179,7 @@ CandidateBar(
                                 onClipboardSelect?.invoke(emoji)
                             }
                         },
+                        onImageEmojiSelect = onCommitImage,
                         onBack = { showEmoji = false },
                         backgroundColor = candidateBarBg,
                         textColor = keyTextColor,
