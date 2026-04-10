@@ -41,7 +41,7 @@ object ExtensionLoader {
             val classLoader = PathClassLoader(apkPath, context.classLoader)
             
             classNames.flatMap { className ->
-                loadExtensionsFromClass(classLoader, className, context, packageInfo.packageName)
+                loadExtensionsFromClass(classLoader, className, context, packageInfo.packageName, apkPath)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load extensions from APK: $apkPath", e)
@@ -77,7 +77,8 @@ object ExtensionLoader {
         classLoader: PathClassLoader,
         className: String,
         context: Context,
-        pluginPackageName: String? = null
+        pluginPackageName: String? = null,
+        apkPath: String? = null
     ): List<KimeExtension> {
         return try {
             val clazz = classLoader.loadClass(className)
@@ -100,7 +101,7 @@ object ExtensionLoader {
                         context
                     }
                     
-                    val initSuccess = extension.initialize(pluginContext)
+                    val initSuccess = extension.initialize(pluginContext, apkPath)
                     if (initSuccess) {
                         extension
                     } else {

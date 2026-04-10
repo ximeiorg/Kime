@@ -164,7 +164,7 @@ object ExtensionManager {
             val factory = BuiltinExtensionFactory()
             factory.createExtensions().map { extension ->
                 try {
-                    val initSuccess = extension.initialize(context)
+                    val initSuccess = extension.initialize(context, null)
                     if (initSuccess) {
                         Log.d(TAG, "Builtin extension ${extension.id} initialized")
                         extension
