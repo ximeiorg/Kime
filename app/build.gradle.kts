@@ -51,7 +51,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true  // 启用代码混淆和压缩
+            isShrinkResources = true  // 启用资源压缩
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -112,9 +113,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    
-    // ONNX Runtime
-    implementation(libs.onnxruntime.android)
     
     // Jetpack Compose
     implementation(platform(libs.androidx.compose.bom))

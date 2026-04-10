@@ -235,11 +235,13 @@ fun EmojiKeyboardLayout(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 if (currentCategory.isPlugin && currentCategory.emojiItems != null) {
-                    val columns = 4
+                    val hasImages = currentCategory.emojiItems.any { it.imageUrl != null }
+                    val columns = if (hasImages) 6 else 8
+                    
                     currentCategory.emojiItems.chunked(columns).forEach { rowItems ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             rowItems.forEach { item ->
                                 PluginEmojiButton(
@@ -272,14 +274,14 @@ fun EmojiKeyboardLayout(
                                     },
                                     modifier = Modifier
                                         .weight(1f)
-                                        .height(80.dp)
+                                        .height(if (hasImages) 60.dp else 40.dp)
                                 )
                             }
                             repeat(columns - rowItems.size) {
                                 Spacer(modifier = Modifier.weight(1f))
                             }
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
                     }
                 } else {
                     val emojis = currentCategory.emojis
@@ -411,44 +413,31 @@ fun PluginEmojiButton(
     
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(4.dp))
             .background(Color.LightGray.copy(alpha = 0.1f))
             .clickable(onClick = onClick)
-            .padding(4.dp),
+            .padding(2.dp),
         contentAlignment = Alignment.Center
     ) {
         if (emojiItem.imageUrl != null) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(emojiItem.imageUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = emojiItem.displayText,
-                    modifier = Modifier
-                        .size(48.dp)
-                        .padding(2.dp),
-                    contentScale = ContentScale.Fit
-                )
-                
-                Text(
-                    text = emojiItem.displayText,
-                    modifier = Modifier.padding(top = 2.dp),
-                    fontSize = 9.sp,
-                    textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    color = Color.DarkGray.copy(alpha = 0.7f)
-                )
-            }
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(emojiItem.imageUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = emojiItem.displayText,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(2.dp),
+                contentScale = ContentScale.Fit
+            )
         } else {
             Text(
                 text = emojiItem.displayText,
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center
+                fontSize = 11.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                softWrap = false
             )
         }
     }

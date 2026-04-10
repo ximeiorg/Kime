@@ -48,7 +48,7 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
         
-      - name: Build Release APK
+      - name: Build Release APKs
         run: ./gradlew assembleRelease --no-daemon
         
       - name: Get version from tag
@@ -69,7 +69,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
         
       - name: List APKs
-        run: ls -la app/build/outputs/apk/release/
+        run: find . -name "*.apk" -path "*/build/outputs/apk/*" -type f -exec ls -lh {} \;
         
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -78,16 +78,25 @@ jobs:
           body: |
             ## Kime ${{ steps.get_version.outputs.VERSION }}
             
-            ### 下载
+            ### 主程序下载
             选择对应架构的APK：
             - **arm64-v8a**: 适用于大多数现代手机
             - **armeabi-v7a**: 适用于旧款32位手机
             - **x86_64**: 适用于模拟器
             - **universal**: 包含所有架构，体积较大
             
+            ### 插件下载
+            - **emoji-sticker**: 恶搞兔表情包插件
+            - **kaomoji**: 颜文字表情包插件
+            - **prediction-onnx**: 智能联想插件
+            
             ### 更新说明
             ${{ steps.changelog.outputs.CHANGELOG }}
-          files: app/build/outputs/apk/release/*.apk
+          files: |
+            app/build/outputs/apk/release/*.apk
+            plugins/emoji-sticker/build/outputs/apk/release/*.apk
+            plugins/kaomoji/build/outputs/apk/release/*.apk
+            plugins/prediction-onnx/build/outputs/apk/release/*.apk
           draft: false
           prerelease: false
         env:
