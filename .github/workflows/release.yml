@@ -48,8 +48,56 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
         
-      - name: Build Release APKs
+      - name: Build Release APKs (Unsigned)
         run: ./gradlew assembleRelease --no-daemon
+        
+      - name: Sign Main App APKs
+        uses: r0adkll/sign-android-release@v1
+        id: sign_main_app
+        with:
+          releaseDirectory: app/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
+          
+      - name: Sign Emoji Sticker Plugin APKs
+        uses: r0adkll/sign-android-release@v1
+        id: sign_emoji_plugin
+        with:
+          releaseDirectory: plugins/emoji-sticker/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
+          
+      - name: Sign Kaomoji Plugin APKs
+        uses: r0adkll/sign-android-release@v1
+        id: sign_kaomoji_plugin
+        with:
+          releaseDirectory: plugins/kaomoji/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
+          
+      - name: Sign Prediction Plugin APKs
+        uses: r0adkll/sign-android-release@v1
+        id: sign_prediction_plugin
+        with:
+          releaseDirectory: plugins/prediction-onnx/build/outputs/apk/release
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
         
       - name: Get version from tag
         id: get_version
@@ -68,8 +116,16 @@ jobs:
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
         
-      - name: List APKs
-        run: find . -name "*.apk" -path "*/build/outputs/apk/*" -type f -exec ls -lh {} \;
+      - name: List Signed APKs
+        run: |
+          echo "Main App APKs:"
+          echo "${{ steps.sign_main_app.outputs.signedReleaseFiles }}" | tr ':' '\n'
+          echo "\nEmoji Plugin APKs:"
+          echo "${{ steps.sign_emoji_plugin.outputs.signedReleaseFiles }}" | tr ':' '\n'
+          echo "\nKaomoji Plugin APKs:"
+          echo "${{ steps.sign_kaomoji_plugin.outputs.signedReleaseFiles }}" | tr ':' '\n'
+          echo "\nPrediction Plugin APKs:"
+          echo "${{ steps.sign_prediction_plugin.outputs.signedReleaseFiles }}" | tr ':' '\n'
         
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -93,10 +149,10 @@ jobs:
             ### 更新说明
             ${{ steps.changelog.outputs.CHANGELOG }}
           files: |
-            app/build/outputs/apk/release/*.apk
-            plugins/emoji-sticker/build/outputs/apk/release/*.apk
-            plugins/kaomoji/build/outputs/apk/release/*.apk
-            plugins/prediction-onnx/build/outputs/apk/release/*.apk
+            ${{ steps.sign_main_app.outputs.signedReleaseFiles }}
+            ${{ steps.sign_emoji_plugin.outputs.signedReleaseFiles }}
+            ${{ steps.sign_kaomoji_plugin.outputs.signedReleaseFiles }}
+            ${{ steps.sign_prediction_plugin.outputs.signedReleaseFiles }}
           draft: false
           prerelease: false
         env:
