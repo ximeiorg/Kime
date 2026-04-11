@@ -9,7 +9,7 @@ class KaomojiPlugin : KimeExtension {
     
     override val id: String = "kaomoji_plugin"
     override val name: String = "颜文字表情包"
-    override val description: String = "提供390+个日式颜文字表情"
+    override val description: String = "提供精选日式颜文字表情"
     override val type: ExtensionType = ExtensionType.EMOJI
     override val version: String = "1.0.0"
     
