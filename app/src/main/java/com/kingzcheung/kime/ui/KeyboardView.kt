@@ -108,7 +108,15 @@ CandidateBar(
                         showMenu = false
                     }
                 },
-                onHideKeyboard = onHideKeyboard,
+onHideKeyboard = {
+                        onHideKeyboard?.invoke()
+                        keyboardMode = KeyboardMode.FULL
+                        showMenu = false
+                        showCandidatePage = false
+                        showClipboard = false
+                        showEmoji = false
+                        isShifted = false
+                    },
                 onShowMoreCandidates = { showCandidatePage = true },
                 showClipboardTabs = showClipboard,
                 clipboardTab = clipboardTab,
@@ -226,7 +234,16 @@ CandidateBar(
                                 keyTextColor = keyTextColor,
                                 specialKeyBackgroundColor = specialKeyBgColor,
                                 showBottomButtons = showBottomButtons,
-                                onHideKeyboard = onHideKeyboard,
+onHideKeyboard = {
+                        onHideKeyboard?.invoke()
+                        keyboardMode = KeyboardMode.FULL
+                        showMenu = false
+                        showCandidatePage = false
+                        showClipboard = false
+                        showEmoji = false
+                        isShifted = false
+                        
+                    },
                                 onSwitchKeyboard = onSwitchKeyboard,
                                 onKeyPressDown = onKeyPressDown
                             )
