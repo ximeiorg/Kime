@@ -973,7 +973,7 @@ fun PluginSettingsContent(
 ) {
     val context = LocalContext.current
     val extension = remember(pluginId) {
-        ExtensionManager.getExtensionById(pluginId)
+        ExtensionManager.getPluginById(pluginId)
     }
     
     if (extension == null) {

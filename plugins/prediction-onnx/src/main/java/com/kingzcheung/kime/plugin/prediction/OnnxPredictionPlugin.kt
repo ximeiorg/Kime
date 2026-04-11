@@ -4,21 +4,20 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.kingzcheung.kime.association.AssociationManager
-import com.kingzcheung.kime.plugin.api.ExtensionInput
-import com.kingzcheung.kime.plugin.api.ExtensionResult
-import com.kingzcheung.kime.plugin.api.ExtensionType
-import com.kingzcheung.kime.plugin.api.KimeExtension
+import com.kingzcheung.kime.plugin.api.PluginType
+import com.kingzcheung.kime.plugin.api.PredictionCandidate
+import com.kingzcheung.kime.plugin.api.PredictionPlugin
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import java.io.File
 
-class OnnxPredictionPlugin : KimeExtension {
+class OnnxPredictionPlugin : PredictionPlugin {
     
     override val id = "plugin_prediction_onnx"
     override val name = "ONNX 联想词插件"
     override val description = "基于 ONNX Runtime 的智能联想词预测，支持用户输入学习"
-    override val type = ExtensionType.PREDICTION
     override val version = "1.0.0"
+    override val type = PluginType.PREDICTION
     
     private var isInitialized = false
     
@@ -58,29 +57,24 @@ class OnnxPredictionPlugin : KimeExtension {
         }
     }
     
-    override suspend fun process(input: ExtensionInput): ExtensionResult {
+    override suspend fun predict(inputText: String, topK: Int): List<PredictionCandidate> {
         if (!isInitialized) {
-            return ExtensionResult.Error("Plugin not initialized")
+            Log.e(TAG, "Plugin not initialized")
+            return emptyList()
         }
         
-        val text = input.text
-        if (text.isNullOrEmpty()) {
-            return ExtensionResult.Text(emptyList())
+        if (inputText.isEmpty()) {
+            return emptyList()
         }
         
         return try {
-            val candidates = AssociationManager.predict(text, input.topK)
-            
-            if (candidates.isEmpty()) {
-                return ExtensionResult.Text(emptyList())
+            val candidates = AssociationManager.predict(inputText, topK)
+            candidates.map { candidate ->
+                PredictionCandidate(candidate.text, candidate.score)
             }
-            
-            val texts = candidates.map { it.text }
-            Log.d(TAG, "Predicted ${texts.size} candidates: $texts")
-            ExtensionResult.Text(texts)
         } catch (e: Exception) {
             Log.e(TAG, "Prediction failed", e)
-            ExtensionResult.Error("Prediction failed: ${e.message}", e)
+            emptyList()
         }
     }
     
@@ -107,7 +101,6 @@ class OnnxPredictionPlugin : KimeExtension {
     override fun hasSettings(): Boolean = true
     
     override fun createSettingsIntent(context: Context): Intent {
-        // 关键：使用插件的包名创建 Intent
         val intent = Intent()
         intent.setClassName(
             "com.kingzcheung.kime.plugin.prediction",

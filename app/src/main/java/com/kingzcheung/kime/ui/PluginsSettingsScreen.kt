@@ -20,8 +20,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kingzcheung.kime.plugin.ExtensionManager
-import com.kingzcheung.kime.plugin.api.ExtensionType
-import com.kingzcheung.kime.plugin.api.KimeExtension
+import com.kingzcheung.kime.plugin.api.PluginMetadata
+import com.kingzcheung.kime.plugin.api.PluginType
 import com.kingzcheung.kime.settings.SettingsPreferences
 import kotlinx.coroutines.launch
 
@@ -34,7 +34,7 @@ fun PluginsSettingsContent(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     
-    var extensions by remember { mutableStateOf<List<KimeExtension>>(emptyList()) }
+    var extensions by remember { mutableStateOf<List<PluginMetadata>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     
@@ -44,7 +44,7 @@ fun PluginsSettingsContent(
         scope.launch {
             try {
                 val initSuccess = ExtensionManager.reload(context)
-                extensions = ExtensionManager.getExtensions()
+                extensions = ExtensionManager.getAllPlugins()
             } catch (e: Exception) {
                 e.printStackTrace()
                 errorMsg = e.message
@@ -192,7 +192,7 @@ fun PluginsSettingsContent(
 
 @Composable
 private fun ExtensionItem(
-    extension: KimeExtension,
+    extension: PluginMetadata,
     onClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -313,18 +313,18 @@ private fun ExtensionItem(
     }
 }
 
-private fun getTypeName(type: ExtensionType): String {
+private fun getTypeName(type: PluginType): String {
     return when (type) {
-        ExtensionType.PREDICTION -> "联想词"
-        ExtensionType.SPEECH -> "语音转文字"
-        ExtensionType.EMOJI -> "表情推荐"
+        PluginType.PREDICTION -> "联想词"
+        PluginType.SPEECH -> "语音转文字"
+        PluginType.EMOJI -> "表情推荐"
     }
 }
 
-private fun getTypeIcon(type: ExtensionType): ImageVector {
+private fun getTypeIcon(type: PluginType): ImageVector {
     return when (type) {
-        ExtensionType.PREDICTION -> Icons.Default.AutoAwesome
-        ExtensionType.SPEECH -> Icons.Default.Mic
-        ExtensionType.EMOJI -> Icons.Default.Face
+        PluginType.PREDICTION -> Icons.Default.AutoAwesome
+        PluginType.SPEECH -> Icons.Default.Mic
+        PluginType.EMOJI -> Icons.Default.Face
     }
 }

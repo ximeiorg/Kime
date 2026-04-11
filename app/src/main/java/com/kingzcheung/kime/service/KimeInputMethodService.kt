@@ -46,9 +46,6 @@ import com.kingzcheung.kime.ui.KeysConfigHelper
 import com.kingzcheung.kime.ui.theme.KimeTheme
 import com.kingzcheung.kime.ui.KeyboardView
 import com.kingzcheung.kime.plugin.ExtensionManager
-import com.kingzcheung.kime.plugin.api.ExtensionType
-import com.kingzcheung.kime.plugin.api.ExtensionInput
-import com.kingzcheung.kime.plugin.api.ExtensionResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -222,10 +219,10 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             ExtensionManager.initialize(this)
         }
         
-        if (ExtensionManager.hasExtensionsOfType(ExtensionType.PREDICTION)) {
-            Log.i(TAG, "Prediction extensions available")
+        if (ExtensionManager.hasPredictionPlugins(this)) {
+            Log.i(TAG, "Prediction plugins available")
         } else {
-            Log.w(TAG, "No prediction extensions available")
+            Log.w(TAG, "No prediction plugins available")
         }
     }
     
@@ -247,52 +244,28 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     /**
      * 从插件获取联想词
      */
-    private fun getPredictionFromPlugin(contextText: String) {
+private fun getPredictionFromPlugin(contextText: String) {
         if (contextText.isEmpty()) {
             uiState.value = uiState.value.copy(associationCandidates = emptyArray())
             return
         }
         
-        // 检查是否有启用的联想插件
-        val enabledPlugins = ExtensionManager.getExtensionsByType(ExtensionType.PREDICTION)
-            .filter { SettingsPreferences.isPluginEnabled(this, it.id) }
-        
-        Log.d(TAG, "getPredictionFromPlugin: ${enabledPlugins.size} enabled plugins")
-        
-        if (enabledPlugins.isEmpty()) {
-            Log.d(TAG, "No enabled prediction plugins, clearing candidates")
-            uiState.value = uiState.value.copy(associationCandidates = emptyArray())
-            return
-        }
-        
-serviceScope.launch {
+        serviceScope.launch {
             try {
-                val input = ExtensionInput(text = contextText, topK = 5)
-                val results = ExtensionManager.process(ExtensionType.PREDICTION, input, this@KimeInputMethodService)
+                val candidates = ExtensionManager.predict(this@KimeInputMethodService, contextText, 5)
                 
-                val candidates = mutableListOf<String>()
-                results.forEach { result ->
-                    when (result) {
-                        is ExtensionResult.Text -> candidates.addAll(result.candidates)
-                        is ExtensionResult.Error -> Log.e(TAG, "Plugin error: ${result.message}")
-                        is ExtensionResult.Emojis -> {} // 不处理表情
-                    }
-                }
-                
-                Log.d(TAG, "getPredictionFromPlugin: got ${candidates.size} candidates")
+                Log.d(TAG, "Prediction candidates: ${candidates.joinToString()}")
                 
                 withContext(Dispatchers.Main) {
-                    uiState.value = uiState.value.copy(
-                        associationCandidates = candidates.take(5).toTypedArray()
-                    )
+                    uiState.value = uiState.value.copy(associationCandidates = candidates.toTypedArray())
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to get prediction from plugin", e)
+                Log.e(TAG, "Prediction failed", e)
                 withContext(Dispatchers.Main) {
                     uiState.value = uiState.value.copy(associationCandidates = emptyArray())
                 }
             }
-        }
+}
     }
     
     /**
@@ -547,31 +520,18 @@ serviceScope.launch {
          associationCandidates = emptyArray()
      )
      
-     // 联想预测只在已上屏文本存在且没有正在输入编码时触发
+// 联想预测只在已上屏文本存在且没有正在输入编码时触发
      // 正确逻辑：只有上屏后才应该显示联想词
-if (ExtensionManager.hasExtensionsOfType(ExtensionType.PREDICTION) && inputText.isEmpty() && lastCommittedText.isNotEmpty()) {
+ if (ExtensionManager.hasPredictionPlugins(this) && inputText.isEmpty() && lastCommittedText.isNotEmpty()) {
           serviceScope.launch {
               try {
                   Log.d(TAG, "Predicting association for lastCommittedText='$lastCommittedText'")
                   
-val result = ExtensionManager.processFirst(
-                            type = ExtensionType.PREDICTION,
-                            input = ExtensionInput(text = lastCommittedText, topK = 5),
-                            context = this@KimeInputMethodService
-                        )
-                  
-                  val candidates = when (result) {
-                      is ExtensionResult.Text -> result.candidates.toTypedArray()
-                      is ExtensionResult.Error -> {
-                          Log.e(TAG, "Prediction error: ${result.message}")
-                          emptyArray()
-                      }
-                      else -> emptyArray()
-                  }
+                  val candidates = ExtensionManager.predict(this@KimeInputMethodService, lastCommittedText, 5)
                   
                   Log.d(TAG, "Association candidates: ${candidates.joinToString()}")
                   withContext(Dispatchers.Main) {
-                      uiState.value = uiState.value.copy(associationCandidates = candidates)
+                      uiState.value = uiState.value.copy(associationCandidates = candidates.toTypedArray())
                   }
               } catch (e: Exception) {
                   Log.e(TAG, "Association prediction failed", e)
@@ -765,13 +725,13 @@ val result = ExtensionManager.processFirst(
             val committedText = rimeEngine.commit()
             if (committedText.isNotEmpty()) {
                 // 学习用户输入
-                if (ExtensionManager.hasExtensionsOfType(ExtensionType.PREDICTION) && selectedCandidate != null) {
+                if (ExtensionManager.hasPredictionPlugins(this@KimeInputMethodService) && selectedCandidate != null) {
                     if (lastCommittedText.isNotEmpty()) {
-                        val predictionExt = ExtensionManager.getExtensionsByType(ExtensionType.PREDICTION).firstOrNull()
+                        val predictionPlugin = ExtensionManager.getEnabledPredictionPlugins(this@KimeInputMethodService).firstOrNull()
                         
-                        if (predictionExt != null) {
+                        if (predictionPlugin != null) {
                             val lastChar = lastCommittedText.last().toString()
-                            predictionExt.learn(lastChar + selectedCandidate)
+                            predictionPlugin.learn(lastChar + selectedCandidate)
                             Log.d(TAG, "Learned: '$lastChar' + '$selectedCandidate'")
                         }
                     }
@@ -934,8 +894,7 @@ private fun commitText(text: String) {
         // 调用插件学习用户输入
         serviceScope.launch {
             try {
-                ExtensionManager.getExtensionsByType(ExtensionType.PREDICTION)
-                    .filter { SettingsPreferences.isPluginEnabled(this@KimeInputMethodService, it.id) }
+                ExtensionManager.getEnabledPredictionPlugins(this@KimeInputMethodService)
                     .forEach { it.learn(text) }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to learn from plugin", e)

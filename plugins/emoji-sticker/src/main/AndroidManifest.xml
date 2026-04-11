@@ -23,7 +23,7 @@
         </activity>
         
         <meta-data
-            android:name="com.kingzcheung.kime.extension.factory.class"
+            android:name="com.kingzcheung.kime.plugin.factory.class"
             android:value="com.kingzcheung.kime.plugin.emoji.EmojiPluginFactory" />
         
     </application>

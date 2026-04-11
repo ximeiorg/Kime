@@ -1,7 +1,7 @@
 package com.kingzcheung.kime.plugin.api
 
-enum class ExtensionType {
+enum class PluginType {
     PREDICTION,
-    SPEECH,
-    EMOJI
+    EMOJI,
+    SPEECH
 }

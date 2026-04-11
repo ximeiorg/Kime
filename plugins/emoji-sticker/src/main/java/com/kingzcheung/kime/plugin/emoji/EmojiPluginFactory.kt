@@ -1,13 +1,17 @@
 package com.kingzcheung.kime.plugin.emoji
 
-import com.kingzcheung.kime.plugin.api.KimeExtension
-import com.kingzcheung.kime.plugin.api.KimeExtensionFactory
+import com.kingzcheung.kime.plugin.api.EmojiPlugin
+import com.kingzcheung.kime.plugin.api.PluginFactory
+import com.kingzcheung.kime.plugin.api.PredictionPlugin
+import com.kingzcheung.kime.plugin.api.SpeechPlugin
 
-class EmojiPluginFactory : KimeExtensionFactory {
+class EmojiPluginFactory : PluginFactory {
     
-    override fun createExtensions(): List<KimeExtension> {
-        return listOf(
-            EmojiStickerPlugin()
-        )
+    override fun createPredictionPlugin(): PredictionPlugin? = null
+    
+    override fun createEmojiPlugin(): EmojiPlugin {
+        return EmojiStickerPlugin()
     }
+    
+    override fun createSpeechPlugin(): SpeechPlugin? = null
 }

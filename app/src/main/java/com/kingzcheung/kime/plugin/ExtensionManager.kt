@@ -2,11 +2,11 @@ package com.kingzcheung.kime.plugin
 
 import android.content.Context
 import android.util.Log
-import com.kingzcheung.kime.plugin.api.ExtensionType
-import com.kingzcheung.kime.plugin.api.KimeExtension
-import com.kingzcheung.kime.plugin.api.ExtensionInput
-import com.kingzcheung.kime.plugin.api.ExtensionResult
-import com.kingzcheung.kime.plugin.builtin.BuiltinExtensionFactory
+import com.kingzcheung.kime.plugin.api.EmojiPlugin
+import com.kingzcheung.kime.plugin.api.PluginMetadata
+import com.kingzcheung.kime.plugin.api.PluginType
+import com.kingzcheung.kime.plugin.api.PredictionPlugin
+import com.kingzcheung.kime.plugin.api.SpeechPlugin
 import com.kingzcheung.kime.settings.SettingsPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,7 +14,9 @@ import kotlinx.coroutines.withContext
 object ExtensionManager {
     private const val TAG = "ExtensionManager"
     
-    private val extensions = mutableListOf<KimeExtension>()
+    private val predictionPlugins = mutableListOf<PredictionPlugin>()
+    private val emojiPlugins = mutableListOf<EmojiPlugin>()
+    private val speechPlugins = mutableListOf<SpeechPlugin>()
     private var isInitialized = false
     
     fun initialize(context: Context): Boolean {
@@ -26,31 +28,34 @@ object ExtensionManager {
         Log.d(TAG, "Initializing ExtensionManager...")
         
         try {
-            val builtinExtensions = loadBuiltinExtensions(context)
-            Log.d(TAG, "Loaded ${builtinExtensions.size} builtin extensions")
-            extensions.addAll(builtinExtensions)
+            val plugins = ExtensionLoader.loadPlugins(context)
             
-            android.util.Log.e(TAG, "About to load installed extensions...")
-            val systemExtensions = ExtensionLoader.loadInstalledExtensions(context)
-            Log.d(TAG, "Loaded ${systemExtensions.size} system extensions")
-            android.util.Log.e(TAG, "Loaded ${systemExtensions.size} system extensions")
-            extensions.addAll(systemExtensions)
-            
-            val privateExtensions = ExtensionLoader.loadExtensionsFromPrivateDir(context)
-            Log.d(TAG, "Loaded ${privateExtensions.size} private extensions")
-            extensions.addAll(privateExtensions)
+            plugins.forEach { plugin ->
+                when (plugin) {
+                    is PredictionPlugin -> {
+                        predictionPlugins.add(plugin)
+                        Log.d(TAG, "Loaded prediction plugin: ${plugin.name}")
+                    }
+                    is EmojiPlugin -> {
+                        emojiPlugins.add(plugin)
+                        Log.d(TAG, "Loaded emoji plugin: ${plugin.name}")
+                    }
+                    is SpeechPlugin -> {
+                        speechPlugins.add(plugin)
+                        Log.d(TAG, "Loaded speech plugin: ${plugin.name}")
+                    }
+                    else -> {
+                        Log.w(TAG, "Unknown plugin type: ${plugin.name}")
+                    }
+                }
+            }
             
             isInitialized = true
-            Log.d(TAG, "ExtensionManager initialized with ${extensions.size} extensions")
-            
-            extensions.forEach { ext ->
-                Log.d(TAG, "  - ${ext.id}: ${ext.name} (${ext.type})")
-            }
+            Log.d(TAG, "ExtensionManager initialized: ${predictionPlugins.size} prediction, ${emojiPlugins.size} emoji, ${speechPlugins.size} speech")
             
             return true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize ExtensionManager", e)
-            android.util.Log.e(TAG, "Failed to initialize ExtensionManager: ${e.message}")
             return false
         }
     }
@@ -64,172 +69,184 @@ object ExtensionManager {
     }
     
     fun scanNewPlugins(context: Context): Boolean {
-        val systemExtensions = ExtensionLoader.loadInstalledExtensions(context)
-        val privateExtensions = ExtensionLoader.loadExtensionsFromPrivateDir(context)
+        val plugins = ExtensionLoader.loadPlugins(context)
         
-        val currentPluginIds = (systemExtensions + privateExtensions).map { it.id }.toSet()
-        val builtinIds = extensions.filter { it.id.startsWith("builtin_") }.map { it.id }.toSet()
+        val currentPredictionIds = plugins.filterIsInstance<PredictionPlugin>().map { it.id }.toSet()
+        val currentEmojiIds = plugins.filterIsInstance<EmojiPlugin>().map { it.id }.toSet()
+        val currentSpeechIds = plugins.filterIsInstance<SpeechPlugin>().map { it.id }.toSet()
         
-        val removedExtensions = extensions.filter { 
-            it.id !in currentPluginIds && it.id !in builtinIds 
+        predictionPlugins.filter { it.id !in currentPredictionIds }.forEach { plugin ->
+            plugin.release()
+            predictionPlugins.remove(plugin)
+            Log.d(TAG, "Removed prediction plugin: ${plugin.id}")
         }
         
-        if (removedExtensions.isNotEmpty()) {
-            removedExtensions.forEach { ext ->
-                try {
-                    ext.release()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to release removed extension ${ext.id}", e)
-                }
-                extensions.remove(ext)
-                Log.d(TAG, "Removed uninstalled plugin: ${ext.id}")
-            }
+        emojiPlugins.filter { it.id !in currentEmojiIds }.forEach { plugin ->
+            plugin.release()
+            emojiPlugins.remove(plugin)
+            Log.d(TAG, "Removed emoji plugin: ${plugin.id}")
         }
         
-        val existingIds = extensions.map { it.id }.toSet()
-        val newExtensions = (systemExtensions + privateExtensions).filter { it.id !in existingIds }
-        
-        if (newExtensions.isNotEmpty()) {
-            extensions.addAll(newExtensions)
-            Log.d(TAG, "Found ${newExtensions.size} new plugins")
-            newExtensions.forEach { ext ->
-                Log.d(TAG, "  - New: ${ext.id}: ${ext.name}")
-            }
+        speechPlugins.filter { it.id !in currentSpeechIds }.forEach { plugin ->
+            plugin.release()
+            speechPlugins.remove(plugin)
+            Log.d(TAG, "Removed speech plugin: ${plugin.id}")
         }
         
-        if (removedExtensions.isEmpty() && newExtensions.isEmpty()) {
-            Log.d(TAG, "No plugin changes detected")
+        plugins.filterIsInstance<PredictionPlugin>().filter { it.id !in predictionPlugins.map { p -> p.id } }.forEach {
+            predictionPlugins.add(it)
+            Log.d(TAG, "Added new prediction plugin: ${it.id}")
+        }
+        
+        plugins.filterIsInstance<EmojiPlugin>().filter { it.id !in emojiPlugins.map { p -> p.id } }.forEach {
+            emojiPlugins.add(it)
+            Log.d(TAG, "Added new emoji plugin: ${it.id}")
+        }
+        
+        plugins.filterIsInstance<SpeechPlugin>().filter { it.id !in speechPlugins.map { p -> p.id } }.forEach {
+            speechPlugins.add(it)
+            Log.d(TAG, "Added new speech plugin: ${it.id}")
         }
         
         return true
     }
     
     fun forceReload(context: Context): Boolean {
-        Log.d(TAG, "Force reloading extensions...")
-        ExtensionLoader.clearAllCachedExtensions()
+        Log.d(TAG, "Force reloading plugins...")
+        ExtensionLoader.clearAllCachedPlugins()
         release()
         return initialize(context)
     }
     
-    fun getExtensions(): List<KimeExtension> = extensions.toList()
+    fun getPredictionPlugins(): List<PredictionPlugin> = predictionPlugins.toList()
     
-    fun getExtensionsByType(type: ExtensionType): List<KimeExtension> {
-        return extensions.filter { it.type == type }
+    fun getEmojiPlugins(): List<EmojiPlugin> = emojiPlugins.toList()
+    
+    fun getSpeechPlugins(): List<SpeechPlugin> = speechPlugins.toList()
+    
+    fun getEnabledPredictionPlugins(context: Context): List<PredictionPlugin> {
+        return predictionPlugins.filter { SettingsPreferences.isPluginEnabled(context, it.id) }
     }
     
-    fun getExtensionById(id: String): KimeExtension? {
-        return extensions.find { it.id == id }
+    fun getEnabledEmojiPlugins(context: Context): List<EmojiPlugin> {
+        return emojiPlugins.filter { SettingsPreferences.isPluginEnabled(context, it.id) }
     }
     
-    suspend fun process(
-        type: ExtensionType,
-        input: ExtensionInput,
-        context: Context? = null
-    ): List<ExtensionResult> = withContext(Dispatchers.Default) {
-        val targetExtensions = getExtensionsByType(type)
+    fun getEnabledSpeechPlugins(context: Context): List<SpeechPlugin> {
+        return speechPlugins.filter { SettingsPreferences.isPluginEnabled(context, it.id) }
+    }
+    
+    fun getPluginById(id: String): PluginMetadata? {
+        return predictionPlugins.find { it.id == id }
+            ?: emojiPlugins.find { it.id == id }
+            ?: speechPlugins.find { it.id == id }
+    }
+    
+    suspend fun predict(
+        context: Context,
+        inputText: String,
+        topK: Int = 5
+    ): List<String> = withContext(Dispatchers.Default) {
+        val enabledPlugins = getEnabledPredictionPlugins(context)
         
-        if (targetExtensions.isEmpty()) {
-            Log.d(TAG, "No extensions found for type: $type")
+        if (enabledPlugins.isEmpty()) {
+            Log.d(TAG, "No enabled prediction plugins")
             return@withContext emptyList()
         }
         
-        // 过滤出已启用的插件
-        val enabledExtensions = if (context != null) {
-            targetExtensions.filter { extension ->
-                val enabled = SettingsPreferences.isPluginEnabled(context, extension.id)
-                Log.d(TAG, "Extension ${extension.id} enabled: $enabled")
-                enabled
-            }
-        } else {
-            Log.w(TAG, "No context provided, skipping enabled check")
-            targetExtensions
-        }
+        val results = mutableListOf<String>()
         
-        if (enabledExtensions.isEmpty()) {
-            Log.d(TAG, "No enabled extensions for type: $type")
-            return@withContext emptyList()
-        }
-        
-        enabledExtensions.map { extension ->
+        enabledPlugins.forEach { plugin ->
             try {
-                Log.d(TAG, "Processing with extension: ${extension.id}")
-                extension.process(input)
+                val candidates = plugin.predict(inputText, topK)
+                results.addAll(candidates.map { it.text })
             } catch (e: Exception) {
-                Log.e(TAG, "Extension ${extension.id} processing failed", e)
-                ExtensionResult.Error("Extension ${extension.id} failed: ${e.message}", e)
+                Log.e(TAG, "Prediction failed for ${plugin.id}", e)
             }
         }
+        
+        results.distinct().take(topK)
     }
     
-    suspend fun processFirst(
-        type: ExtensionType,
-        input: ExtensionInput,
-        context: Context? = null
-    ): ExtensionResult? = withContext(Dispatchers.Default) {
-        val results = process(type, input, context)
-        results.firstOrNull { it !is ExtensionResult.Error }
-    }
-    
-    fun addExtension(extension: KimeExtension) {
-        if (extensions.none { it.id == extension.id }) {
-            extensions.add(extension)
-            Log.d(TAG, "Added extension: ${extension.id}")
-        } else {
-            Log.w(TAG, "Extension ${extension.id} already exists")
+    suspend fun getEmojis(
+        context: Context,
+        category: String? = null,
+        searchText: String? = null,
+        topK: Int = 100
+    ): List<com.kingzcheung.kime.plugin.api.EmojiItem> = withContext(Dispatchers.Default) {
+        val enabledPlugins = getEnabledEmojiPlugins(context)
+        
+        if (enabledPlugins.isEmpty()) {
+            Log.d(TAG, "No enabled emoji plugins")
+            return@withContext emptyList()
         }
-    }
-    
-    fun removeExtension(id: String) {
-        val extension = extensions.find { it.id == id }
-        if (extension != null) {
-            extension.release()
-            extensions.remove(extension)
-            Log.d(TAG, "Removed extension: $id")
+        
+        val results = mutableListOf<com.kingzcheung.kime.plugin.api.EmojiItem>()
+        
+        enabledPlugins.forEach { plugin ->
+            try {
+                val emojis = plugin.getEmojis(category, searchText, topK)
+                results.addAll(emojis)
+            } catch (e: Exception) {
+                Log.e(TAG, "Get emojis failed for ${plugin.id}", e)
+            }
         }
+        
+        results.take(topK)
     }
     
     fun release() {
-        Log.d(TAG, "Releasing all extensions...")
-        extensions.forEach { extension ->
+        Log.d(TAG, "Releasing all plugins...")
+        
+        predictionPlugins.forEach { plugin ->
             try {
-                extension.release()
-                Log.d(TAG, "Released extension: ${extension.id}")
+                plugin.release()
+                Log.d(TAG, "Released prediction plugin: ${plugin.id}")
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to release extension ${extension.id}", e)
+                Log.e(TAG, "Failed to release ${plugin.id}", e)
             }
         }
-        extensions.clear()
+        predictionPlugins.clear()
+        
+        emojiPlugins.forEach { plugin ->
+            try {
+                plugin.release()
+                Log.d(TAG, "Released emoji plugin: ${plugin.id}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to release ${plugin.id}", e)
+            }
+        }
+        emojiPlugins.clear()
+        
+        speechPlugins.forEach { plugin ->
+            try {
+                plugin.release()
+                Log.d(TAG, "Released speech plugin: ${plugin.id}")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to release ${plugin.id}", e)
+            }
+        }
+        speechPlugins.clear()
+        
         isInitialized = false
         Log.d(TAG, "ExtensionManager released")
     }
     
     fun isInitialized(): Boolean = isInitialized
     
-    fun hasExtensionsOfType(type: ExtensionType): Boolean {
-        return getExtensionsByType(type).isNotEmpty()
+    fun hasPredictionPlugins(context: Context): Boolean {
+        return getEnabledPredictionPlugins(context).isNotEmpty()
     }
     
-    private fun loadBuiltinExtensions(context: Context): List<KimeExtension> {
-        return try {
-            val factory = BuiltinExtensionFactory()
-            factory.createExtensions().map { extension ->
-                try {
-                    val initSuccess = extension.initialize(context, null)
-                    if (initSuccess) {
-                        Log.d(TAG, "Builtin extension ${extension.id} initialized")
-                        extension
-                    } else {
-                        Log.w(TAG, "Builtin extension ${extension.id} initialization failed")
-                        null
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to initialize builtin extension ${extension.id}", e)
-                    null
-                }
-            }.filterNotNull()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to load builtin extensions", e)
-            emptyList()
-        }
+    fun hasEmojiPlugins(context: Context): Boolean {
+        return getEnabledEmojiPlugins(context).isNotEmpty()
+    }
+    
+    fun hasSpeechPlugins(context: Context): Boolean {
+        return getEnabledSpeechPlugins(context).isNotEmpty()
+    }
+    
+    fun getAllPlugins(): List<PluginMetadata> {
+        return predictionPlugins + emojiPlugins + speechPlugins
     }
 }
