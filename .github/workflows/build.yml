@@ -31,8 +31,8 @@ jobs:
         
       - name: Install NDK
         run: |
-          sdkmanager "ndk;27.3.13750724"
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.3.13750724" >> $GITHUB_ENV
+          sdkmanager "ndk;28.2.13676358"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> $GITHUB_ENV
           
       - name: Cache CMake build
         uses: actions/cache@v4
@@ -50,31 +50,3 @@ jobs:
         
       - name: Build Debug APKs
         run: ./gradlew assembleDebug --no-daemon
-        
-      - name: Upload Main App APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: kime-debug-apk
-          path: app/build/outputs/apk/debug/*.apk
-          retention-days: 7
-          
-      - name: Upload Emoji Sticker Plugin APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: emoji-sticker-plugin-apk
-          path: plugins/emoji-sticker/build/outputs/apk/debug/*.apk
-          retention-days: 7
-          
-      - name: Upload Kaomoji Plugin APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: kaomoji-plugin-apk
-          path: plugins/kaomoji/build/outputs/apk/debug/*.apk
-          retention-days: 7
-          
-      - name: Upload Prediction Plugin APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: prediction-onnx-plugin-apk
-          path: plugins/prediction-onnx/build/outputs/apk/debug/*.apk
-          retention-days: 7
