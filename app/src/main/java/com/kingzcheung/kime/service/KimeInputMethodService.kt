@@ -93,7 +93,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         get() = savedStateRegistryController.savedStateRegistry
 
     // Rime 引擎实例
-    private val rimeEngine = RimeEngine()
+    private val rimeEngine = RimeEngine.getInstance()
     
     private lateinit var clipboardManager: ClipboardManager
     
@@ -287,7 +287,10 @@ private fun getPredictionFromPlugin(contextText: String) {
             val savedSchema = SettingsPreferences.getCurrentSchema(this)
             Log.d(TAG, "initRimeEngine: currentSchema=$currentSchema, savedSchema=$savedSchema")
             
-            if (currentSchema != savedSchema) {
+            val availableSchemas = rimeEngine.getAvailableSchemas()
+            Log.d(TAG, "initRimeEngine: availableSchemas=${availableSchemas.joinToString()}")
+            
+            if (savedSchema in availableSchemas && currentSchema != savedSchema) {
                 Log.d(TAG, "initRimeEngine: Switching to saved schema: $savedSchema")
                 rimeEngine.switchSchema(savedSchema)
             }
@@ -762,36 +765,36 @@ private fun getPredictionFromPlugin(contextText: String) {
     }
     
     /**
-     * 重载配置
+     * 部署方案
      */
     private fun reloadConfig() {
-        Log.d(TAG, "Reloading config...")
+        Log.d(TAG, "Deploying schema...")
+        
+        // 收起键盘并显示提示
+        mainHandler.post {
+            requestHideSelf(0)
+            android.widget.Toast.makeText(this, "方案部署中...", android.widget.Toast.LENGTH_SHORT).show()
+        }
+        
         Thread {
             try {
                 KeysConfigHelper.loadConfig(this)
                 
-                // 清理 build 目录强制重新部署
                 val userDataDir = File(filesDir, "rime/user")
+                
+                // 删除旧的 default.custom.yaml（避免覆盖 assets 中的 schema_list）
+                val customFile = File(userDataDir, "default.custom.yaml")
+                if (customFile.exists()) {
+                    Log.d(TAG, "Removing old default.custom.yaml")
+                    customFile.delete()
+                }
+                
+                // 清理 build 目录强制重新部署
                 val buildDir = File(userDataDir, "build")
                 if (buildDir.exists()) {
                     Log.d(TAG, "Cleaning build directory")
                     buildDir.deleteRecursively()
                 }
-                
-                // 写入 default.custom.yaml 设置默认方案
-                val savedSchema = SettingsPreferences.getCurrentSchema(this)
-                Log.d(TAG, "Saved schema: $savedSchema")
-                
-                val customYaml = """# Rime default.custom.yaml
-patch:
-  "schema_list":
-    - schema: wubi86
-    - schema: wubi86_pinyin
-"""
-                
-                val customFile = File(userDataDir, "default.custom.yaml")
-                customFile.writeText(customYaml)
-                Log.d(TAG, "Wrote default.custom.yaml")
                 
                 // 部署
                 Log.d(TAG, "Starting deployment...")
@@ -802,7 +805,9 @@ patch:
                 val availableSchemas = rimeEngine.getAvailableSchemas()
                 Log.d(TAG, "Available schemas: ${availableSchemas.joinToString()}")
                 
-                // 切换方案
+                // 切换到保存的方案
+                val savedSchema = SettingsPreferences.getCurrentSchema(this)
+                Log.d(TAG, "Saved schema: $savedSchema")
                 if (savedSchema in availableSchemas) {
                     val switchResult = rimeEngine.switchSchema(savedSchema)
                     Log.d(TAG, "Switch schema result: $switchResult")
@@ -814,7 +819,8 @@ patch:
                 mainHandler.post {
                     updateSchemaName()
                     updateUI()
-                    Log.d(TAG, "Config reloaded successfully")
+                    android.widget.Toast.makeText(this, "方案部署完成", android.widget.Toast.LENGTH_SHORT).show()
+                    Log.d(TAG, "Schema deployed successfully")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to reload config", e)

@@ -405,7 +405,22 @@ fun SchemaSettingsContent(
                                     currentSchema = schema.schemaId
                                     SettingsPreferences.setCurrentSchema(context, schema.schemaId)
                                     android.util.Log.d("Settings", "Saved schema: ${SettingsPreferences.getCurrentSchema(context)}")
-                                    Toast.makeText(context, "已切换到${schema.name}，请在输入法中点击\"重载配置\"生效", Toast.LENGTH_LONG).show()
+                                    
+                                    if (com.kingzcheung.kime.rime.RimeEngine.isInitialized()) {
+                                        val engine = com.kingzcheung.kime.rime.RimeEngine.getInstance()
+                                        val availableSchemas = engine.getAvailableSchemas()
+                                        android.util.Log.d("Settings", "Available schemas: ${availableSchemas.joinToString()}")
+                                        
+                                        if (schema.schemaId in availableSchemas) {
+                                            val result = engine.switchSchema(schema.schemaId)
+                                            android.util.Log.d("Settings", "Switch schema result: $result")
+                                            Toast.makeText(context, "已切换到${schema.name}", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "已保存${schema.name}，请部署方案后生效", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "已保存${schema.name}，请在输入法中生效", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                             }
                         )
@@ -418,15 +433,6 @@ fun SchemaSettingsContent(
                         }
                     }
                 })
-            }
-            
-            item {
-                Text(
-                    text = "提示: 切换方案后，请在输入法界面菜单中点击\"重载配置\"生效",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                )
             }
         }
     }

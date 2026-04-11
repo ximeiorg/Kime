@@ -41,6 +41,7 @@ object RimeConfigHelper {
         
         // 尝试从 assets 复制配置文件
         val copiedFromAssets = copyAssetsToRimeDir(context, sharedDataDir)
+
         
         // 如果没有从 assets 复制到文件，则使用默认配置
         if (!copiedFromAssets) {

@@ -52,7 +52,7 @@ fun MenuBar(
         MenuItem(rememberVectorPainter(Icons.Default.MenuBook), "管理词库", onManageDict),
         MenuItem(rememberVectorPainter(Icons.Default.EmojiEmotions), "表情", onEmoji),
         MenuItem(rememberVectorPainter(if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode), if (isDarkTheme) "浅色模式" else "深色模式", onToggleDarkMode),
-        MenuItem(rememberVectorPainter(Icons.Default.Refresh), "重载配置", onReloadConfig),
+        MenuItem(rememberVectorPainter(Icons.Default.Refresh), "部署方案", onReloadConfig),
         MenuItem(rememberVectorPainter(Icons.Default.Settings), "设置", onSettings),
         MenuItem(rememberVectorPainter(Icons.Default.Keyboard), "混输", onMixedInput)
     )

@@ -11,12 +11,21 @@ class RimeEngine {
     
     companion object {
         private const val TAG = "RimeEngine"
+        private var instance: RimeEngine? = null
         
         init {
             // 加载 native 库
             System.loadLibrary("rime_jni")
             Log.d(TAG, "Native library loaded")
         }
+        
+        fun getInstance(): RimeEngine {
+            return instance ?: synchronized(this) {
+                instance ?: RimeEngine().also { instance = it }
+            }
+        }
+        
+        fun isInitialized(): Boolean = instance?.isInitialized ?: false
     }
     
     private var isInitialized = false
