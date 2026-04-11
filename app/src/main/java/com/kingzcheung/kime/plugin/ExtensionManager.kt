@@ -57,14 +57,56 @@ object ExtensionManager {
     
     fun reload(context: Context): Boolean {
         if (isInitialized) {
-            Log.d(TAG, "ExtensionManager already initialized, skipping reload")
-            return true
+            Log.d(TAG, "ExtensionManager already initialized, scanning for new plugins...")
+            return scanNewPlugins(context)
         }
         return initialize(context)
     }
     
+    fun scanNewPlugins(context: Context): Boolean {
+        val systemExtensions = ExtensionLoader.loadInstalledExtensions(context)
+        val privateExtensions = ExtensionLoader.loadExtensionsFromPrivateDir(context)
+        
+        val currentPluginIds = (systemExtensions + privateExtensions).map { it.id }.toSet()
+        val builtinIds = extensions.filter { it.id.startsWith("builtin_") }.map { it.id }.toSet()
+        
+        val removedExtensions = extensions.filter { 
+            it.id !in currentPluginIds && it.id !in builtinIds 
+        }
+        
+        if (removedExtensions.isNotEmpty()) {
+            removedExtensions.forEach { ext ->
+                try {
+                    ext.release()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to release removed extension ${ext.id}", e)
+                }
+                extensions.remove(ext)
+                Log.d(TAG, "Removed uninstalled plugin: ${ext.id}")
+            }
+        }
+        
+        val existingIds = extensions.map { it.id }.toSet()
+        val newExtensions = (systemExtensions + privateExtensions).filter { it.id !in existingIds }
+        
+        if (newExtensions.isNotEmpty()) {
+            extensions.addAll(newExtensions)
+            Log.d(TAG, "Found ${newExtensions.size} new plugins")
+            newExtensions.forEach { ext ->
+                Log.d(TAG, "  - New: ${ext.id}: ${ext.name}")
+            }
+        }
+        
+        if (removedExtensions.isEmpty() && newExtensions.isEmpty()) {
+            Log.d(TAG, "No plugin changes detected")
+        }
+        
+        return true
+    }
+    
     fun forceReload(context: Context): Boolean {
         Log.d(TAG, "Force reloading extensions...")
+        ExtensionLoader.clearAllCachedExtensions()
         release()
         return initialize(context)
     }
