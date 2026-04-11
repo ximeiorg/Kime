@@ -15,6 +15,8 @@ object ExtensionLoader {
     private const val EXTENSION_ACTION = "com.kingzcheung.kime.plugin.EXTENSION"
     private const val EXTENSION_FACTORY_CLASS_META = "com.kingzcheung.kime.extension.factory.class"
     
+    private val loadedApks = mutableMapOf<String, List<KimeExtension>>()
+    
     @Suppress("DEPRECATION")
     private val PACKAGE_FLAGS = PackageManager.GET_CONFIGURATIONS or
         PackageManager.GET_META_DATA or
@@ -181,7 +183,7 @@ object ExtensionLoader {
                 }
                 
                 if (apkPath != null) {
-                    extensions.addAll(loadExtensionsFromApk(context, apkPath))
+                    extensions.addAll(loadExtensionsFromApkCached(context, apkPath))
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load plugin: $packageName", e)
@@ -191,20 +193,46 @@ object ExtensionLoader {
         return extensions
     }
     
+    private fun loadExtensionsFromApkCached(context: Context, apkPath: String): List<KimeExtension> {
+        val cached = loadedApks[apkPath]
+        if (cached != null) {
+            Log.d(TAG, "Returning cached extensions for APK: $apkPath (${cached.size} extensions)")
+            return cached
+        }
+        
+        Log.d(TAG, "Loading new extensions from APK: $apkPath")
+        val extensions = loadExtensionsFromApk(context, apkPath)
+        if (extensions.isNotEmpty()) {
+            loadedApks[apkPath] = extensions
+            Log.d(TAG, "Cached ${extensions.size} extensions from APK: $apkPath")
+        }
+        return extensions
+    }
+    
     fun loadExtensionsFromPrivateDir(context: Context): List<KimeExtension> {
         val extensions = mutableListOf<KimeExtension>()
         
         val extDir = File(context.filesDir, "extensions")
         if (!extDir.exists()) {
-            return emptyList()
+            return extensions
         }
         
         extDir.listFiles()?.forEach { file ->
             if (file.isFile && file.name.endsWith(".apk")) {
-                extensions.addAll(loadExtensionsFromApk(context, file.absolutePath))
+                extensions.addAll(loadExtensionsFromApkCached(context, file.absolutePath))
             }
         }
         
         return extensions
+    }
+    
+    fun clearCachedApk(apkPath: String) {
+        loadedApks.remove(apkPath)
+        Log.d(TAG, "Cleared cached APK: $apkPath")
+    }
+    
+    fun clearAllCachedExtensions() {
+        loadedApks.clear()
+        Log.d(TAG, "Cleared all cached APKs")
     }
 }

@@ -38,10 +38,11 @@ fun PluginsSettingsContent(
     var isLoading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
     
-    LaunchedEffect(Unit) {
+    fun refreshPlugins() {
+        isLoading = true
+        errorMsg = null
         scope.launch {
             try {
-                // 强制重新扫描
                 val initSuccess = ExtensionManager.reload(context)
                 extensions = ExtensionManager.getExtensions()
             } catch (e: Exception) {
@@ -51,6 +52,10 @@ fun PluginsSettingsContent(
                 isLoading = false
             }
         }
+    }
+    
+    LaunchedEffect(Unit) {
+        refreshPlugins()
     }
     
     Scaffold(
@@ -63,6 +68,14 @@ fun PluginsSettingsContent(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "返回"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { refreshPlugins() }) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "刷新"
                         )
                     }
                 },
@@ -166,7 +179,7 @@ fun PluginsSettingsContent(
                     Spacer(modifier = Modifier.height(8.dp))
                     
                     Text(
-                        text = "提示: 插件以独立 APK 形式安装，安装后需重启应用生效",
+                        text = "提示: 插件以独立 APK 形式安装，安装后点击右上角刷新按钮",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -270,6 +283,8 @@ private fun ExtensionItem(
                 try {
                     val packageName = when (extension.id) {
                         "plugin_prediction_onnx" -> "com.kingzcheung.kime.plugin.prediction"
+                        "kaomoji_plugin" -> "com.kingzcheung.kime.plugin.kaomoji"
+                        "emoji_sticker_plugin" -> "com.kingzcheung.kime.plugin.emoji"
                         else -> extension.id
                     }
                     
