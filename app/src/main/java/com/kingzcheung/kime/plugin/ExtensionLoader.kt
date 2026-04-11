@@ -21,6 +21,36 @@ object ExtensionLoader {
         PackageManager.GET_SIGNATURES or
         (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) PackageManager.GET_SIGNING_CERTIFICATES else 0)
     
+    private val addedNativeLibDirs = mutableSetOf<String>()
+    
+    fun addNativeLibraryDir(context: Context, nativeLibDir: String) {
+        if (nativeLibDir.isBlank() || addedNativeLibDirs.contains(nativeLibDir)) {
+            return
+        }
+        
+        try {
+            val classLoader = context.classLoader
+            val baseDexClassLoader = classLoader.javaClass.superclass ?: classLoader.javaClass
+            val pathListField = baseDexClassLoader.getDeclaredField("pathList")
+            pathListField.isAccessible = true
+            val pathList = pathListField.get(classLoader)
+            
+            val nativeLibDirsField = pathList.javaClass.getDeclaredField("nativeLibraryDirectories")
+            nativeLibDirsField.isAccessible = true
+            
+            @Suppress("UNCHECKED_CAST")
+            val libDirs = nativeLibDirsField.get(pathList) as MutableList<File>
+            val newDir = File(nativeLibDir)
+            if (!libDirs.contains(newDir)) {
+                libDirs.add(newDir)
+                addedNativeLibDirs.add(nativeLibDir)
+                Log.d(TAG, "Added native library dir: $nativeLibDir")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to add native library dir: $nativeLibDir", e)
+        }
+    }
+    
     fun loadExtensionsFromApk(context: Context, apkPath: String): List<KimeExtension> {
         return try {
             val packageInfo = context.packageManager.getPackageArchiveInfo(
@@ -32,6 +62,11 @@ object ExtensionLoader {
             
             appInfo.sourceDir = apkPath
             appInfo.publicSourceDir = apkPath
+            
+            val nativeLibDir = appInfo.nativeLibraryDir
+            if (!nativeLibDir.isNullOrBlank()) {
+                addNativeLibraryDir(context, nativeLibDir)
+            }
             
             val classNames = getExtensionFactoryClassNames(apkPath, context)
             if (classNames.isEmpty()) {
@@ -138,6 +173,12 @@ object ExtensionLoader {
             try {
                 val pkgInfo = pm.getPackageInfo(packageName, PACKAGE_FLAGS)
                 val apkPath = pkgInfo.applicationInfo?.publicSourceDir
+                val nativeLibDir = pkgInfo.applicationInfo?.nativeLibraryDir
+                
+                if (!nativeLibDir.isNullOrBlank()) {
+                    Log.d(TAG, "Plugin $packageName nativeLibraryDir: $nativeLibDir")
+                    addNativeLibraryDir(context, nativeLibDir)
+                }
                 
                 if (apkPath != null) {
                     extensions.addAll(loadExtensionsFromApk(context, apkPath))

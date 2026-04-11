@@ -26,6 +26,10 @@ app/release
 # Association model weights (large files, manually placed)
 app/src/main/assets/association_model
 
+# ONNX Runtime prebuilt libraries (downloaded during build)
+src/main/cpp/onnxruntime/
+src/main/jniLibs/**/*.so
+
 /.kilo
 /.kotlin
 

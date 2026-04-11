@@ -1,11 +1,8 @@
 package com.kingzcheung.kime.association
 
-import ai.onnxruntime.OnnxTensor
-import ai.onnxruntime.OrtEnvironment
-import ai.onnxruntime.OrtSession
 import android.content.Context
-import android.os.Build
 import android.util.Log
+import com.kingzcheung.kime.plugin.prediction.association.association.NativeOnnxEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -15,64 +12,52 @@ import java.util.zip.ZipFile
 object OnnxAssociationEngine {
     private const val TAG = "OnnxAssociationEngine"
     private const val MODEL_DIR = "association_model"
-    private const val NATIVE_LIB_NAME = "onnxruntime4j_jni"
     
-    private var environment: OrtEnvironment? = null
-    private var session: OrtSession? = null
     private var vocab: Map<String, Int> = emptyMap()
     private var id2word: Map<Int, String> = emptyMap()
     private var isInitialized = false
-    private var nativeLoaded = false
 
     fun initialize(context: Context, apkPath: String? = null): Boolean {
         if (isInitialized) return true
-        
-        if (!nativeLoaded) {
-            loadNativeLibrary(apkPath)
-        }
-        
-        if (!nativeLoaded) {
-            Log.e(TAG, "Native library not loaded")
-            return false
-        }
 
         try {
             val mainAppFilesDir = File("/data/data/com.kingzcheung.kime/files")
             val modelDir = File(mainAppFilesDir, MODEL_DIR)
             
-            if (!modelDir.exists() || modelDir.listFiles()?.isEmpty() != false) {
-                Log.d(TAG, "Extracting model from assets...")
-                modelDir.mkdirs()
-                
-                val filesToCopy = listOf("vocab.json", "model.onnx")
-                
-                val actualApkPath = apkPath ?: context.applicationInfo?.sourceDir
-                
-                Log.d(TAG, "Using APK path: $actualApkPath")
-                
-                val extractedFromApk = if (actualApkPath != null) {
-                    extractAssetsFromApk(actualApkPath, filesToCopy, modelDir)
-                } else {
-                    false
-                }
-                
-                if (!extractedFromApk) {
-                    Log.d(TAG, "Trying context.assets fallback...")
-                    filesToCopy.forEach { fileName ->
+            modelDir.mkdirs()
+            
+            val filesToCopy = listOf("vocab.json", "model.onnx", "model.onnx.data")
+            val actualApkPath = apkPath ?: context.applicationInfo?.sourceDir
+            
+            Log.d(TAG, "Using APK path: $actualApkPath")
+            
+            for (fileName in filesToCopy) {
+                val targetFile = File(modelDir, fileName)
+                if (!targetFile.exists()) {
+                    Log.d(TAG, "Extracting missing file: $fileName")
+                    
+                    val extractedFromApk = if (actualApkPath != null) {
+                        extractSingleAssetFromApk(actualApkPath, fileName, targetFile)
+                    } else {
+                        false
+                    }
+                    
+                    if (!extractedFromApk) {
+                        Log.d(TAG, "Trying context.assets fallback for $fileName...")
                         try {
-                            val inputStream = context.assets.open(fileName)
-                            val outputFile = File(modelDir, fileName)
-                            inputStream.use { input ->
-                                outputFile.outputStream().use { output ->
+                            context.assets.open(fileName).use { input ->
+                                targetFile.outputStream().use { output ->
                                     input.copyTo(output)
                                 }
                             }
-                            Log.d(TAG, "Extracted $fileName via assets (${outputFile.length()} bytes)")
+                            Log.d(TAG, "Extracted $fileName via assets (${targetFile.length()} bytes)")
                         } catch (e: Exception) {
-                            Log.e(TAG, "Failed to extract $fileName from assets", e)
+                            Log.e(TAG, "Failed to extract $fileName", e)
                             return false
                         }
                     }
+                } else {
+                    Log.d(TAG, "File already exists: $fileName (${targetFile.length()} bytes)")
                 }
             }
             
@@ -100,18 +85,13 @@ object OnnxAssociationEngine {
             }
             Log.d(TAG, "Using model: ${modelFile.name} (${modelFile.length()} bytes)")
 
-            environment = OrtEnvironment.getEnvironment()
-            val sessionOptions = OrtSession.SessionOptions()
-            sessionOptions.setIntraOpNumThreads(4)
-            
-            session = environment?.createSession(modelFile.absolutePath, sessionOptions)
-            
-            if (session != null) {
+            val success = NativeOnnxEngine.initialize(context, apkPath, modelFile.absolutePath)
+            if (success) {
                 isInitialized = true
-                Log.i(TAG, "ONNX Runtime initialized successfully")
+                Log.i(TAG, "ONNX Runtime initialized successfully via native JNI")
                 return true
             } else {
-                Log.e(TAG, "Failed to create ONNX session")
+                Log.e(TAG, "Failed to initialize ONNX Runtime")
                 return false
             }
         } catch (e: Exception) {
@@ -121,7 +101,7 @@ object OnnxAssociationEngine {
     }
 
     suspend fun predict(inputText: String, topK: Int = 5): List<AssociationCandidate> = withContext(Dispatchers.Default) {
-        if (!isInitialized || session == null) {
+        if (!isInitialized) {
             Log.e(TAG, "Engine not initialized")
             return@withContext emptyList()
         }
@@ -135,31 +115,8 @@ object OnnxAssociationEngine {
 
             Log.d(TAG, "Predicting for: '$inputText', tokens: $inputIds")
 
-            val inputArray = Array(1) { inputIds.map { it.toLong() }.toLongArray() }
-            val inputTensor = OnnxTensor.createTensor(environment, inputArray)
-
-            val inputs = mapOf("input_ids" to inputTensor)
-            val results = session?.run(inputs)
-
-            val outputTensor = results?.get(0) as? OnnxTensor
-            val outputArray = outputTensor?.value as? Array<Array<FloatArray>>
-
-            inputTensor.close()
-            results?.close()
-
-            if (outputArray == null) {
-                Log.e(TAG, "Failed to get output")
-                return@withContext emptyList()
-            }
-
-            val lastPos = outputArray[0].size - 1
-            val logits = outputArray[0][lastPos]
-
-            val scores = logits.mapIndexed { index, score ->
-                index to score
-            }.filter { it.first >= 4 }
-                .sortedByDescending { it.second }
-                .take(topK)
+            val inputIdsLong = inputIds.map { it.toLong() }.toLongArray()
+            val scores = NativeOnnxEngine.predict(inputIdsLong, topK)
 
             val candidates = scores.mapNotNull { (id, score) ->
                 id2word[id]?.let { word ->
@@ -189,13 +146,45 @@ object OnnxAssociationEngine {
     }
 
     fun release() {
-        session?.close()
-        session = null
+        NativeOnnxEngine.release()
         isInitialized = false
         Log.d(TAG, "ONNX Runtime released")
     }
 
     fun isInitialized(): Boolean = isInitialized
+    
+    private fun extractSingleAssetFromApk(apkPath: String, fileName: String, targetFile: File): Boolean {
+        return try {
+            Log.d(TAG, "Extracting $fileName from APK: $apkPath")
+            
+            val apkFile = File(apkPath)
+            if (!apkFile.exists()) {
+                Log.e(TAG, "APK file not found: $apkPath")
+                return false
+            }
+            
+            ZipFile(apkFile).use { zipFile ->
+                val entryName = "assets/$fileName"
+                val entry = zipFile.getEntry(entryName)
+                
+                if (entry == null) {
+                    Log.e(TAG, "Asset not found in APK: $entryName")
+                    return false
+                }
+                
+                zipFile.getInputStream(entry).use { input ->
+                    targetFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                Log.d(TAG, "Extracted $fileName from APK (${targetFile.length()} bytes)")
+            }
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to extract $fileName from APK", e)
+            false
+        }
+    }
     
     private fun extractAssetsFromApk(apkPath: String, fileNames: List<String>, targetDir: File): Boolean {
         return try {
