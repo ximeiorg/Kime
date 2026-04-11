@@ -1,3 +1,5 @@
+import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -50,7 +52,7 @@ android {
 android.applicationVariants.all {
     val pluginName = "emoji-sticker"
     outputs.all {
-        (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName = "$pluginName-$versionName.apk"
+        (this as BaseVariantOutputImpl).outputFileName = "$pluginName-$versionName.apk"
     }
 }
 

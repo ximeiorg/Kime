@@ -123,11 +123,13 @@ android {
     }
 }
 
+import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+
 android.applicationVariants.all {
     val pluginName = "prediction-onnx"
-    val abi = filters.find { it.filterType.toString() == "ABI" }?.identifier ?: "universal"
     outputs.all {
-        (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName = "$pluginName-$versionName-$abi.apk"
+        val abi = filters.find { it.filterType.toString() == "ABI" }?.identifier ?: "universal"
+        (this as BaseVariantOutputImpl).outputFileName = "$pluginName-$versionName-$abi.apk"
     }
 }
 
