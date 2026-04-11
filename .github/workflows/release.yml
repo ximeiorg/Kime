@@ -106,10 +106,10 @@ jobs:
       - name: Find signed APKs
         id: find_apks
         run: |
-          MAIN_APKS=$(find app/build/outputs/apk/release -name "*-signed.apk" -type f | sort | tr '\n' ':' | sed 's/:$//')
-          EMOJI_APKS=$(find plugins/emoji-sticker/build/outputs/apk/release -name "*-signed.apk" -type f | tr '\n' ':' | sed 's/:$//')
-          KAOMOJI_APKS=$(find plugins/kaomoji/build/outputs/apk/release -name "*-signed.apk" -type f | tr '\n' ':' | sed 's/:$//')
-          PREDICTION_APKS=$(find plugins/prediction-onnx/build/outputs/apk/release -name "*-signed.apk" -type f | tr '\n' ':' | sed 's/:$//')
+          MAIN_APKS=$(find app/build/outputs/apk/release -name "*-signed.apk" -type f | sort | tr '\n' ',' | sed 's/,$//')
+          EMOJI_APKS=$(find plugins/emoji-sticker/build/outputs/apk/release -name "*-signed.apk" -type f | sort | tr '\n' ',' | sed 's/,$//')
+          KAOMOJI_APKS=$(find plugins/kaomoji/build/outputs/apk/release -name "*-signed.apk" -type f | sort | tr '\n' ',' | sed 's/,$//')
+          PREDICTION_APKS=$(find plugins/prediction-onnx/build/outputs/apk/release -name "*-signed.apk" -type f | sort | tr '\n' ',' | sed 's/,$//')
           
           echo "main_apks=$MAIN_APKS" >> $GITHUB_OUTPUT
           echo "emoji_apks=$EMOJI_APKS" >> $GITHUB_OUTPUT
@@ -117,13 +117,18 @@ jobs:
           echo "prediction_apks=$PREDICTION_APKS" >> $GITHUB_OUTPUT
           
           echo "Main App APKs:"
-          echo "$MAIN_APKS" | tr ':' '\n'
+          echo "$MAIN_APKS" | tr ',' '\n'
           echo "Emoji Plugin APKs:"
-          echo "$EMOJI_APKS" | tr ':' '\n'
+          echo "$EMOJI_APKS" | tr ',' '\n'
           echo "Kaomoji Plugin APKs:"
-          echo "$KAOMOJI_APKS" | tr ':' '\n'
+          echo "$KAOMOJI_APKS" | tr ',' '\n'
           echo "Prediction Plugin APKs:"
-          echo "$PREDICTION_APKS" | tr ':' '\n'
+          echo "$PREDICTION_APKS" | tr ',' '\n'
+          
+          if [ -z "$MAIN_APKS" ]; then
+            echo "::warning::No main app APKs found!"
+            ls -la app/build/outputs/apk/release/
+          fi
         
       - name: Generate changelog
         id: changelog

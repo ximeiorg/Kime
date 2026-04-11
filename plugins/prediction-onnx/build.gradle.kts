@@ -112,6 +112,23 @@ android {
             useLegacyPackaging = true
         }
     }
+    
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+            isUniversalApk = true
+        }
+    }
+}
+
+android.applicationVariants.all {
+    val pluginName = "prediction-onnx"
+    val abi = filters.find { it.filterType.toString() == "ABI" }?.identifier ?: "universal"
+    outputs.all {
+        (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName = "$pluginName-$versionName-$abi.apk"
+    }
 }
 
 dependencies {

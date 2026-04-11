@@ -47,6 +47,13 @@ android {
     }
 }
 
+android.applicationVariants.all {
+    val pluginName = "kaomoji"
+    outputs.all {
+        (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName = "$pluginName-$versionName.apk"
+    }
+}
+
 dependencies {
     implementation(project(":plugin-api"))
     implementation(libs.androidx.core.ktx)
