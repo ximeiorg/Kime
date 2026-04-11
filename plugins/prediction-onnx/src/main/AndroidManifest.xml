@@ -26,7 +26,7 @@
         
         <!-- 插件工厂类 -->
         <meta-data
-            android:name="com.kingzcheung.kime.extension.factory.class"
+            android:name="com.kingzcheung.kime.plugin.factory.class"
             android:value="com.kingzcheung.kime.plugin.prediction.PredictionPluginFactory" />
         
     </application>

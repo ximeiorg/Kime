@@ -28,9 +28,6 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.kingzcheung.kime.plugin.ExtensionManager
-import com.kingzcheung.kime.plugin.api.ExtensionInput
-import com.kingzcheung.kime.plugin.api.ExtensionResult
-import com.kingzcheung.kime.plugin.api.ExtensionType
 import com.kingzcheung.kime.plugin.api.EmojiItem
 import com.kingzcheung.kime.clipboard.ClipboardManager
 import com.kingzcheung.kime.settings.SettingsPreferences
@@ -91,48 +88,48 @@ object EmojiData {
             name = "食物",
             icon = "🍎",
             emojis = listOf(
-                "🍎", "梨", "🍊", "柠檬", "🍌", "西瓜", "葡萄", "草莓", "蓝莓", "🍈",
-                "樱桃", "桃", "芒果", "菠萝", "椰子", "猕猴桃", "番茄", "茄子", " avocado", "西兰花",
-                "白菜", "黄瓜", "辣椒", "青椒", "玉米", "胡萝卜", "大蒜", "洋葱", "土豆", "红薯",
-                "羊角面包", "贝果", "面包", "法棍", "椒盐卷饼", "奶酪", "蛋", "煎蛋", "黄油", "煎饼",
-                "华夫饼", "培根", "牛排", "鸡肉", "排骨", "骨头", "热狗", "汉堡", "薯条", "披萨",
-                "饼", "三明治", "卷饼", "沙拉", "墨西哥卷", "饭团", "沙拉", "火锅", "煲", "奶酪锅"
+                "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🫐", "🍈",
+                "🍒", "🍑", "🥭", "🍍", "🥥", "🥝", "🍅", "🍆", "🥑", "🥦",
+                "🥬", "🥒", "🌶️", "🫑", "🌽", "🥕", "🧄", "🧅", "🥔", "🍠",
+                "🥐", "🥯", "🍞", "🥖", "🥨", "🧀", "🥚", "🍳", "🧈", "🥞",
+                "🧇", "🥓", "🥩", "🍗", "🍖", "🦴", "🌭", "🍔", "🍟", "🍕",
+                "🫓", "🥪", "🌯", "🥗", "🌮", "🍙", "🍚", "🍲", "🥘", "🫕"
             )
         ),
         EmojiCategory(
             name = "活动",
             icon = "⚽",
             emojis = listOf(
-                "⚽", "🏀", "🏈", "棒球", "垒球", "网球", "排球", "橄榄球", "飞盘", "台球",
-                "悠悠球", "乒乓球", "羽毛球", "冰球", "曲棍球", "长曲棍球", "板球", "飞盘", "回旋镖", "球门",
-                "高尔夫", "风筝", "射箭", "钓鱼", "潜水", "拳击", "武术", "背心", "滑板", "轮滑",
-                "雪橇", "滑冰", "冰壶", "滑雪", "滑雪者", "滑雪板", "降落伞", "举重", "摔跤", "体操",
-                "击剑", "篮球", "手球", "高尔夫", "骑马", "瑜伽", "冲浪", "游泳", "水球", "划船",
-                "攀岩", "骑行", "山地车", "勋章", "奖杯", "金牌", "银牌", "铜牌", "奖章", "马戏团"
+                "⚽", "🏀", "🏈", "⚾", "🥎", "🎾", "🏐", "🏉", "🥏", "🎱",
+                "🪀", "🏓", "🏸", "🏒", "🏑", "🥍", "🏏", "🥏", "🪃", "🥅",
+                "⛳", "🪁", "🏹", "🎣", "🤿", "🥊", "🥋", "🎽", "🛹", "🛼",
+                "🪂", "⛸️", "🥌", "⛷️", "🏂", "🎿", "🪂", "🏋️‍♂️", "🤼", "🤸",
+                "🤺", "🤾", "🥏", "🏌️", "🏇", "🧘", "🏄", "🏊", "🤽", "🚣",
+                "🧗", "🚵", "🚴", "🎖️", "🏆", "🥇", "🥈", "🥉", "🏅", "🎪"
             )
         ),
         EmojiCategory(
             name = "物品",
             icon = "💻",
             emojis = listOf(
-                "手表", "手机", "📲", "💻", "键盘", "台式机", "打印机", "鼠标", "轨迹球", "操纵杆",
-                "压缩机", "磁盘", "软盘", "光盘", "DVD", "录像带", "相机", "相机2", "摄像机", "电影摄影机",
-                "放映机", "胶片", "电话", "座机", "传呼机", "传真机", "电视", "收音机", "麦克风", "调音台",
-                "旋钮", "指南针", "秒表", "计时器", "闹钟", "座钟", "沙漏", "沙漏2", "卫星", "电池",
-                "插头", "灯泡", "手电筒", "蜡烛", "油灯", "灭火器", "油桶", "零钱", "钞票", "日元",
-                "欧元", "英镑", "钱袋", "信用卡", "宝石", "天平", "工具箱", "扳手", "锤子", "镐"
+                "⌚", "📱", "📲", "💻", "⌨️", "🖥️", "🖨️", "🖱️", "🖲️", "🕹️",
+                "🗜️", "💽", "💾", "💿", "📀", "📼", "📷", "📸", "📹", "🎥",
+                "📽️", "🎞️", "📞", "☎️", "📟", "📠", "📺", "📻", "🎙️", "🎚️",
+                "🎛️", "🧭", "⏱️", "⏲️", "⏰", "🕰️", "⏳", "⌛", "📡", "🔋",
+                "🔌", "💡", "🔦", "🕯️", "🪔", "🧯", "🛢️", "💸", "💵", "💴",
+                "💶", "💷", "💰", "💳", "💎", "⚖️", " toolbox", "🔧", "🔨", "⛏️"
             )
         ),
         EmojiCategory(
             name = "符号",
             icon = "❤️",
             emojis = listOf(
-                "❤️", "橙心", "黄心", "绿心", "蓝心", "紫心", "黑心", "白心", "棕心", "心碎",
-                "感叹号", "双心", "两心", "心跳", "心动", "爱心", "丘比特", "礼物心", "循环", "和平",
-                "十字架", "星月", "印度教", "佛教", "犹太教", "六芒星", "烛台", "道教", "东正教", "祈祷",
-                "蛇夫座", "白羊", "金牛", "双子", "巨蟹", "狮子", "处女", "天秤", "天蝎", "射手",
-                "摩羯", "水瓶", "双鱼", "ID", "原子", "可", "辐射", "生物危害", "关机", "震动",
-                "有", "无", "申", "申2", "申3", "星号", "VS", "白花", "得", "秘"
+                "❤️", "🧡", "💛", "💚", "💙", "💜", "🖤", "🤍", "🤎", "💔",
+                "❣️", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "♻️", "☮️",
+                "✝️", "☪️", "🕉️", "☸️", "✡️", "🔯", "🕎", "☯️", "☦️", "🛐",
+                "⛎", "♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐",
+                "♑", "♒", "♓", "🆔", "⚛️", "🉑", "☢️", "☣️", "📴", "📳",
+                "🈶", "🈚", "🈸", "🈺", "🈷️", "⭐", "🆚", "💮", "🉐", "㊙️"
             )
         )
     )
@@ -161,40 +158,30 @@ fun EmojiKeyboardLayout(
                 val pluginCategories = mutableListOf<EmojiCategory>()
                 
                 if (ExtensionManager.isInitialized()) {
-                    val emojiExtensions = ExtensionManager.getExtensionsByType(ExtensionType.EMOJI)
-                    Log.d("EmojiKeyboard", "Found ${emojiExtensions.size} emoji extensions")
+                    val emojiPlugins = ExtensionManager.getEnabledEmojiPlugins(context)
+                    Log.d("EmojiKeyboard", "Found ${emojiPlugins.size} emoji plugins")
                     
-                    emojiExtensions.forEach { extension ->
-                        val isEnabled = SettingsPreferences.isPluginEnabled(context, extension.id)
-                        if (!isEnabled) {
-                            Log.d("EmojiKeyboard", "Skipping disabled plugin: ${extension.name}")
-                            return@forEach
-                        }
+                    emojiPlugins.forEach { plugin ->
+                        Log.d("EmojiKeyboard", "Loading emojis from: ${plugin.name}")
                         
-                        Log.d("EmojiKeyboard", "Loading emojis from: ${extension.name}")
-                        
-                        val result = extension.process(ExtensionInput(text = "", topK = 100))
-                        
-                        when (result) {
-                            is ExtensionResult.Emojis -> {
-                                if (result.items.isNotEmpty()) {
-                                    pluginCategories.add(
-                                        EmojiCategory(
-                                            name = extension.name,
-                                            icon = "🎭",
-                                            emojis = emptyList(),
-                                            isPlugin = true,
-                                            pluginId = extension.id,
-                                            emojiItems = result.items
-                                        )
+                        try {
+                            val emojiItems = plugin.getEmojis(category = null, searchText = null, topK = 100)
+                            
+                            if (emojiItems.isNotEmpty()) {
+                                pluginCategories.add(
+                                    EmojiCategory(
+                                        name = plugin.name,
+                                        icon = "🎭",
+                                        emojis = emptyList(),
+                                        isPlugin = true,
+                                        pluginId = plugin.id,
+                                        emojiItems = emojiItems
                                     )
-                                    Log.d("EmojiKeyboard", "Loaded ${result.items.size} emojis from ${extension.name}")
-                                }
+                                )
+                                Log.d("EmojiKeyboard", "Loaded ${emojiItems.size} emojis from ${plugin.name}")
                             }
-                            is ExtensionResult.Error -> {
-                                Log.e("EmojiKeyboard", "Error loading emojis from ${extension.name}: ${result.message}")
-                            }
-                            else -> {}
+                        } catch (e: Exception) {
+                            Log.e("EmojiKeyboard", "Error loading emojis from ${plugin.name}", e)
                         }
                     }
                 }

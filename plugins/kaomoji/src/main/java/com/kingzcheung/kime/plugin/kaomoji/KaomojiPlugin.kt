@@ -3,15 +3,17 @@ package com.kingzcheung.kime.plugin.kaomoji
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.kingzcheung.kime.plugin.api.*
+import com.kingzcheung.kime.plugin.api.EmojiItem
+import com.kingzcheung.kime.plugin.api.EmojiPlugin
+import com.kingzcheung.kime.plugin.api.PluginType
 
-class KaomojiPlugin : KimeExtension {
+class KaomojiPlugin : EmojiPlugin {
     
-    override val id: String = "kaomoji_plugin"
-    override val name: String = "颜文字表情包"
-    override val description: String = "提供精选日式颜文字表情"
-    override val type: ExtensionType = ExtensionType.EMOJI
-    override val version: String = "1.0.0"
+    override val id = "kaomoji_plugin"
+    override val name = "颜文字表情包"
+    override val description = "提供精选日式颜文字表情"
+    override val version = "1.0.0"
+    override val type = PluginType.EMOJI
     
     private var kaomojiList: List<EmojiItem> = emptyList()
     
@@ -41,20 +43,18 @@ class KaomojiPlugin : KimeExtension {
         }
     }
     
-    override suspend fun process(input: ExtensionInput): ExtensionResult {
-        val searchText = input.text ?: ""
-        
-        val filtered = if (searchText.isEmpty()) {
+    override suspend fun getEmojis(category: String?, searchText: String?, topK: Int): List<EmojiItem> {
+        val filtered = if (searchText.isNullOrEmpty()) {
             kaomojiList
         } else {
-            kaomojiList.filter { kaomoji ->
-                kaomoji.displayText.contains(searchText)
-            }
+            kaomojiList.filter { it.displayText.contains(searchText) }
         }
         
-        val result = filtered.take(input.topK)
-        
-        return ExtensionResult.Emojis(result)
+        return filtered.take(topK)
+    }
+    
+    override suspend fun getCategories(): List<String> {
+        return listOf("颜文字")
     }
     
     override fun release() {

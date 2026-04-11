@@ -5,17 +5,22 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
-import com.kingzcheung.kime.plugin.api.KimeExtension
-import com.kingzcheung.kime.plugin.api.KimeExtensionFactory
+import com.kingzcheung.kime.plugin.api.EmojiPlugin
+import com.kingzcheung.kime.plugin.api.PluginFactory
+import com.kingzcheung.kime.plugin.api.PluginMetadata
+import com.kingzcheung.kime.plugin.api.PluginType
+import com.kingzcheung.kime.plugin.api.PredictionPlugin
+import com.kingzcheung.kime.plugin.api.SpeechPlugin
 import dalvik.system.PathClassLoader
 import java.io.File
 
 object ExtensionLoader {
     private const val TAG = "ExtensionLoader"
-    private const val EXTENSION_ACTION = "com.kingzcheung.kime.plugin.EXTENSION"
-    private const val EXTENSION_FACTORY_CLASS_META = "com.kingzcheung.kime.extension.factory.class"
+    private const val PLUGIN_ACTION = "com.kingzcheung.kime.plugin.EXTENSION"
+    private const val PLUGIN_FACTORY_CLASS_META = "com.kingzcheung.kime.plugin.factory.class"
     
-    private val loadedApks = mutableMapOf<String, List<KimeExtension>>()
+    private val loadedPlugins = mutableMapOf<String, PluginMetadata>()
+    private val loadedApks = mutableMapOf<String, List<PluginMetadata>>()
     
     @Suppress("DEPRECATION")
     private val PACKAGE_FLAGS = PackageManager.GET_CONFIGURATIONS or
@@ -53,116 +58,24 @@ object ExtensionLoader {
         }
     }
     
-    fun loadExtensionsFromApk(context: Context, apkPath: String): List<KimeExtension> {
-        return try {
-            val packageInfo = context.packageManager.getPackageArchiveInfo(
-                apkPath,
-                PACKAGE_FLAGS
-            ) ?: return emptyList()
-            
-            val appInfo = packageInfo.applicationInfo ?: return emptyList()
-            
-            appInfo.sourceDir = apkPath
-            appInfo.publicSourceDir = apkPath
-            
-            val nativeLibDir = appInfo.nativeLibraryDir
-            if (!nativeLibDir.isNullOrBlank()) {
-                addNativeLibraryDir(context, nativeLibDir)
-            }
-            
-            val classNames = getExtensionFactoryClassNames(apkPath, context)
-            if (classNames.isEmpty()) {
-                return emptyList()
-            }
-            
-            val classLoader = PathClassLoader(apkPath, context.classLoader)
-            
-            classNames.flatMap { className ->
-                loadExtensionsFromClass(classLoader, className, context, packageInfo.packageName, apkPath)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to load extensions from APK: $apkPath", e)
-            emptyList()
-        }
+    fun loadPredictionPlugins(context: Context): List<PredictionPlugin> {
+        return loadPlugins(context).filterIsInstance<PredictionPlugin>()
     }
     
-    private fun getExtensionFactoryClassNames(apkPath: String, context: Context): List<String> {
-        return try {
-            val packageInfo = context.packageManager.getPackageArchiveInfo(
-                apkPath,
-                PackageManager.GET_META_DATA
-            )
-            
-            val metaData = packageInfo?.applicationInfo?.metaData
-            if (metaData != null && metaData.containsKey(EXTENSION_FACTORY_CLASS_META)) {
-                val className = metaData.getString(EXTENSION_FACTORY_CLASS_META)
-                if (className != null) {
-                    listOf(className)
-                } else {
-                    emptyList()
-                }
-            } else {
-                emptyList()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to get extension factory class names", e)
-            emptyList()
-        }
+    fun loadEmojiPlugins(context: Context): List<EmojiPlugin> {
+        return loadPlugins(context).filterIsInstance<EmojiPlugin>()
     }
     
-    private fun loadExtensionsFromClass(
-        classLoader: PathClassLoader,
-        className: String,
-        context: Context,
-        pluginPackageName: String? = null,
-        apkPath: String? = null
-    ): List<KimeExtension> {
-        return try {
-            val clazz = classLoader.loadClass(className)
-            
-            if (!KimeExtensionFactory::class.java.isAssignableFrom(clazz)) {
-                return emptyList()
-            }
-            
-            val factory = clazz.getDeclaredConstructor().newInstance() as KimeExtensionFactory
-            val extensions = factory.createExtensions()
-            
-            extensions.map { extension ->
-                try {
-                    val pluginContext = if (pluginPackageName != null && pluginPackageName != context.packageName) {
-                        context.createPackageContext(
-                            pluginPackageName,
-                            Context.CONTEXT_INCLUDE_CODE or Context.CONTEXT_IGNORE_SECURITY
-                        )
-                    } else {
-                        context
-                    }
-                    
-                    val initSuccess = extension.initialize(pluginContext, apkPath)
-                    if (initSuccess) {
-                        extension
-                    } else {
-                        extension.release()
-                        null
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to initialize extension ${extension.id}", e)
-                    extension.release()
-                    null
-                }
-            }.filterNotNull()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to load extensions from class: $className", e)
-            emptyList()
-        }
+    fun loadSpeechPlugins(context: Context): List<SpeechPlugin> {
+        return loadPlugins(context).filterIsInstance<SpeechPlugin>()
     }
     
-    fun loadInstalledExtensions(context: Context): List<KimeExtension> {
-        val extensions = mutableListOf<KimeExtension>()
+    fun loadPlugins(context: Context): List<PluginMetadata> {
+        val plugins = mutableListOf<PluginMetadata>()
         
         val pm = context.packageManager
         
-        val intent = Intent(EXTENSION_ACTION)
+        val intent = Intent(PLUGIN_ACTION)
         val resolveInfos = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             pm.queryIntentActivities(intent, PackageManager.ResolveInfoFlags.of(0))
         } else {
@@ -183,47 +96,194 @@ object ExtensionLoader {
                 }
                 
                 if (apkPath != null) {
-                    extensions.addAll(loadExtensionsFromApkCached(context, apkPath))
+                    plugins.addAll(loadPluginsFromApkCached(context, apkPath))
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load plugin: $packageName", e)
             }
         }
         
-        return extensions
+        plugins.addAll(loadPluginsFromPrivateDir(context))
+        
+        return plugins
     }
     
-    private fun loadExtensionsFromApkCached(context: Context, apkPath: String): List<KimeExtension> {
+    private fun loadPluginsFromApkCached(context: Context, apkPath: String): List<PluginMetadata> {
         val cached = loadedApks[apkPath]
         if (cached != null) {
-            Log.d(TAG, "Returning cached extensions for APK: $apkPath (${cached.size} extensions)")
+            Log.d(TAG, "Returning cached plugins for APK: $apkPath (${cached.size} plugins)")
             return cached
         }
         
-        Log.d(TAG, "Loading new extensions from APK: $apkPath")
-        val extensions = loadExtensionsFromApk(context, apkPath)
-        if (extensions.isNotEmpty()) {
-            loadedApks[apkPath] = extensions
-            Log.d(TAG, "Cached ${extensions.size} extensions from APK: $apkPath")
+        Log.d(TAG, "Loading new plugins from APK: $apkPath")
+        val plugins = loadPluginsFromApk(context, apkPath)
+        if (plugins.isNotEmpty()) {
+            loadedApks[apkPath] = plugins
+            plugins.forEach { plugin ->
+                loadedPlugins[plugin.id] = plugin
+            }
+            Log.d(TAG, "Cached ${plugins.size} plugins from APK: $apkPath")
         }
-        return extensions
+        return plugins
     }
     
-    fun loadExtensionsFromPrivateDir(context: Context): List<KimeExtension> {
-        val extensions = mutableListOf<KimeExtension>()
+    private fun loadPluginsFromApk(context: Context, apkPath: String): List<PluginMetadata> {
+        return try {
+            val packageInfo = context.packageManager.getPackageArchiveInfo(
+                apkPath,
+                PACKAGE_FLAGS
+            ) ?: return emptyList()
+            
+            val appInfo = packageInfo.applicationInfo ?: return emptyList()
+            
+            appInfo.sourceDir = apkPath
+            appInfo.publicSourceDir = apkPath
+            
+            val nativeLibDir = appInfo.nativeLibraryDir
+            if (!nativeLibDir.isNullOrBlank()) {
+                addNativeLibraryDir(context, nativeLibDir)
+            }
+            
+            val classNames = getFactoryClassNames(apkPath, context)
+            if (classNames.isEmpty()) {
+                return emptyList()
+            }
+            
+            val classLoader = PathClassLoader(apkPath, context.classLoader)
+            
+            classNames.flatMap { className ->
+                loadPluginsFromFactory(classLoader, className, context, packageInfo.packageName, apkPath)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load plugins from APK: $apkPath", e)
+            emptyList()
+        }
+    }
+    
+    private fun getFactoryClassNames(apkPath: String, context: Context): List<String> {
+        return try {
+            val packageInfo = context.packageManager.getPackageArchiveInfo(
+                apkPath,
+                PackageManager.GET_META_DATA
+            )
+            
+            val metaData = packageInfo?.applicationInfo?.metaData
+            if (metaData != null && metaData.containsKey(PLUGIN_FACTORY_CLASS_META)) {
+                val className = metaData.getString(PLUGIN_FACTORY_CLASS_META)
+                if (className != null) {
+                    listOf(className)
+                } else {
+                    emptyList()
+                }
+            } else {
+                emptyList()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get factory class names", e)
+            emptyList()
+        }
+    }
+    
+    private fun loadPluginsFromFactory(
+        classLoader: PathClassLoader,
+        className: String,
+        context: Context,
+        pluginPackageName: String?,
+        apkPath: String?
+    ): List<PluginMetadata> {
+        return try {
+            val clazz = classLoader.loadClass(className)
+            
+            if (!PluginFactory::class.java.isAssignableFrom(clazz)) {
+                Log.e(TAG, "Class $className is not a PluginFactory")
+                return emptyList()
+            }
+            
+            val factory = clazz.getDeclaredConstructor().newInstance() as PluginFactory
+            val plugins = mutableListOf<PluginMetadata>()
+            
+            val predictionPlugin = factory.createPredictionPlugin()
+            if (predictionPlugin != null) {
+                if (initializePlugin(predictionPlugin, context, pluginPackageName, apkPath)) {
+                    plugins.add(predictionPlugin)
+                    Log.d(TAG, "Loaded prediction plugin: ${predictionPlugin.name}")
+                }
+            }
+            
+            val emojiPlugin = factory.createEmojiPlugin()
+            if (emojiPlugin != null) {
+                if (initializePlugin(emojiPlugin, context, pluginPackageName, apkPath)) {
+                    plugins.add(emojiPlugin)
+                    Log.d(TAG, "Loaded emoji plugin: ${emojiPlugin.name}")
+                }
+            }
+            
+            val speechPlugin = factory.createSpeechPlugin()
+            if (speechPlugin != null) {
+                if (initializePlugin(speechPlugin, context, pluginPackageName, apkPath)) {
+                    plugins.add(speechPlugin)
+                    Log.d(TAG, "Loaded speech plugin: ${speechPlugin.name}")
+                }
+            }
+            
+            plugins
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load plugins from factory: $className", e)
+            emptyList()
+        }
+    }
+    
+    private fun initializePlugin(
+        plugin: PluginMetadata,
+        context: Context,
+        pluginPackageName: String?,
+        apkPath: String?
+    ): Boolean {
+        return try {
+            val pluginContext = if (pluginPackageName != null && pluginPackageName != context.packageName) {
+                context.createPackageContext(
+                    pluginPackageName,
+                    Context.CONTEXT_INCLUDE_CODE or Context.CONTEXT_IGNORE_SECURITY
+                )
+            } else {
+                context
+            }
+            
+            val success = plugin.initialize(pluginContext, apkPath)
+            if (!success) {
+                plugin.release()
+                Log.e(TAG, "Failed to initialize plugin: ${plugin.name}")
+            }
+            success
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize plugin: ${plugin.name}", e)
+            plugin.release()
+            false
+        }
+    }
+    
+    fun loadPluginsFromPrivateDir(context: Context): List<PluginMetadata> {
+        val plugins = mutableListOf<PluginMetadata>()
         
         val extDir = File(context.filesDir, "extensions")
         if (!extDir.exists()) {
-            return extensions
+            return plugins
         }
         
         extDir.listFiles()?.forEach { file ->
             if (file.isFile && file.name.endsWith(".apk")) {
-                extensions.addAll(loadExtensionsFromApkCached(context, file.absolutePath))
+                plugins.addAll(loadPluginsFromApkCached(context, file.absolutePath))
             }
         }
         
-        return extensions
+        return plugins
+    }
+    
+    fun getLoadedPlugin(id: String): PluginMetadata? = loadedPlugins[id]
+    
+    fun removeLoadedPlugin(id: String) {
+        loadedPlugins.remove(id)
+        Log.d(TAG, "Removed plugin: $id")
     }
     
     fun clearCachedApk(apkPath: String) {
@@ -231,8 +291,9 @@ object ExtensionLoader {
         Log.d(TAG, "Cleared cached APK: $apkPath")
     }
     
-    fun clearAllCachedExtensions() {
+    fun clearAllCachedPlugins() {
         loadedApks.clear()
-        Log.d(TAG, "Cleared all cached APKs")
+        loadedPlugins.clear()
+        Log.d(TAG, "Cleared all cached plugins")
     }
 }

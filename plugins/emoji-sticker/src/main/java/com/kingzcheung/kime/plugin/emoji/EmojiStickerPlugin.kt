@@ -3,17 +3,19 @@ package com.kingzcheung.kime.plugin.emoji
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.kingzcheung.kime.plugin.api.*
+import com.kingzcheung.kime.plugin.api.EmojiItem
+import com.kingzcheung.kime.plugin.api.EmojiPlugin
+import com.kingzcheung.kime.plugin.api.PluginType
 import java.io.File
 import java.util.zip.ZipFile
 
-class EmojiStickerPlugin : KimeExtension {
+class EmojiStickerPlugin : EmojiPlugin {
     
-    override val id: String = "emoji_sticker_plugin"
-    override val name: String = "恶搞兔表情包"
-    override val description: String = "提供8个恶搞兔表情包"
-    override val type: ExtensionType = ExtensionType.EMOJI
-    override val version: String = "1.0.0"
+    override val id = "emoji_sticker_plugin"
+    override val name = "恶搞兔表情包"
+    override val description = "提供8个恶搞兔表情包"
+    override val version = "1.0.0"
+    override val type = PluginType.EMOJI
     
     private lateinit var context: Context
     private var apkPath: String? = null
@@ -130,21 +132,20 @@ class EmojiStickerPlugin : KimeExtension {
         }
     }
     
-    override suspend fun process(input: ExtensionInput): ExtensionResult {
-        val searchText = input.text ?: ""
-        
-        val filtered = if (searchText.isEmpty()) {
+    override suspend fun getEmojis(category: String?, searchText: String?, topK: Int): List<EmojiItem> {
+        val filtered = if (searchText.isNullOrEmpty()) {
             emojiList
         } else {
-            emojiList.filter { emoji ->
-                emoji.displayText.contains(searchText) || 
-                emoji.insertText.contains(searchText)
+            emojiList.filter { 
+                it.displayText.contains(searchText) || it.insertText.contains(searchText)
             }
         }
         
-        val result = filtered.take(input.topK)
-        
-        return ExtensionResult.Emojis(result)
+        return filtered.take(topK)
+    }
+    
+    override suspend fun getCategories(): List<String> {
+        return listOf("恶搞兔")
     }
     
     override fun release() {
