@@ -132,15 +132,30 @@ dependencies {
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     
-    <!-- 声明这是一个 Kime 插件 -->
-    <uses-feature android:name="com.kingzcheung.kime.extension" />
-    
     <application
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name">
+        android:allowBackup="false"
+        android:label="@string/app_name"
+        android:supportsRtl="true">
         
-        <!-- 指定插件工厂类（重要：使用新的 meta-data 名称） -->
+        <!-- 声明这是一个 Kime 插件（通过 Intent Filter） -->
+        <activity
+            android:name=".PluginDeclaration"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.kingzcheung.kime.plugin.EXTENSION" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        
+        <!-- 插件设置界面（可选） -->
+        <activity
+            android:name=".PluginSettingsActivity"
+            android:exported="true"
+            android:label="插件设置"
+            android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        </activity>
+        
+        <!-- 指定插件工厂类 -->
         <meta-data
             android:name="com.kingzcheung.kime.plugin.factory.class"
             android:value="com.example.plugin.MyPluginFactory" />
@@ -189,21 +204,21 @@ class MyPredictionPlugin : PredictionPlugin {
         }
     }
     
-    override suspend fun predict(inputText: String, topK: Int): List<Candidate> {
+    override suspend fun predict(inputText: String, topK: Int): List<PredictionCandidate> {
         if (!isInitialized) return emptyList()
         if (inputText.isEmpty()) return emptyList()
         
         return try {
             // 实现预测逻辑
             val results = doPredict(inputText, topK)
-            results.map { Candidate(it, score = 1.0f, source = id) }
+            results.map { PredictionCandidate(it, score = 1.0f) }
         } catch (e: Exception) {
             Log.e(TAG, "Prediction failed", e)
             emptyList()
         }
     }
     
-    override suspend fun learn(text: String) {
+    override fun learn(text: String) {
         // 学习用户输入
     }
     
@@ -256,7 +271,7 @@ class MyEmojiPlugin : EmojiPlugin {
     
     override fun initialize(context: Context): Boolean = true
     
-    override suspend fun getEmojis(category: String?, searchText: String?, topK: Int): List<EmojiItem> {
+    override suspend fun getEmojis(category: String?, searchText: String?, topK: Int = 100): List<EmojiItem> {
         var result = emojis
         
         category?.let { cat ->
@@ -417,15 +432,16 @@ adb push my-kime-plugin-release.apk /sdcard/
 
 ```kotlin
 interface PredictionPlugin : PluginMetadata {
-    suspend fun predict(inputText: String, topK: Int): List<Candidate>
-    suspend fun learn(text: String)
-    suspend fun saveLearnedData()
+    suspend fun predict(inputText: String, topK: Int = 5): List<PredictionCandidate>
+    
+    fun learn(text: String) {}
+    
+    suspend fun saveLearnedData() {}
 }
 
-data class Candidate(
+data class PredictionCandidate(
     val text: String,
-    val score: Float = 0f,
-    val source: String = ""
+    val score: Float = 1.0f
 )
 ```
 
@@ -433,7 +449,7 @@ data class Candidate(
 
 ```kotlin
 interface EmojiPlugin : PluginMetadata {
-    suspend fun getEmojis(category: String?, searchText: String?, topK: Int): List<EmojiItem>
+    suspend fun getEmojis(category: String?, searchText: String?, topK: Int = 100): List<EmojiItem>
     suspend fun getCategories(): List<String>
 }
 
