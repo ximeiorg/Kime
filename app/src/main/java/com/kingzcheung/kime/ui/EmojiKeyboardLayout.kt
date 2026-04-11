@@ -16,9 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -29,6 +33,7 @@ import com.kingzcheung.kime.plugin.api.ExtensionResult
 import com.kingzcheung.kime.plugin.api.ExtensionType
 import com.kingzcheung.kime.plugin.api.EmojiItem
 import com.kingzcheung.kime.clipboard.ClipboardManager
+import com.kingzcheung.kime.settings.SettingsPreferences
 import kotlinx.coroutines.launch
 
 data class EmojiCategory(
@@ -160,6 +165,12 @@ fun EmojiKeyboardLayout(
                     Log.d("EmojiKeyboard", "Found ${emojiExtensions.size} emoji extensions")
                     
                     emojiExtensions.forEach { extension ->
+                        val isEnabled = SettingsPreferences.isPluginEnabled(context, extension.id)
+                        if (!isEnabled) {
+                            Log.d("EmojiKeyboard", "Skipping disabled plugin: ${extension.name}")
+                            return@forEach
+                        }
+                        
                         Log.d("EmojiKeyboard", "Loading emojis from: ${extension.name}")
                         
                         val result = extension.process(ExtensionInput(text = "", topK = 100))
@@ -410,13 +421,15 @@ fun PluginEmojiButton(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    var containerWidth by remember { mutableStateOf(0) }
     
     Box(
         modifier = modifier
+            .onSizeChanged { size -> containerWidth = size.width }
             .clip(RoundedCornerShape(4.dp))
             .background(Color.LightGray.copy(alpha = 0.1f))
             .clickable(onClick = onClick)
-            .padding(2.dp),
+            .padding(horizontal = 2.dp, vertical = 1.dp),
         contentAlignment = Alignment.Center
     ) {
         if (emojiItem.imageUrl != null) {
@@ -432,12 +445,21 @@ fun PluginEmojiButton(
                 contentScale = ContentScale.Fit
             )
         } else {
+            val textLength = emojiItem.displayText.length
+            val fontSize = when {
+                textLength <= 3 -> 10.sp
+                textLength <= 4 -> 8.sp
+                textLength <= 5 -> 6.sp
+                else -> 5.sp
+            }
+            
             Text(
                 text = emojiItem.displayText,
-                fontSize = 11.sp,
+                fontSize = fontSize,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
-                softWrap = false
+                softWrap = false,
+                overflow = TextOverflow.Visible
             )
         }
     }
