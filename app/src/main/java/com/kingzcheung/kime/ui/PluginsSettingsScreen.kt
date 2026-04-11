@@ -263,52 +263,49 @@ private fun ExtensionItem(
                 }
             }
             
-            Switch(
-                checked = isEnabled,
-                onCheckedChange = { enabled ->
-                    isEnabled = enabled
-                    SettingsPreferences.setPluginEnabled(context, extension.id, enabled)
-                },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = MaterialTheme.colorScheme.primary,
-                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Switch(
+                    checked = isEnabled,
+                    onCheckedChange = { enabled ->
+                        isEnabled = enabled
+                        SettingsPreferences.setPluginEnabled(context, extension.id, enabled)
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                    )
                 )
-            )
-        }
-        
-        Spacer(modifier = Modifier.height(8.dp))
-        
-        OutlinedButton(
-            onClick = {
-                try {
-                    val packageName = when (extension.id) {
-                        "plugin_prediction_onnx" -> "com.kingzcheung.kime.plugin.prediction"
-                        "kaomoji_plugin" -> "com.kingzcheung.kime.plugin.kaomoji"
-                        "emoji_sticker_plugin" -> "com.kingzcheung.kime.plugin.emoji"
-                        else -> extension.id
+                
+                IconButton(
+                    onClick = {
+                        try {
+                            val packageName = when (extension.id) {
+                                "plugin_prediction_onnx" -> "com.kingzcheung.kime.plugin.prediction"
+                                "kaomoji_plugin" -> "com.kingzcheung.kime.plugin.kaomoji"
+                                "emoji_sticker_plugin" -> "com.kingzcheung.kime.plugin.emoji"
+                                else -> extension.id
+                            }
+                            
+                            val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            intent.data = Uri.parse("package:$packageName")
+                            context.startActivity(intent)
+                            
+                            android.widget.Toast.makeText(context, "请在应用信息页面卸载插件", android.widget.Toast.LENGTH_LONG).show()
+                        } catch (e: Exception) {
+                            android.widget.Toast.makeText(context, "无法打开应用详情: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                        }
                     }
-                    
-                    val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                    intent.data = Uri.parse("package:$packageName")
-                    context.startActivity(intent)
-                    
-                    android.widget.Toast.makeText(context, "请在应用信息页面卸载插件", android.widget.Toast.LENGTH_LONG).show()
-                } catch (e: Exception) {
-                    android.widget.Toast.makeText(context, "无法打开应用详情: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "卸载插件",
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
-            },
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.error
-            )
-        ) {
-            Icon(
-                Icons.Default.Delete,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("卸载插件")
+            }
         }
     }
 }
