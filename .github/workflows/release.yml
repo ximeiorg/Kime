@@ -103,6 +103,28 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
         
+      - name: Find signed APKs
+        id: find_apks
+        run: |
+          MAIN_APKS=$(find app/build/outputs/apk/release -name "*-signed.apk" -type f | sort | tr '\n' ':' | sed 's/:$//')
+          EMOJI_APKS=$(find plugins/emoji-sticker/build/outputs/apk/release -name "*-signed.apk" -type f | tr '\n' ':' | sed 's/:$//')
+          KAOMOJI_APKS=$(find plugins/kaomoji/build/outputs/apk/release -name "*-signed.apk" -type f | tr '\n' ':' | sed 's/:$//')
+          PREDICTION_APKS=$(find plugins/prediction-onnx/build/outputs/apk/release -name "*-signed.apk" -type f | tr '\n' ':' | sed 's/:$//')
+          
+          echo "main_apks=$MAIN_APKS" >> $GITHUB_OUTPUT
+          echo "emoji_apks=$EMOJI_APKS" >> $GITHUB_OUTPUT
+          echo "kaomoji_apks=$KAOMOJI_APKS" >> $GITHUB_OUTPUT
+          echo "prediction_apks=$PREDICTION_APKS" >> $GITHUB_OUTPUT
+          
+          echo "Main App APKs:"
+          echo "$MAIN_APKS" | tr ':' '\n'
+          echo "Emoji Plugin APKs:"
+          echo "$EMOJI_APKS" | tr ':' '\n'
+          echo "Kaomoji Plugin APKs:"
+          echo "$KAOMOJI_APKS" | tr ':' '\n'
+          echo "Prediction Plugin APKs:"
+          echo "$PREDICTION_APKS" | tr ':' '\n'
+        
       - name: Generate changelog
         id: changelog
         run: |
@@ -115,17 +137,6 @@ jobs:
           echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-        
-      - name: List Signed APKs
-        run: |
-          echo "Main App APKs:"
-          echo "${{ steps.sign_main_app.outputs.signedReleaseFiles }}" | tr ':' '\n'
-          echo "\nEmoji Plugin APKs:"
-          echo "${{ steps.sign_emoji_plugin.outputs.signedReleaseFiles }}" | tr ':' '\n'
-          echo "\nKaomoji Plugin APKs:"
-          echo "${{ steps.sign_kaomoji_plugin.outputs.signedReleaseFiles }}" | tr ':' '\n'
-          echo "\nPrediction Plugin APKs:"
-          echo "${{ steps.sign_prediction_plugin.outputs.signedReleaseFiles }}" | tr ':' '\n'
         
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -149,10 +160,10 @@ jobs:
             ### 更新说明
             ${{ steps.changelog.outputs.CHANGELOG }}
           files: |
-            ${{ steps.sign_main_app.outputs.signedReleaseFiles }}
-            ${{ steps.sign_emoji_plugin.outputs.signedReleaseFiles }}
-            ${{ steps.sign_kaomoji_plugin.outputs.signedReleaseFiles }}
-            ${{ steps.sign_prediction_plugin.outputs.signedReleaseFiles }}
+            ${{ steps.find_apks.outputs.main_apks }}
+            ${{ steps.find_apks.outputs.emoji_apks }}
+            ${{ steps.find_apks.outputs.kaomoji_apks }}
+            ${{ steps.find_apks.outputs.prediction_apks }}
           draft: false
           prerelease: false
         env:
