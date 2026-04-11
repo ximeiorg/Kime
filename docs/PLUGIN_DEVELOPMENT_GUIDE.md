@@ -18,24 +18,26 @@ Kime 采用类似 Mihon/Tachiyomi 的动态加载插件架构：
 │                    │ PathClassLoader        │
 │                    ▼                         │
 └─────────────────────────────────────────────┘
-         │
-         │ 加载插件APK
-         ▼
+          │
+          │ 加载插件APK
+          ▼
 ┌─────────────────────────────────────────────┐
 │       插件 APK (独立安装)                    │
 │                                              │
 │  ┌─────────────────────────────────────┐   │
-│  │   OnnxPluginFactory                  │   │
-│  │   - createExtensions()               │   │
-│  │   - 返回插件实例列表                  │   │
+│  │   MyPluginFactory                    │   │
+│  │   - createPredictionPlugin()         │   │
+│  │   - createEmojiPlugin()              │   │
+│  │   - createSpeechPlugin()             │   │
 │  └─────────────────────────────────────┘   │
 │                    │                         │
 │                    ▼                         │
 │  ┌─────────────────────────────────────┐   │
-│  │   OnnxPredictionPlugin               │   │
+│  │   MyPredictionPlugin                 │   │
 │  │   - id, name, type, version          │   │
 │  │   - initialize()                     │   │
-│  │   - process()                        │   │
+│  │   - predict()                        │   │
+│  │   - learn()                          │   │
 │  │   - release()                        │   │
 │  └─────────────────────────────────────┘   │
 └─────────────────────────────────────────────┘
@@ -43,11 +45,19 @@ Kime 采用类似 Mihon/Tachiyomi 的动态加载插件架构：
 
 ## 插件类型
 
+Kime 插件系统支持三种独立插件类型：
+
+| 类型 | 接口 | 用途 |
+|------|------|------|
+| PREDICTION | PredictionPlugin | 联想词预测 |
+| SPEECH | SpeechPlugin | 语音转文字 |
+| EMOJI | EmojiPlugin | 表情输入 |
+
 ```kotlin
-enum class ExtensionType {
+enum class PluginType {
     PREDICTION,  // 联想词预测
     SPEECH,      // 语音转文字
-    EMOJI        // 表情输入（支持文本和图片）
+    EMOJI        // 表情输入
 }
 ```
 
@@ -64,7 +74,7 @@ my-kime-plugin/
 └── src/main/
     ├── AndroidManifest.xml
     ├── java/com/example/plugin/
-    │   ├── MyPlugin.kt
+    │   ├── MyPredictionPlugin.kt
     │   └── MyPluginFactory.kt
     └── res/
         └── values/strings.xml
@@ -83,7 +93,6 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        // 应用ID必须唯一
         applicationId = "com.example.kime.plugin.myplugin"
         minSdk = 28
         targetSdk = 35
@@ -110,14 +119,10 @@ android {
 }
 
 dependencies {
-    // 必须依赖 plugin-api（需要发布到 Maven 或本地引用）
-    implementation("com.kingzcheung.kime:plugin-api:1.0.0")
+    implementation(project(":plugin-api"))
     
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
-    
-    // 如果需要 ONNX Runtime
-    implementation("com.microsoft.onnxruntime:onnxruntime-android:latest.release")
 }
 ```
 
@@ -127,7 +132,7 @@ dependencies {
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     
-    <!-- 声明这是一个 Kime 插件（必须有） -->
+    <!-- 声明这是一个 Kime 插件 -->
     <uses-feature android:name="com.kingzcheung.kime.extension" />
     
     <application
@@ -135,9 +140,9 @@ dependencies {
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name">
         
-        <!-- 指定插件工厂类（必须有） -->
+        <!-- 指定插件工厂类（重要：使用新的 meta-data 名称） -->
         <meta-data
-            android:name="com.kingzcheung.kime.extension.factory.class"
+            android:name="com.kingzcheung.kime.plugin.factory.class"
             android:value="com.example.plugin.MyPluginFactory" />
         
     </application>
@@ -145,7 +150,7 @@ dependencies {
 </manifest>
 ```
 
-### 4. 实现插件接口
+### 4. 实现联想词插件
 
 ```kotlin
 package com.example.plugin
@@ -153,22 +158,14 @@ package com.example.plugin
 import android.content.Context
 import android.util.Log
 import com.kingzcheung.kime.plugin.api.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
-class MyPredictionPlugin : KimeExtension {
+class MyPredictionPlugin : PredictionPlugin {
     
-    // 唯一标识（必须唯一）
     override val id = "my_prediction_plugin"
-    
-    // 显示名称
     override val name = "我的联想引擎"
-    
-    // 插件类型
-    override val type = ExtensionType.PREDICTION
-    
-    // 版本号
+    override val description = "基于xxx的联想插件"
     override val version = "1.0.0"
+    override val type = PluginType.PREDICTION
     
     private var isInitialized = false
     
@@ -176,26 +173,13 @@ class MyPredictionPlugin : KimeExtension {
         private const val TAG = "MyPredictionPlugin"
     }
     
-    /**
-     * 初始化插件
-     * 加载模型、准备资源等
-     */
     override fun initialize(context: Context): Boolean {
-        if (isInitialized) {
-            Log.d(TAG, "Already initialized")
-            return true
-        }
+        if (isInitialized) return true
         
         Log.d(TAG, "Initializing plugin...")
         
-        // 在这里加载模型、准备资源
-        // 注意：context 是主应用的 Context
-        
         try {
-            // 示例：加载模型文件
-            // val modelFile = File(context.filesDir, "my_model.bin")
-            // loadModel(modelFile)
-            
+            // 加载模型、准备资源
             isInitialized = true
             Log.d(TAG, "Plugin initialized successfully")
             return true
@@ -205,87 +189,180 @@ class MyPredictionPlugin : KimeExtension {
         }
     }
     
-    /**
-     * 处理输入并返回结果
-     */
-    override suspend fun process(input: ExtensionInput): ExtensionResult {
-        if (!isInitialized) {
-            return ExtensionResult.Error("Plugin not initialized")
-        }
+    override suspend fun predict(inputText: String, topK: Int): List<Candidate> {
+        if (!isInitialized) return emptyList()
+        if (inputText.isEmpty()) return emptyList()
         
-        val text = input.text
-        if (text.isNullOrEmpty()) {
-            Log.d(TAG, "Empty input")
-            return ExtensionResult.Text(emptyList())
-        }
-        
-        return withContext(Dispatchers.Default) {
-            try {
-                Log.d(TAG, "Processing: '$text', topK=${input.topK}")
-                
-                // 实现预测逻辑
-                val candidates = predict(text, input.topK)
-                
-                Log.d(TAG, "Result: ${candidates.joinToString()}")
-                ExtensionResult.Text(candidates)
-            } catch (e: Exception) {
-                Log.e(TAG, "Processing failed", e)
-                ExtensionResult.Error("Processing failed: ${e.message}", e)
-            }
+        return try {
+            // 实现预测逻辑
+            val results = doPredict(inputText, topK)
+            results.map { Candidate(it, score = 1.0f, source = id) }
+        } catch (e: Exception) {
+            Log.e(TAG, "Prediction failed", e)
+            emptyList()
         }
     }
     
-    /**
-     * 释放资源
-     */
+    override suspend fun learn(text: String) {
+        // 学习用户输入
+    }
+    
+    override suspend fun saveLearnedData() {
+        // 保存学习数据
+    }
+    
     override fun release() {
-        if (isInitialized) {
-            // 释放模型、清理资源
-            isInitialized = false
-            Log.d(TAG, "Plugin released")
-        }
+        isInitialized = false
     }
     
-    // 私有方法：实现预测逻辑
-    private fun predict(text: String, topK: Int): List<String> {
-        // 这里实现实际的预测逻辑
-        // 例如调用 ONNX 模型
-        
-        // 示例返回（实际应替换为真实逻辑）
+    private fun doPredict(text: String, topK: Int): List<String> {
+        // 实现预测逻辑
         return listOf("候选1", "候选2", "候选3").take(topK)
     }
 }
 ```
 
-### 5. 实现工厂接口
+### 5. 实现表情插件
 
 ```kotlin
 package com.example.plugin
 
-import com.kingzcheung.kime.plugin.api.KimeExtension
-import com.kingzcheung.kime.plugin.api.KimeExtensionFactory
+import android.content.Context
+import com.kingzcheung.kime.plugin.api.*
 
-class MyPluginFactory : KimeExtensionFactory {
+class MyEmojiPlugin : EmojiPlugin {
     
-    /**
-     * 创建插件实例列表
-     * 一个插件APK可以提供多个插件
-     */
-    override fun createExtensions(): List<KimeExtension> {
-        return listOf(
-            MyPredictionPlugin()
-            // 可以添加更多插件
-            // MySpeechPlugin(),
-            // MyEmojiPlugin()
+    override val id = "my_emoji_plugin"
+    override val name = "自定义表情包"
+    override val description = "我的表情集合"
+    override val version = "1.0.0"
+    override val type = PluginType.EMOJI
+    
+    private val emojis = listOf(
+        EmojiItem(
+            id = "emoji_1",
+            displayText = "😊",
+            insertText = "😊",
+            category = "表情"
+        ),
+        EmojiItem(
+            id = "emoji_2",
+            displayText = "[开心]",
+            insertText = "[开心]",
+            imageUrl = "file:///android_asset/emoji/happy.png",
+            category = "图片表情"
         )
+    )
+    
+    override fun initialize(context: Context): Boolean = true
+    
+    override suspend fun getEmojis(category: String?, searchText: String?, topK: Int): List<EmojiItem> {
+        var result = emojis
+        
+        category?.let { cat ->
+            result = result.filter { it.category == cat }
+        }
+        
+        searchText?.let { text ->
+            if (text.isNotEmpty()) {
+                result = result.filter { 
+                    it.displayText.contains(text) || 
+                    it.insertText.contains(text)
+                }
+            }
+        }
+        
+        return result.take(topK)
+    }
+    
+    override suspend fun getCategories(): List<String> {
+        return emojis.mapNotNull { it.category }.distinct()
+    }
+    
+    override fun release() {}
+}
+```
+
+### 6. 实现语音插件
+
+```kotlin
+package com.example.plugin
+
+import android.content.Context
+import com.kingzcheung.kime.plugin.api.*
+
+class MySpeechPlugin : SpeechPlugin {
+    
+    override val id = "my_speech_plugin"
+    override val name = "离线语音识别"
+    override val description = "基于xxx的语音识别"
+    override val version = "1.0.0"
+    override val type = PluginType.SPEECH
+    
+    override val supportsRealtime = true
+    override val requiresNetwork = false
+    
+    private var state = RecognitionState.IDLE
+    
+    override fun initialize(context: Context): Boolean = true
+    
+    override fun startRecognition(config: AudioConfig, onResult: (SpeechResult) -> Unit): Boolean {
+        state = RecognitionState.LISTENING
+        // 启动识别
+        return true
+    }
+    
+    override fun sendAudioChunk(data: ByteArray) {
+        // 发送音频数据
+    }
+    
+    override fun stopRecognition() {
+        state = RecognitionState.IDLE
+    }
+    
+    override fun cancelRecognition() {
+        state = RecognitionState.IDLE
+    }
+    
+    override suspend fun recognizeOnce(data: ByteArray, config: AudioConfig): String? {
+        // 一次性识别
+        return "识别结果"
+    }
+    
+    override fun getState(): RecognitionState = state
+    
+    override fun release() {
+        state = RecognitionState.IDLE
     }
 }
 ```
 
-### 6. 构建插件 APK
+### 7. 实现工厂接口
+
+```kotlin
+package com.example.plugin
+
+import com.kingzcheung.kime.plugin.api.*
+
+class MyPluginFactory : PluginFactory {
+    
+    override fun createPredictionPlugin(): PredictionPlugin? {
+        return MyPredictionPlugin()
+    }
+    
+    override fun createEmojiPlugin(): EmojiPlugin? {
+        return null // 或返回 MyEmojiPlugin()
+    }
+    
+    override fun createSpeechPlugin(): SpeechPlugin? {
+        return null // 或返回 MySpeechPlugin()
+    }
+}
+```
+
+### 8. 构建插件 APK
 
 ```bash
-# 构建插件
 ./gradlew assembleRelease
 
 # 输出位置
@@ -296,8 +373,6 @@ class MyPluginFactory : KimeExtensionFactory {
 
 ### 方式1：系统安装（推荐）
 
-直接安装插件 APK 到设备：
-
 ```bash
 adb install my-kime-plugin-release.apk
 ```
@@ -305,8 +380,6 @@ adb install my-kime-plugin-release.apk
 安装后，所有 Kime 实例都可以使用此插件。
 
 ### 方式2：私有目录安装
-
-将插件 APK 放入 Kime 的私有目录：
 
 ```bash
 adb push my-kime-plugin-release.apk /sdcard/
@@ -323,158 +396,87 @@ adb push my-kime-plugin-release.apk /sdcard/
 
 2. **加载阶段**：
    - 使用 PathClassLoader 加载插件 APK
-   - 读取 `com.kingzcheung.kime.extension.factory.class` 元数据
+   - 读取 `com.kingzcheung.kime.plugin.factory.class` 元数据
 
 3. **实例化阶段**：
-   - 加载工厂类并调用 `createExtensions()`
-   - 调用每个插件的 `initialize(context)`
+   - 加载工厂类并调用对应的 createXxxPlugin() 方法
+   - 调用每个插件的 initialize(context)
 
 4. **运行阶段**：
-   - ExtensionManager 调用 `process(input)`
-   - 插件返回 ExtensionResult
+   - 根据插件类型调用对应方法
+   - 联想: predict(), learn(), saveLearnedData()
+   - 表情: getEmojis(), getCategories()
+   - 语音: startRecognition(), sendAudioChunk(), stopRecognition() 等
 
 5. **卸载阶段**：
-   - 调用 `release()` 释放资源
+   - 调用 release() 释放资源
 
-## 输入输出数据结构
+## 数据结构
 
-### ExtensionInput
+### PredictionPlugin 接口
 
 ```kotlin
-data class ExtensionInput(
-    val text: String? = null,           // 文本输入（联想词）
-    val audioData: ByteArray? = null,   // 音频数据（语音）
-    val audioSampleRate: Int = 16000,   // 采样率
-    val topK: Int = 5,                  // 返回候选数
-    val context: Map<String, Any> = emptyMap() // 额外上下文
+interface PredictionPlugin : PluginMetadata {
+    suspend fun predict(inputText: String, topK: Int): List<Candidate>
+    suspend fun learn(text: String)
+    suspend fun saveLearnedData()
+}
+
+data class Candidate(
+    val text: String,
+    val score: Float = 0f,
+    val source: String = ""
 )
 ```
 
-### ExtensionResult
+### EmojiPlugin 接口
 
 ```kotlin
-sealed class ExtensionResult {
-    // 文本结果（联想词、语音识别）
-    data class Text(val candidates: List<String>) : ExtensionResult()
-    
-    // 表情结果（支持图片）
-    data class Emojis(val items: List<EmojiItem>) : ExtensionResult()
-    
-    // 错误
-    data class Error(
-        val message: String,
-        val exception: Exception? = null
-    ) : ExtensionResult()
+interface EmojiPlugin : PluginMetadata {
+    suspend fun getEmojis(category: String?, searchText: String?, topK: Int): List<EmojiItem>
+    suspend fun getCategories(): List<String>
 }
 
 data class EmojiItem(
     val id: String,
-    val displayText: String,    // 显示文本（如 "😊"）
-    val insertText: String,     // 插入文本
-    val imageUrl: String? = null, // 图片 URL（可选）
-    val category: String? = null  // 分类
+    val displayText: String,
+    val insertText: String,
+    val imageUrl: String? = null,
+    val category: String? = null
 )
 ```
 
-## 完整示例：语音转文字插件
+### SpeechPlugin 接口
 
 ```kotlin
-class MySpeechPlugin : KimeExtension {
+interface SpeechPlugin : PluginMetadata {
+    val supportsRealtime: Boolean
+    val requiresNetwork: Boolean
     
-    override val id = "my_speech_plugin"
-    override val name = "离线语音识别"
-    override val type = ExtensionType.SPEECH
-    override val version = "1.0.0"
-    
-    private var isInitialized = false
-    
-    override fun initialize(context: Context): Boolean {
-        // 加载语音识别模型
-        // 例如 Whisper、Vosk 等
-        isInitialized = true
-        return true
-    }
-    
-    override suspend fun process(input: ExtensionInput): ExtensionResult {
-        val audioData = input.audioData
-        if (audioData == null || audioData.isEmpty()) {
-            return ExtensionResult.Error("No audio data")
-        }
-        
-        return withContext(Dispatchers.Default) {
-            try {
-                // 处理音频数据
-                val recognizedText = recognizeAudio(
-                    audioData,
-                    input.audioSampleRate
-                )
-                
-                ExtensionResult.Text(listOf(recognizedText))
-            } catch (e: Exception) {
-                ExtensionResult.Error("Recognition failed: ${e.message}", e)
-            }
-        }
-    }
-    
-    override fun release() {
-        isInitialized = false
-    }
-    
-    private fun recognizeAudio(data: ByteArray, sampleRate: Int): String {
-        // 实现语音识别逻辑
-        return "识别结果"
-    }
+    fun startRecognition(config: AudioConfig, onResult: (SpeechResult) -> Unit): Boolean
+    fun sendAudioChunk(data: ByteArray)
+    fun stopRecognition()
+    fun cancelRecognition()
+    suspend fun recognizeOnce(data: ByteArray, config: AudioConfig): String?
+    fun getState(): RecognitionState
 }
-```
 
-## 完整示例：表情插件（支持图片）
+data class AudioConfig(
+    val sampleRate: Int = 16000,
+    val encoding: AudioEncoding = AudioEncoding.PCM16,
+    val channels: Int = 1
+)
 
-```kotlin
-class MyEmojiPlugin : KimeExtension {
-    
-    override val id = "my_emoji_plugin"
-    override val name = "自定义表情包"
-    override val type = ExtensionType.EMOJI
-    override val version = "1.0.0"
-    
-    private val emojis = listOf(
-        EmojiItem(
-            id = "emoji_1",
-            displayText = "😊",
-            insertText = "😊",
-            category = "表情"
-        ),
-        EmojiItem(
-            id = "emoji_2",
-            displayText = "[开心]",
-            insertText = "[开心]",
-            imageUrl = "https://example.com/happy.png",
-            category = "图片表情"
-        )
-    )
-    
-    override fun initialize(context: Context): Boolean {
-        return true
-    }
-    
-    override suspend fun process(input: ExtensionInput): ExtensionResult {
-        // 可以根据 input.text 过滤表情
-        val keyword = input.text?.lowercase() ?: ""
-        
-        val filtered = if (keyword.isEmpty()) {
-            emojis
-        } else {
-            emojis.filter { 
-                it.displayText.contains(keyword) || 
-                it.category?.contains(keyword) == true
-            }
-        }
-        
-        return ExtensionResult.Emojis(filtered)
-    }
-    
-    override fun release() {}
-}
+enum class AudioEncoding { PCM16, OPUS, SPEEX }
+
+data class SpeechResult(
+    val text: String,
+    val isFinal: Boolean,
+    val confidence: Float = 1.0f,
+    val durationMs: Long = 0
+)
+
+enum class RecognitionState { IDLE, LISTENING, PROCESSING, ERROR }
 ```
 
 ## 注意事项
@@ -484,8 +486,6 @@ class MyEmojiPlugin : KimeExtension {
 插件获得的是**主应用的 Context**，可以访问：
 - `context.filesDir` - 主应用私有目录
 - `context.cacheDir` - 主应用缓存目录
-
-插件自己的资源需要打包在插件 APK 中。
 
 ### 2. ClassLoader 隔离
 
@@ -500,7 +500,7 @@ class MyEmojiPlugin : KimeExtension {
 ### 4. 性能
 
 - 插件在同一进程内运行，无 IPC 开销
-- 使用 `suspend fun process()` 支持异步处理
+- 使用 suspend 函数支持异步处理
 - 建议使用 `Dispatchers.Default` 处理耗时任务
 
 ### 5. 插件更新
@@ -508,20 +508,18 @@ class MyEmojiPlugin : KimeExtension {
 - 更新插件 APK 后，需要重启主应用
 - 主应用会重新扫描和加载插件
 
+### 6. meta-data 名称
+
+**重要**: AndroidManifest.xml 中的 meta-data 名称已更改：
+- 旧: `com.kingzcheung.kime.extension.factory.class`
+- 新: `com.kingzcheung.kime.plugin.factory.class`
+
 ## 示例项目
 
-查看 `sample-extension-plugin` 目录获取完整的插件示例：
-
-```
-sample-extension-plugin/
-├── build.gradle.kts           # Gradle 配置
-├── proguard-rules.pro         # ProGuard 规则
-├── src/main/
-│   ├── AndroidManifest.xml    # 插件声明
-│   └── java/com/example/kime/plugin/
-│       ├── OnnxPredictionPlugin.kt  # 插件实现
-│       └── OnnxPluginFactory.kt     # 工厂类
-```
+查看现有插件实现：
+- `plugins/prediction-onnx/` - 联想词插件（ONNX）
+- `plugins/kaomoji/` - 颜文字插件
+- `plugins/emoji-sticker/` - 表情贴纸插件
 
 ## 发布 plugin-api 到 Maven
 
