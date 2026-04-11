@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -25,9 +24,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,33 +34,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kingzcheung.kime.R
-
-@Composable
-fun TabButton(
-    text: String,
-    isSelected: Boolean,
-    backgroundColor: Color,
-    textColor: Color,
-    accentColor: Color,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .height(32.dp)
-            .clip(RoundedCornerShape(4.dp))
-            .background(if (isSelected) accentColor.copy(alpha = 0.2f) else backgroundColor)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = if (isSelected) accentColor else textColor,
-            fontSize = 13.sp,
-            fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal
-        )
-    }
-}
 
 /**
  * 候选栏组件
@@ -217,16 +187,31 @@ fun CandidateBar(
             }
             
             if (isComposing && inputText.isNotEmpty()) {
+                val inputTextInteractionSource = remember { MutableInteractionSource() }
+                val isInputTextPressed by inputTextInteractionSource.collectIsPressedAsState()
+                
                 Text(
                     text = inputText,
                     color = textColor,
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Normal,
                     modifier = Modifier
-                        .clickable(enabled = onInputTextClick != null) { 
+                        .padding(horizontal = 3.dp, vertical = 2.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(
+                            if (isInputTextPressed && onInputTextClick != null) 
+                                (if (isDarkTheme) Color.White.copy(alpha = 0.15f) else Color.Black.copy(alpha = 0.1f))
+                            else 
+                                Color.Transparent
+                        )
+                        .clickable(
+                            enabled = onInputTextClick != null,
+                            interactionSource = inputTextInteractionSource,
+                            indication = null
+                        ) { 
                             onInputTextClick?.invoke() 
                         }
-                        .padding(end = 8.dp)
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
                 )
                 
                 Box(
@@ -383,7 +368,7 @@ fun CandidateItem(
         modifier = modifier
             .clip(RoundedCornerShape(4.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 6.dp, vertical = 4.dp),
+            .padding(horizontal = 4.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // 显示候选词
