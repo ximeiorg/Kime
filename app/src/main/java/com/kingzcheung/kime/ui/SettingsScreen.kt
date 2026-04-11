@@ -313,18 +313,7 @@ fun SettingsMainContent(
                         thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
-                    SettingsItem(
-                        icon = Icons.Outlined.Mic,
-                        title = "语言转文字",
-                        subtitle = "语音输入设置",
-                        onClick = { },
-                        showArrow = true
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 56.dp),
-                        thickness = 0.5.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    )
+                    
                     SettingsItem(
                         icon = Icons.Outlined.Book,
                         title = "词库管理",
