@@ -56,7 +56,15 @@ object ExtensionManager {
     }
     
     fun reload(context: Context): Boolean {
-        Log.d(TAG, "Reloading extensions...")
+        if (isInitialized) {
+            Log.d(TAG, "ExtensionManager already initialized, skipping reload")
+            return true
+        }
+        return initialize(context)
+    }
+    
+    fun forceReload(context: Context): Boolean {
+        Log.d(TAG, "Force reloading extensions...")
         release()
         return initialize(context)
     }
