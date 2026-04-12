@@ -1,2 +1,7 @@
-# ProGuard rules for emoji-sticker plugin
-# R8 is disabled for plugins, so minimal rules needed
+# Emoji Sticker Plugin ProGuard rules
+
+# Disable obfuscation - CRITICAL for plugin compatibility
+-dontobfuscate
+
+# Preserve line numbers for debugging
+-keepattributes SourceFile,LineNumberTable

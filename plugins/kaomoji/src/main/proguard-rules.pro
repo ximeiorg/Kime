@@ -1,2 +1,7 @@
-# ProGuard rules for kaomoji plugin
-# R8 is disabled for plugins, so minimal rules needed
+# Kaomoji Plugin ProGuard rules
+
+# Disable obfuscation - CRITICAL for plugin compatibility
+-dontobfuscate
+
+# Preserve line numbers for debugging
+-keepattributes SourceFile,LineNumberTable

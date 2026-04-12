@@ -1,9 +1,12 @@
 # App ProGuard rules
 
-# Keep plugin API classes - CRITICAL for plugin compatibility
-# Plugins don't use R8, so app must not obfuscate plugin-api classes
--keep interface com.kingzcheung.kime.plugin.api.** { *; }
+# Disable obfuscation - CRITICAL for plugin compatibility
+# Allows optimization and shrinking but keeps original class/method names
+-dontobfuscate
+
+# Keep plugin API classes
 -keep class com.kingzcheung.kime.plugin.api.** { *; }
+-keep interface com.kingzcheung.kime.plugin.api.** { *; }
 
 # Keep Rime native classes
 -keep class com.kingzcheung.kime.rime.** { *; }
@@ -21,3 +24,6 @@
 
 # Keep kotlinx serialization annotations
 -keep @kotlinx.serialization.Serializable class * { *; }
+
+# Preserve line numbers for debugging
+-keepattributes SourceFile,LineNumberTable
