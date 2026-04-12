@@ -1,15 +1,15 @@
 # Emoji Sticker Plugin ProGuard rules
 
-# Disable obfuscation - CRITICAL for plugin compatibility
+# disable obfuscation
 -dontobfuscate
 
-# Keep plugin declaration activity (used for intent filter discovery)
+# CRITICAL: Keep plugin declaration activity for Intent Filter discovery
 -keep class com.kingzcheung.kime.plugin.emoji.PluginDeclaration { *; }
 
-# Keep plugin factory class
+# CRITICAL: Keep plugin factory class referenced in AndroidManifest meta-data
 -keep class com.kingzcheung.kime.plugin.emoji.EmojiPluginFactory { *; }
 
-# Keep plugin implementation
+# CRITICAL: Keep plugin implementation class
 -keep class com.kingzcheung.kime.plugin.emoji.EmojiStickerPlugin { *; }
 
 # Preserve line numbers for debugging
