@@ -1,15 +1,18 @@
-# Kaomoji Plugin ProGuard rules
-
 # disable obfuscation
 -dontobfuscate
+# disable optimizations
+-dontoptimize
 
-# CRITICAL: Keep plugin declaration activity for Intent Filter discovery
+# Keep Kotlin standard library
+-keep class kotlin.** { *; }
+-keep class kotlin.jvm.** { *; }
+-keep class kotlin.collections.** { *; }
+-keep class kotlin.coroutines.** { *; }
+-keep class kotlin.reflect.** { *; }
+
+# CRITICAL: Keep plugin classes for discovery
 -keep class com.kingzcheung.kime.plugin.kaomoji.PluginDeclaration { *; }
-
-# CRITICAL: Keep plugin factory class referenced in AndroidManifest meta-data
 -keep class com.kingzcheung.kime.plugin.kaomoji.KaomojiPluginFactory { *; }
-
-# CRITICAL: Keep plugin implementation class
 -keep class com.kingzcheung.kime.plugin.kaomoji.KaomojiPlugin { *; }
 
 # Preserve line numbers for debugging

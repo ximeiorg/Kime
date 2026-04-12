@@ -19,7 +19,14 @@ val downloadOnnx by tasks.registering {
     doLast {
         val tmpDir = temporaryDir
         val aarFile = File(tmpDir, "onnxruntime.aar")
-        val zipFile = File(tmpDir, "onnxruntime.zip")
+        
+        // Check if already downloaded
+        val libDir = file("src/main/cpp/onnxruntime/lib")
+        val universalSo = file("src/main/jniLibs/arm64-v8a/libonnxruntime.so")
+        if (universalSo.exists()) {
+            println("ONNX Runtime files already exist, skipping download")
+            return@doLast
+        }
         
         println("Downloading ONNX Runtime ${onnxVersion}...")
         
@@ -76,7 +83,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            isShrinkResources = true
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
