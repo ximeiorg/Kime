@@ -1,5 +1,2 @@
-# Add project specific ProGuard rules here.
-
-# Keep plugin classes
--keep class com.kingzcheung.kime.plugin.api.** { *; }
--keep class com.kingzcheung.kime.plugin.emoji.** { *; }
+# ProGuard rules for emoji-sticker plugin
+# R8 is disabled for plugins, so minimal rules needed

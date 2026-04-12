@@ -1,5 +1,2 @@
-# Add project specific ProGuard rules here.
-
-# Keep plugin classes
--keep class com.kingzcheung.kime.plugin.api.** { *; }
--keep class com.kingzcheung.kime.plugin.kaomoji.** { *; }
+# ProGuard rules for kaomoji plugin
+# R8 is disabled for plugins, so minimal rules needed

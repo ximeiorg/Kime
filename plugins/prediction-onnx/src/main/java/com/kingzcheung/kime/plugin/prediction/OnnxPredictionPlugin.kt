@@ -14,9 +14,9 @@ import java.io.File
 class OnnxPredictionPlugin : PredictionPlugin {
     
     override val id = "plugin_prediction_onnx"
-    override val name = "ONNX 联想词插件"
+    override val name = "Kime: ONNX 联想词"
     override val description = "基于 ONNX Runtime 的智能联想词预测，支持用户输入学习"
-    override val version = "1.0.0"
+    override val version = "1.0.1"
     override val type = PluginType.PREDICTION
     
     private var isInitialized = false

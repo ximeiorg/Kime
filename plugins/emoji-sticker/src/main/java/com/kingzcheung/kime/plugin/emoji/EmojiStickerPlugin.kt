@@ -12,9 +12,9 @@ import java.util.zip.ZipFile
 class EmojiStickerPlugin : EmojiPlugin {
     
     override val id = "emoji_sticker_plugin"
-    override val name = "恶搞兔表情包"
+    override val name = "Kime: 恶搞兔表情包"
     override val description = "提供8个恶搞兔表情包"
-    override val version = "1.0.0"
+    override val version = "1.0.1"
     override val type = PluginType.EMOJI
     
     private lateinit var context: Context

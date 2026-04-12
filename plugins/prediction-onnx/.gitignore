@@ -22,7 +22,7 @@ app/release
 *.tar.xz
 *.tar.gz
 *.zip
-
+/release
 # Association model weights (large files, manually placed)
 app/src/main/assets/association_model
 

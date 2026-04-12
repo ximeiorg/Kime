@@ -14,7 +14,7 @@
 .cxx
 local.properties
 build/
-
+/release
 # librime and its dependencies
 app/src/main/jni/librime/
 app/src/main/jni/snappy/

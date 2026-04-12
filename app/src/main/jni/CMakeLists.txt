@@ -54,6 +54,7 @@ set(LevelDb_INCLUDE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/librime/deps/leveldb/inclu
 set(LevelDb_LIBRARY leveldb CACHE STRING "" FORCE)
 set(LevelDb_STATIC TRUE CACHE BOOL "" FORCE)
 
+set(ENABLE_TOOLS OFF CACHE BOOL "" FORCE)
 add_subdirectory(librime/deps/marisa-trie)
 target_compile_options(marisa PRIVATE "-ffile-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=.")
 

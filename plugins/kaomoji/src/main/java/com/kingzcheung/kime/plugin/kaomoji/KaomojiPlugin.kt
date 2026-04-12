@@ -10,9 +10,9 @@ import com.kingzcheung.kime.plugin.api.PluginType
 class KaomojiPlugin : EmojiPlugin {
     
     override val id = "kaomoji_plugin"
-    override val name = "颜文字表情包"
+    override val name = "Kime: 颜文字表情包"
     override val description = "提供精选日式颜文字表情"
-    override val version = "1.0.0"
+    override val version = "1.0.1"
     override val type = PluginType.EMOJI
     
     private var kaomojiList: List<EmojiItem> = emptyList()
