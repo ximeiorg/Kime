@@ -4,6 +4,10 @@
 # Allows optimization and shrinking but keeps original class/method names
 -dontobfuscate
 
+# Keep plugin system classes - CRITICAL for plugin loading
+-keep class com.kingzcheung.kime.plugin.** { *; }
+-keep interface com.kingzcheung.kime.plugin.** { *; }
+
 # Keep plugin API classes
 -keep class com.kingzcheung.kime.plugin.api.** { *; }
 -keep interface com.kingzcheung.kime.plugin.api.** { *; }
@@ -27,3 +31,15 @@
 
 # Preserve line numbers for debugging
 -keepattributes SourceFile,LineNumberTable
+
+# Keep Android DexClassLoader internals used by plugin loader (reflection)
+-keep class dalvik.system.BaseDexClassLoader { *; }
+-keep class dalvik.system.DexClassLoader { *; }
+-keep class dalvik.system.PathClassLoader { *; }
+-keepclassmembers class dalvik.system.BaseDexClassLoader {
+    *** pathList;
+}
+-keepclassmembers class * {
+    *** pathList;
+    *** nativeLibraryDirectories;
+}
