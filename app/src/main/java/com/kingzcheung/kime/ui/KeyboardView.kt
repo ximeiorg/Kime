@@ -4,11 +4,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.kingzcheung.kime.clipboard.ClipboardItem
 import com.kingzcheung.kime.settings.SchemaInfo
@@ -40,6 +42,7 @@ fun KeyboardView(
     clipboardItems: List<ClipboardItem> = emptyList(),
     quickSendItems: List<ClipboardItem> = emptyList(),
     associationCandidates: Array<String> = emptyArray(),
+    keyboardHeightDp: Int = 290,
     onKeyPress: (String, Boolean) -> Unit,
     onKeyPressDown: ((String) -> Unit)? = null,
     onCandidateSelect: (Int) -> Unit,
@@ -52,7 +55,7 @@ fun KeyboardView(
     onAddToQuickSend: ((Long) -> Unit)? = null,
     onRemoveFromQuickSend: ((Long) -> Unit)? = null,
     onQuickSend: (() -> Unit)? = null,
-    onManageDict: (() -> Unit)? = null,
+    onKeyboardResize: (() -> Unit)? = null,
     onReloadConfig: (() -> Unit)? = null,
     onSettings: (() -> Unit)? = null,
     onSwitchSchema: ((String) -> Unit)? = null,
@@ -183,7 +186,10 @@ onHideKeyboard = {
                             showMenu = false
                             onQuickSend?.invoke() 
                         },
-                        onManageDict = { onManageDict?.invoke(); showMenu = false },
+                        onKeyboardResize = { 
+                            showMenu = false 
+                            onKeyboardResize?.invoke()
+                        },
                         onEmoji = { 
                             showEmoji = true
                             showMenu = false 
@@ -338,8 +344,8 @@ onHideKeyboard = {
                                 )
                             }
                     }
-                }
-            }
-        }
-    }
 }
+             }
+         }
+     }
+ }

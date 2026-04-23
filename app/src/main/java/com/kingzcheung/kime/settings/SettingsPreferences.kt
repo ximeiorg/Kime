@@ -23,6 +23,9 @@ object SettingsPreferences {
     private const val KEY_STT_PROVIDER = "stt_provider"
     private const val KEY_FUNASR_API_KEY = "funasr_api_key"
     
+    private const val KEY_KEYBOARD_HEIGHT_DP = "keyboard_height_dp"
+    private const val DEFAULT_KEYBOARD_HEIGHT_DP = 290
+    
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
@@ -151,4 +154,14 @@ object SettingsPreferences {
     fun setFunAsrApiKey(context: Context, apiKey: String) {
         getPrefs(context).edit().putString(KEY_FUNASR_API_KEY, apiKey).apply()
     }
+    
+    fun getKeyboardHeightDp(context: Context): Int {
+        return getPrefs(context).getInt(KEY_KEYBOARD_HEIGHT_DP, DEFAULT_KEYBOARD_HEIGHT_DP)
+    }
+    
+    fun setKeyboardHeightDp(context: Context, heightDp: Int) {
+        getPrefs(context).edit().putInt(KEY_KEYBOARD_HEIGHT_DP, heightDp).apply()
+    }
+    
+    fun getDefaultKeyboardHeightDp(): Int = DEFAULT_KEYBOARD_HEIGHT_DP
 }

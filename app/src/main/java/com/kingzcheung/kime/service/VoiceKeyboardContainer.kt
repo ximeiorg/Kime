@@ -21,6 +21,16 @@ class VoiceKeyboardContainer(
     private var lastLeftActive = false
     private var lastRightActive = false
     
+    fun updateHeight(heightDp: Int) {
+        val heightPx = (heightDp * resources.displayMetrics.density).toInt()
+        val params = layoutParams
+        if (params != null && params.height != heightPx) {
+            params.height = heightPx
+            layoutParams = params
+            requestLayout()
+        }
+    }
+    
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
         ev?.let {
             when (it.action) {

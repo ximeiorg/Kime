@@ -16,6 +16,10 @@ data class InputUIState(
     val darkMode: Int = 0,
     val themeId: String = "ocean_blue",
     val showBottomButtons: Boolean = false,
+    val keyboardHeightDp: Int = 290,
+    val showKeyboardResize: Boolean = false,
+    val resizePreviewHeightDp: Int = 290,
+    val originalKeyboardHeightDp: Int = 290,
     val associationCandidates: Array<String> = emptyArray(),
     val associationEnabled: Boolean = false,
     val isVoiceMode: Boolean = false,
@@ -44,6 +48,10 @@ data class InputUIState(
         if (darkMode != other.darkMode) return false
         if (themeId != other.themeId) return false
         if (showBottomButtons != other.showBottomButtons) return false
+        if (keyboardHeightDp != other.keyboardHeightDp) return false
+        if (showKeyboardResize != other.showKeyboardResize) return false
+        if (resizePreviewHeightDp != other.resizePreviewHeightDp) return false
+        if (originalKeyboardHeightDp != other.originalKeyboardHeightDp) return false
         if (!associationCandidates.contentEquals(other.associationCandidates)) return false
         if (associationEnabled != other.associationEnabled) return false
         if (isVoiceMode != other.isVoiceMode) return false
@@ -70,6 +78,10 @@ data class InputUIState(
         result = 31 * result + darkMode
         result = 31 * result + themeId.hashCode()
         result = 31 * result + showBottomButtons.hashCode()
+        result = 31 * result + keyboardHeightDp
+        result = 31 * result + showKeyboardResize.hashCode()
+        result = 31 * result + resizePreviewHeightDp
+        result = 31 * result + originalKeyboardHeightDp
         result = 31 * result + associationCandidates.contentHashCode()
         result = 31 * result + associationEnabled.hashCode()
         result = 31 * result + isVoiceMode.hashCode()

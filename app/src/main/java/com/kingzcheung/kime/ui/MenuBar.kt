@@ -19,7 +19,7 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Height
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -50,7 +50,7 @@ fun MenuBar(
     onDismiss: () -> Unit,
     onClipboard: () -> Unit,
     onQuickSend: () -> Unit,
-    onManageDict: () -> Unit,
+    onKeyboardResize: () -> Unit,
     onEmoji: () -> Unit,
     onReloadConfig: () -> Unit,
     onSettings: () -> Unit,
@@ -66,7 +66,7 @@ fun MenuBar(
     val menuItems = listOf(
         MenuItem(rememberVectorPainter(Icons.Default.ContentPaste), "剪贴板", onClipboard),
         MenuItem(rememberVectorPainter(Icons.Default.Bolt), "快捷发送", onQuickSend),
-        MenuItem(rememberVectorPainter(Icons.Default.MenuBook), "管理词库", onManageDict),
+        MenuItem(rememberVectorPainter(Icons.Default.Height), "键盘调节", onKeyboardResize),
         MenuItem(rememberVectorPainter(Icons.Default.EmojiEmotions), "表情", onEmoji),
         MenuItem(rememberVectorPainter(if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode), if (isDarkTheme) "浅色模式" else "深色模式", onToggleDarkMode),
         MenuItem(rememberVectorPainter(Icons.Default.Refresh), "部署方案", onReloadConfig),

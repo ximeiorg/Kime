@@ -11,7 +11,9 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputContentInfo
+import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
@@ -20,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
+import com.kingzcheung.kime.ui.KeyboardResizeOverlay
 import androidx.core.content.FileProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -73,6 +76,8 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     
     private lateinit var clipboardManager: ClipboardManager
     
+    private lateinit var keyboardContainer: VoiceKeyboardContainer
+    
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -106,7 +111,8 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         uiState.value = uiState.value.copy(
             darkMode = SettingsPreferences.getDarkMode(this),
             themeId = SettingsPreferences.getKeyboardTheme(this),
-            showBottomButtons = SettingsPreferences.showBottomButtons(this)
+            showBottomButtons = SettingsPreferences.showBottomButtons(this),
+            keyboardHeightDp = SettingsPreferences.getKeyboardHeightDp(this)
         )
     }
     
@@ -114,7 +120,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         val prefs = SettingsPreferences.getPrefsPublic(this)
         sharedPrefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             when (key) {
-                "dark_mode", "keyboard_theme", "show_bottom_buttons" -> {
+                "dark_mode", "keyboard_theme", "show_bottom_buttons", "keyboard_height_dp" -> {
                     loadDarkModePreference()
                     Log.d(TAG, "Settings changed: $key, updated UI state")
                 }
@@ -240,7 +246,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     }
 
     override fun onCreateInputView(): View {
-        val container = VoiceKeyboardContainer(
+        keyboardContainer = VoiceKeyboardContainer(
             context = this,
             uiStateProvider = { uiState.value },
             onUiStateChanged = { newState -> uiState.value = newState },
@@ -256,13 +262,22 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             setContent {
                 val state = uiState.value
                 val isDarkTheme = isDarkTheme()
+                val screenHeightDp = resources.configuration.screenHeightDp
+                val maxHeightDp = screenHeightDp / 2
+                
                 KimeTheme(darkTheme = isDarkTheme, themeId = state.themeId) {
-                    Surface(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(290.dp),
-                        color = MaterialTheme.colorScheme.surface
+                            .height(if (state.showKeyboardResize) maxHeightDp.dp else state.keyboardHeightDp.dp)
                     ) {
+                        Surface(
+                            modifier = Modifier
+                                .align(androidx.compose.ui.Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .height(if (state.showKeyboardResize) state.originalKeyboardHeightDp.dp else state.keyboardHeightDp.dp),
+                            color = MaterialTheme.colorScheme.surface
+                        ) {
                         KeyboardView(
                             candidates = state.candidates,
                             inputText = state.inputText,
@@ -275,6 +290,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             isDarkTheme = isDarkTheme,
                             themeId = state.themeId,
                             showBottomButtons = state.showBottomButtons,
+                            keyboardHeightDp = state.keyboardHeightDp,
                             clipboardItems = clipboardItemsState.value,
                             quickSendItems = quickSendItemsState.value,
                             candidateComments = state.candidateComments,
@@ -319,8 +335,13 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             onQuickSend = {
                                 Log.d(TAG, "QuickSend clicked")
                             },
-                            onManageDict = {
-                                openManageDict()
+                            onKeyboardResize = {
+                                val currentHeight = uiState.value.keyboardHeightDp
+                                uiState.value = uiState.value.copy(
+                                    showKeyboardResize = true,
+                                    resizePreviewHeightDp = currentHeight,
+                                    originalKeyboardHeightDp = currentHeight
+                                )
                             },
                             onReloadConfig = {
                                 reloadConfig()
@@ -412,16 +433,62 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                                 } else {
                                     isTrackingVoiceButtons = false
                                 }
-                            }
-                        )
+}
+                         )
+                     }
+                     
+                     if (state.showKeyboardResize) {
+                         val screenHeightDp = resources.configuration.screenHeightDp
+                         val maxContainerHeightDp = screenHeightDp / 2
+                         
+                         KeyboardResizeOverlay(
+                             initialHeightDp = state.resizePreviewHeightDp,
+                             defaultHeightDp = SettingsPreferences.getDefaultKeyboardHeightDp(),
+                             maxContainerHeightDp = maxContainerHeightDp,
+                             onHeightChange = { newHeight ->
+                                 uiState.value = uiState.value.copy(
+                                     resizePreviewHeightDp = newHeight
+                                 )
+                             },
+                             onHeightChangeEnd = { newHeight ->
+                                 uiState.value = uiState.value.copy(
+                                     keyboardHeightDp = newHeight
+                                 )
+                             },
+                             onPositionChange = { offsetY ->
+                             },
+                             onReset = { defaultHeight ->
+                                 uiState.value = uiState.value.copy(
+                                     resizePreviewHeightDp = defaultHeight
+                                 )
+                             },
+                             onConfirm = { newHeight ->
+                                 setKeyboardHeight(newHeight)
+                                 uiState.value = uiState.value.copy(
+                                     showKeyboardResize = false
+                                 )
+                             },
+                             onCancel = {
+                                 uiState.value = uiState.value.copy(
+                                     showKeyboardResize = false,
+                                     keyboardHeightDp = state.originalKeyboardHeightDp,
+                                     resizePreviewHeightDp = state.originalKeyboardHeightDp
+                                 )
+                             },
+                             modifier = Modifier.fillMaxWidth()
+                         )
+                     }
                     }
                 }
             }
         }
         
-        container.addView(composeView)
+        keyboardContainer.addView(composeView)
         
-        return container
+        val initialHeightDp = SettingsPreferences.getKeyboardHeightDp(this)
+        keyboardContainer.updateHeight(initialHeightDp)
+        
+        return keyboardContainer
     }
     
     private fun performUndo() {
@@ -895,18 +962,6 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         }
     }
     
-    private fun openManageDict() {
-        Log.d(TAG, "Opening manage dict...")
-        try {
-            val intent = Intent(this, MainActivity::class.java)
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            intent.putExtra("open_fragment", "manage_dict")
-            startActivity(intent)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to open manage dict", e)
-        }
-    }
-    
     private fun switchSchema(schemaId: String) {
         Log.d(TAG, "Switching schema to: $schemaId")
         try {
@@ -919,6 +974,18 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         } catch (e: Exception) {
             Log.e(TAG, "Failed to switch schema", e)
         }
+    }
+    
+    private fun updateKeyboardHeightPreview(heightDp: Int) {
+        Log.d(TAG, "Preview keyboard height: $heightDp")
+        keyboardContainer.updateHeight(heightDp)
+    }
+    
+    private fun setKeyboardHeight(heightDp: Int) {
+        Log.d(TAG, "Setting keyboard height to: $heightDp")
+        SettingsPreferences.setKeyboardHeightDp(this, heightDp)
+        uiState.value = uiState.value.copy(keyboardHeightDp = heightDp)
+        Toast.makeText(this, "键盘高度已调整", Toast.LENGTH_SHORT).show()
     }
 
     private fun commitText(text: String) {
