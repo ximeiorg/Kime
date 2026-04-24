@@ -275,7 +275,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             modifier = Modifier
                                 .align(androidx.compose.ui.Alignment.BottomCenter)
                                 .fillMaxWidth()
-                                .height(if (state.showKeyboardResize) state.originalKeyboardHeightDp.dp else state.keyboardHeightDp.dp),
+                                .height(if (state.showKeyboardResize) state.resizePreviewHeightDp.dp else state.keyboardHeightDp.dp),
                             color = MaterialTheme.colorScheme.surface
                         ) {
                         KeyboardView(
@@ -455,9 +455,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                                      keyboardHeightDp = newHeight
                                  )
                              },
-                             onPositionChange = { offsetY ->
-                             },
-                             onReset = { defaultHeight ->
+                              onReset = { defaultHeight ->
                                  uiState.value = uiState.value.copy(
                                      resizePreviewHeightDp = defaultHeight
                                  )
