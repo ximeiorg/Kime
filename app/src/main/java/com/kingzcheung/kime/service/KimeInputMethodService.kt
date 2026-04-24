@@ -14,17 +14,15 @@ import android.view.inputmethod.InputContentInfo
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.ComposeView
+import com.kingzcheung.kime.ui.LocalStretchFactor
 import androidx.compose.ui.unit.dp
 import com.kingzcheung.kime.ui.KeyboardResizeOverlay
 import androidx.core.content.FileProvider
@@ -282,23 +280,8 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                                 .height(if (state.showKeyboardResize) state.resizePreviewHeightDp.dp else state.keyboardHeightDp.dp),
                             color = MaterialTheme.colorScheme.surface
                         ) {
-                        val isResizing = state.showKeyboardResize
-                        val isStretching = isResizing && state.stretchFactor > 1f
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .then(
-                                    if (isStretching) {
-                                        Modifier.graphicsLayer {
-                                            scaleY = state.stretchFactor
-                                            transformOrigin = TransformOrigin(0.5f, 1f)
-                                        }
-                                    } else Modifier
-                                ),
-                            contentAlignment = if (isStretching) Alignment.BottomCenter else Alignment.TopStart
-                        ) {
+                        CompositionLocalProvider(LocalStretchFactor provides state.stretchFactor) {
                             KeyboardView(
-                                modifier = if (isStretching) Modifier.height(state.keyboardHeightDp.dp) else Modifier,
                                 candidates = state.candidates,
                                 inputText = state.inputText,
                                 isComposing = state.isComposing,

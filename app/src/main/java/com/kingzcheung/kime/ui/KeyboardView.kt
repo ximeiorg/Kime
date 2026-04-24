@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +25,8 @@ import com.kingzcheung.kime.ui.theme.KeyTextColorDark
 import com.kingzcheung.kime.ui.theme.KeyboardBackground
 import com.kingzcheung.kime.ui.theme.KeyboardBackgroundDark
 import com.kingzcheung.kime.ui.theme.KeyboardThemes
+
+val LocalStretchFactor = compositionLocalOf { 1f }
 
 @Composable
 fun KeyboardView(

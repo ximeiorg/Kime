@@ -27,10 +27,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import com.kingzcheung.kime.ui.LocalStretchFactor
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -269,7 +271,7 @@ fun KeyboardLayout(
                 Box(
                     modifier = Modifier
                         .weight(3f)
-                        .height(44.dp)
+                        .height((44 * LocalStretchFactor.current).dp)
                         .shadow(1.dp, RoundedCornerShape(8.dp), ambientColor = Color(0x80000000), spotColor = Color(0x80000000))
                         .clip(RoundedCornerShape(8.dp))
                         .background(keyBackgroundColor)
@@ -500,7 +502,7 @@ private fun DummyKeyButton(
 ) {
     Box(
         modifier = modifier
-            .height(44.dp)
+            .height((44 * LocalStretchFactor.current).dp)
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
     )

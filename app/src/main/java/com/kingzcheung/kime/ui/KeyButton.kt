@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.kingzcheung.kime.ui.LocalStretchFactor
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -84,7 +85,7 @@ fun KeyButton(
     
     Box(
         modifier = modifier
-            .height(44.dp)
+            .height((44 * LocalStretchFactor.current).dp)
             .shadow(1.dp, RoundedCornerShape(8.dp), ambientColor = Color(0x80000000), spotColor = Color(0x80000000))
             .clip(RoundedCornerShape(8.dp))
             .background(
@@ -224,7 +225,7 @@ fun SwipeableKeyButton(
     
     Box(
         modifier = modifier
-            .height(44.dp)
+            .height((44 * LocalStretchFactor.current).dp)
             .shadow(1.dp, RoundedCornerShape(8.dp), ambientColor = Color(0x80000000), spotColor = Color(0x80000000))
             .onGloballyPositioned { coordinates ->
                 buttonBounds = coordinates.boundsInRoot()
@@ -403,7 +404,7 @@ fun IconKeyButton(
     
     Box(
         modifier = modifier
-            .height(44.dp)
+            .height((44 * LocalStretchFactor.current).dp)
             .shadow(1.dp, RoundedCornerShape(8.dp), ambientColor = Color(0x80000000), spotColor = Color(0x80000000))
             .clip(RoundedCornerShape(8.dp))
             .background(
@@ -480,7 +481,7 @@ fun SwipeableIconKeyButton(
     
     Box(
         modifier = modifier
-            .height(44.dp)
+            .height((44 * LocalStretchFactor.current).dp)
             .shadow(1.dp, RoundedCornerShape(8.dp), ambientColor = Color(0x80000000), spotColor = Color(0x80000000))
             .clip(RoundedCornerShape(8.dp))
             .background(
