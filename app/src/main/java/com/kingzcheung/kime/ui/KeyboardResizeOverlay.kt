@@ -39,7 +39,7 @@ fun KeyboardResizeOverlay(
     initialHeightDp: Int,
     defaultHeightDp: Int,
     maxContainerHeightDp: Int,
-    onHeightChange: (Int) -> Unit,
+    onHeightChange: (Int, Boolean) -> Unit,
     onHeightChangeEnd: (Int) -> Unit,
     onReset: (Int) -> Unit,
     onConfirm: (Int) -> Unit,
@@ -75,7 +75,7 @@ fun KeyboardResizeOverlay(
                             val heightChangeDp = with(density) { -dragAmount.y.toDp().value }
                             currentHeightDp = (currentHeightDp + heightChangeDp)
                                 .coerceIn(minKeyboardHeightDp.toFloat(), maxKeyboardHeightDp.toFloat())
-                            onHeightChange(currentHeightDp.roundToInt())
+                            onHeightChange(currentHeightDp.roundToInt(), false)
                         },
                         onDragEnd = { }
                     )
@@ -93,7 +93,7 @@ fun KeyboardResizeOverlay(
                                 val heightChangeDp = with(density) { -dragAmount.y.toDp().value }
                                 currentHeightDp = (currentHeightDp + heightChangeDp)
                                     .coerceIn(minKeyboardHeightDp.toFloat(), maxKeyboardHeightDp.toFloat())
-                                onHeightChange(currentHeightDp.roundToInt())
+                                onHeightChange(currentHeightDp.roundToInt(), true)
                             },
                             onDragEnd = { }
                         )

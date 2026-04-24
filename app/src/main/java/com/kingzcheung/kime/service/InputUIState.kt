@@ -28,7 +28,8 @@ data class InputUIState(
     val voiceRecognitionState: RecognitionState = RecognitionState.IDLE,
     val voiceRecognizedText: String = "",
     val voiceAmplitude: Float = 0f,
-    val pendingEnglishText: String = ""
+    val pendingEnglishText: String = "",
+    val stretchFactor: Float = 1f
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -61,6 +62,7 @@ data class InputUIState(
         if (voiceRecognizedText != other.voiceRecognizedText) return false
         if (voiceAmplitude != other.voiceAmplitude) return false
         if (pendingEnglishText != other.pendingEnglishText) return false
+        if (stretchFactor != other.stretchFactor) return false
 
         return true
     }
@@ -91,6 +93,7 @@ data class InputUIState(
         result = 31 * result + voiceRecognizedText.hashCode()
         result = 31 * result + voiceAmplitude.hashCode()
         result = 31 * result + pendingEnglishText.hashCode()
+        result = 31 * result + stretchFactor.hashCode()
         return result
     }
 }

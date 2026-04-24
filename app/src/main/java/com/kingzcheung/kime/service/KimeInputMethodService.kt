@@ -14,12 +14,16 @@ import android.view.inputmethod.InputContentInfo
 import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import com.kingzcheung.kime.ui.KeyboardResizeOverlay
@@ -278,15 +282,31 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                                 .height(if (state.showKeyboardResize) state.resizePreviewHeightDp.dp else state.keyboardHeightDp.dp),
                             color = MaterialTheme.colorScheme.surface
                         ) {
-                        KeyboardView(
-                            candidates = state.candidates,
-                            inputText = state.inputText,
-                            isComposing = state.isComposing,
-                            isAsciiMode = state.isAsciiMode,
-                            schemaName = state.schemaName,
-                            currentSchemaId = state.currentSchemaId,
-                            schemas = state.schemas,
-                            enterKeyText = state.enterKeyText,
+                        val isResizing = state.showKeyboardResize
+                        val isStretching = isResizing && state.stretchFactor > 1f
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(
+                                    if (isStretching) {
+                                        Modifier.graphicsLayer {
+                                            scaleY = state.stretchFactor
+                                            transformOrigin = TransformOrigin(0.5f, 1f)
+                                        }
+                                    } else Modifier
+                                ),
+                            contentAlignment = if (isStretching) Alignment.BottomCenter else Alignment.TopStart
+                        ) {
+                            KeyboardView(
+                                modifier = if (isStretching) Modifier.height(state.keyboardHeightDp.dp) else Modifier,
+                                candidates = state.candidates,
+                                inputText = state.inputText,
+                                isComposing = state.isComposing,
+                                isAsciiMode = state.isAsciiMode,
+                                schemaName = state.schemaName,
+                                currentSchemaId = state.currentSchemaId,
+                                schemas = state.schemas,
+                                enterKeyText = state.enterKeyText,
                             isDarkTheme = isDarkTheme,
                             themeId = state.themeId,
                             showBottomButtons = state.showBottomButtons,
@@ -434,7 +454,8 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                                     isTrackingVoiceButtons = false
                                 }
 }
-                         )
+                             )
+                        }
                      }
                      
                      if (state.showKeyboardResize) {
@@ -445,21 +466,29 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                              initialHeightDp = state.resizePreviewHeightDp,
                              defaultHeightDp = SettingsPreferences.getDefaultKeyboardHeightDp(),
                              maxContainerHeightDp = maxContainerHeightDp,
-                             onHeightChange = { newHeight ->
-                                 uiState.value = uiState.value.copy(
-                                     resizePreviewHeightDp = newHeight
-                                 )
-                             },
+                              onHeightChange = { newHeight, isStretch ->
+                                  val currentState = uiState.value
+                                  val newStretchFactor = if (isStretch && currentState.keyboardHeightDp > 0) {
+                                      newHeight.toFloat() / currentState.keyboardHeightDp.toFloat()
+                                  } else {
+                                      1f
+                                  }
+                                  uiState.value = currentState.copy(
+                                      resizePreviewHeightDp = newHeight,
+                                      stretchFactor = newStretchFactor
+                                  )
+                              },
                              onHeightChangeEnd = { newHeight ->
                                  uiState.value = uiState.value.copy(
                                      keyboardHeightDp = newHeight
                                  )
                              },
                               onReset = { defaultHeight ->
-                                 uiState.value = uiState.value.copy(
-                                     resizePreviewHeightDp = defaultHeight
-                                 )
-                             },
+                                  uiState.value = uiState.value.copy(
+                                      resizePreviewHeightDp = defaultHeight,
+                                      stretchFactor = 1f
+                                  )
+                              },
                              onConfirm = { newHeight ->
                                  setKeyboardHeight(newHeight)
                                  uiState.value = uiState.value.copy(
