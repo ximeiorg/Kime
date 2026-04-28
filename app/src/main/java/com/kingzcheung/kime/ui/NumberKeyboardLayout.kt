@@ -36,7 +36,7 @@ fun NumberKeyboardLayout(
     modifier: Modifier = Modifier,
     onKeyPressDown: ((String) -> Unit)? = null
 ) {
-    val symbols = listOf("@", "%", "-")
+    val symbols = listOf("@", "+", "-")
     
     Box(modifier = modifier.background(keyboardBackgroundColor)) {
         Column(

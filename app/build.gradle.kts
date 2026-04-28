@@ -185,7 +185,7 @@ android {
         applicationId = "com.kingzcheung.kime"
         minSdk = 28
         targetSdk = 35
-        versionCode = 10
+        versionCode = 11
         versionName = "2.0.0-beta5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -106,10 +108,16 @@ fun KeyboardLayout(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .fillMaxHeight()
                 .background(keyboardBackgroundColor)
-                .padding(vertical = 8.dp, horizontal = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(vertical = 8.dp, horizontal = 4.dp)
         ) {
+            Spacer(modifier = Modifier.weight(1f))
+            
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
             // 第一行
             if (isVoiceMode) {
                 DummyKeyboardRow(keysCount = 10, keyBackgroundColor = keyBackgroundColor.copy(alpha = 0.5f), keyboardBackgroundColor = keyboardBackgroundColor)
@@ -379,6 +387,7 @@ fun KeyboardLayout(
                         onPress = { onKeyPressDown?.invoke("enter") }
                     )
                 }
+            }
             }
             
             // 底部按钮

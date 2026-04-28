@@ -37,12 +37,15 @@ import kotlin.math.roundToInt
 @Composable
 fun KeyboardResizeOverlay(
     initialHeightDp: Int,
+    initialBottomPaddingDp: Int,
     defaultHeightDp: Int,
+    defaultBottomPaddingDp: Int,
     maxContainerHeightDp: Int,
-    onHeightChange: (Int, Boolean) -> Unit,
-    onHeightChangeEnd: (Int) -> Unit,
-    onReset: (Int) -> Unit,
-    onConfirm: (Int) -> Unit,
+    onHeightChange: (Int) -> Unit,
+    onBottomPaddingChange: (Int) -> Unit,
+    onStretchChange: (Float) -> Unit,
+    onReset: (Int, Int) -> Unit,
+    onConfirm: (Int, Int) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -51,11 +54,17 @@ fun KeyboardResizeOverlay(
     val screenHeightDp = configuration.screenHeightDp
     val minKeyboardHeightDp = screenHeightDp / 3
     val maxKeyboardHeightDp = screenHeightDp / 2
+    val minBottomPaddingDp = 0
+    val maxBottomPaddingDp = 100
 
     val safeDefaultHeightDp = defaultHeightDp.coerceIn(minKeyboardHeightDp, maxKeyboardHeightDp)
+    val safeDefaultBottomPaddingDp = defaultBottomPaddingDp.coerceIn(minBottomPaddingDp, maxBottomPaddingDp)
     val safeInitialHeightDp = initialHeightDp.coerceIn(minKeyboardHeightDp, maxKeyboardHeightDp)
+    val safeInitialBottomPaddingDp = initialBottomPaddingDp.coerceIn(minBottomPaddingDp, maxBottomPaddingDp)
 
     var currentHeightDp by remember { mutableFloatStateOf(safeInitialHeightDp.toFloat()) }
+    var currentBottomPaddingDp by remember { mutableFloatStateOf(safeInitialBottomPaddingDp.toFloat()) }
+    var baseHeightDp by remember { mutableFloatStateOf(safeInitialHeightDp.toFloat()) }
 
     Box(
         modifier = modifier
@@ -65,6 +74,7 @@ fun KeyboardResizeOverlay(
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
+                .padding(bottom = currentBottomPaddingDp.roundToInt().dp)
                 .height(currentHeightDp.roundToInt().dp)
                 .fillMaxWidth()
                 .background(Color.Black.copy(alpha = 0.5f))
@@ -72,10 +82,10 @@ fun KeyboardResizeOverlay(
                     detectDragGestures(
                         onDrag = { change, dragAmount ->
                             change.consume()
-                            val heightChangeDp = with(density) { -dragAmount.y.toDp().value }
-                            currentHeightDp = (currentHeightDp + heightChangeDp)
-                                .coerceIn(minKeyboardHeightDp.toFloat(), maxKeyboardHeightDp.toFloat())
-                            onHeightChange(currentHeightDp.roundToInt(), false)
+                            val paddingChangeDp = with(density) { -dragAmount.y.toDp().value }
+                            currentBottomPaddingDp = (currentBottomPaddingDp + paddingChangeDp)
+                                .coerceIn(minBottomPaddingDp.toFloat(), maxBottomPaddingDp.toFloat())
+                            onBottomPaddingChange(currentBottomPaddingDp.roundToInt())
                         },
                         onDragEnd = { }
                     )
@@ -93,7 +103,11 @@ fun KeyboardResizeOverlay(
                                 val heightChangeDp = with(density) { -dragAmount.y.toDp().value }
                                 currentHeightDp = (currentHeightDp + heightChangeDp)
                                     .coerceIn(minKeyboardHeightDp.toFloat(), maxKeyboardHeightDp.toFloat())
-                                onHeightChange(currentHeightDp.roundToInt(), true)
+                                onHeightChange(currentHeightDp.roundToInt())
+                                if (baseHeightDp > 0) {
+                                    val stretchFactor = currentHeightDp / baseHeightDp
+                                    onStretchChange(stretchFactor)
+                                }
                             },
                             onDragEnd = { }
                         )
@@ -119,7 +133,9 @@ fun KeyboardResizeOverlay(
                 IconButton(
                     onClick = {
                         currentHeightDp = safeDefaultHeightDp.toFloat()
-                        onReset(safeDefaultHeightDp)
+                        currentBottomPaddingDp = safeDefaultBottomPaddingDp.toFloat()
+                        baseHeightDp = safeDefaultHeightDp.toFloat()
+                        onReset(safeDefaultHeightDp, safeDefaultBottomPaddingDp)
                     },
                     modifier = Modifier
                         .size(56.dp)
@@ -148,7 +164,7 @@ fun KeyboardResizeOverlay(
                 }
 
                 IconButton(
-                    onClick = { onConfirm(currentHeightDp.roundToInt()) },
+                    onClick = { onConfirm(currentHeightDp.roundToInt(), currentBottomPaddingDp.roundToInt()) },
                     modifier = Modifier
                         .size(56.dp)
                         .background(Color.White.copy(alpha = 0.3f), CircleShape)
@@ -163,7 +179,7 @@ fun KeyboardResizeOverlay(
             }
 
             Text(
-                text = "高度: ${currentHeightDp.roundToInt()}dp",
+                text = "高度: ${currentHeightDp.roundToInt()}dp | 底部: ${currentBottomPaddingDp.roundToInt()}dp",
                 color = Color.White,
                 fontSize = 14.sp,
                 modifier = Modifier

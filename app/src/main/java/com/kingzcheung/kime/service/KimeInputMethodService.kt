@@ -115,7 +115,8 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             darkMode = SettingsPreferences.getDarkMode(this),
             themeId = SettingsPreferences.getKeyboardTheme(this),
             showBottomButtons = SettingsPreferences.showBottomButtons(this),
-            keyboardHeightDp = SettingsPreferences.getKeyboardHeightDp(this)
+            keyboardHeightDp = SettingsPreferences.getKeyboardHeightDp(this),
+            keyboardBottomPaddingDp = SettingsPreferences.getKeyboardBottomPaddingDp(this)
         )
     }
     
@@ -123,7 +124,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         val prefs = SettingsPreferences.getPrefsPublic(this)
         sharedPrefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             when (key) {
-                "dark_mode", "keyboard_theme", "show_bottom_buttons", "keyboard_height_dp" -> {
+                "dark_mode", "keyboard_theme", "show_bottom_buttons", "keyboard_height_dp", "keyboard_bottom_padding_dp" -> {
                     loadDarkModePreference()
                     Log.d(TAG, "Settings changed: $key, updated UI state")
                 }
@@ -294,6 +295,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             modifier = Modifier
                                 .align(androidx.compose.ui.Alignment.BottomCenter)
                                 .fillMaxWidth()
+                                .padding(bottom = if (state.showKeyboardResize) state.resizePreviewBottomPaddingDp.dp else state.keyboardBottomPaddingDp.dp)
                                 .height(if (state.showKeyboardResize) state.resizePreviewHeightDp.dp else state.keyboardHeightDp.dp),
                             color = MaterialTheme.colorScheme.surface
                         ) {
@@ -359,10 +361,14 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             },
                             onKeyboardResize = {
                                 val currentHeight = uiState.value.keyboardHeightDp
+                                val currentPadding = uiState.value.keyboardBottomPaddingDp
                                 uiState.value = uiState.value.copy(
                                     showKeyboardResize = true,
                                     resizePreviewHeightDp = currentHeight,
-                                    originalKeyboardHeightDp = currentHeight
+                                    resizePreviewBottomPaddingDp = currentPadding,
+                                    originalKeyboardHeightDp = currentHeight,
+                                    originalKeyboardBottomPaddingDp = currentPadding,
+                                    stretchFactor = 1f
                                 )
                             },
                             onReloadConfig = {
@@ -460,53 +466,61 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                         }
                      }
                      
-                     if (state.showKeyboardResize) {
-                         val screenHeightDp = resources.configuration.screenHeightDp
-                         val maxContainerHeightDp = screenHeightDp / 2
-                         
-                         KeyboardResizeOverlay(
-                             initialHeightDp = state.resizePreviewHeightDp,
-                             defaultHeightDp = SettingsPreferences.getDefaultKeyboardHeightDp(),
-                             maxContainerHeightDp = maxContainerHeightDp,
-                              onHeightChange = { newHeight, isStretch ->
-                                  val currentState = uiState.value
-                                  val newStretchFactor = if (isStretch && currentState.keyboardHeightDp > 0) {
-                                      newHeight.toFloat() / currentState.keyboardHeightDp.toFloat()
-                                  } else {
-                                      1f
-                                  }
-                                  uiState.value = currentState.copy(
-                                      resizePreviewHeightDp = newHeight,
-                                      stretchFactor = newStretchFactor
+if (state.showKeyboardResize) {
+                          val screenHeightDp = resources.configuration.screenHeightDp
+                          val maxContainerHeightDp = screenHeightDp / 2
+                          
+                          KeyboardResizeOverlay(
+                              initialHeightDp = state.resizePreviewHeightDp,
+                              initialBottomPaddingDp = state.resizePreviewBottomPaddingDp,
+                              defaultHeightDp = SettingsPreferences.getDefaultKeyboardHeightDp(),
+                              defaultBottomPaddingDp = 40,
+                              maxContainerHeightDp = maxContainerHeightDp,
+                              onHeightChange = { newHeight ->
+                                  uiState.value = uiState.value.copy(
+                                      resizePreviewHeightDp = newHeight
                                   )
                               },
-                             onHeightChangeEnd = { newHeight ->
-                                 uiState.value = uiState.value.copy(
-                                     keyboardHeightDp = newHeight
-                                 )
-                             },
-                              onReset = { defaultHeight ->
+                              onBottomPaddingChange = { newPadding ->
+                                  uiState.value = uiState.value.copy(
+                                      resizePreviewBottomPaddingDp = newPadding,
+                                      keyboardBottomPaddingDp = newPadding
+                                  )
+                              },
+                              onStretchChange = { stretchFactor ->
+                                  uiState.value = uiState.value.copy(
+                                      stretchFactor = stretchFactor
+                                  )
+                              },
+                              onReset = { defaultHeight, defaultPadding ->
                                   uiState.value = uiState.value.copy(
                                       resizePreviewHeightDp = defaultHeight,
+                                      resizePreviewBottomPaddingDp = defaultPadding,
+                                      keyboardBottomPaddingDp = defaultPadding,
                                       stretchFactor = 1f
                                   )
                               },
-                             onConfirm = { newHeight ->
-                                 setKeyboardHeight(newHeight)
-                                 uiState.value = uiState.value.copy(
-                                     showKeyboardResize = false
-                                 )
-                             },
-                             onCancel = {
-                                 uiState.value = uiState.value.copy(
-                                     showKeyboardResize = false,
-                                     keyboardHeightDp = state.originalKeyboardHeightDp,
-                                     resizePreviewHeightDp = state.originalKeyboardHeightDp
-                                 )
-                             },
-                             modifier = Modifier.fillMaxWidth()
-                         )
-                     }
+                              onConfirm = { newHeight, newPadding ->
+                                  setKeyboardHeight(newHeight)
+                                  uiState.value = uiState.value.copy(
+                                      showKeyboardResize = false,
+                                      keyboardHeightDp = newHeight,
+                                      keyboardBottomPaddingDp = newPadding
+                                  )
+                              },
+                              onCancel = {
+                                  uiState.value = uiState.value.copy(
+                                      showKeyboardResize = false,
+                                      keyboardHeightDp = state.originalKeyboardHeightDp,
+                                      keyboardBottomPaddingDp = state.originalKeyboardBottomPaddingDp,
+                                      resizePreviewHeightDp = state.originalKeyboardHeightDp,
+                                      resizePreviewBottomPaddingDp = state.originalKeyboardBottomPaddingDp,
+                                      stretchFactor = 1f
+                                  )
+                              },
+                              modifier = Modifier.fillMaxWidth()
+                          )
+                      }
                     }
                 }
             }

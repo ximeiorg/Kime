@@ -26,6 +26,9 @@ object SettingsPreferences {
     private const val KEY_KEYBOARD_HEIGHT_DP = "keyboard_height_dp"
     private const val DEFAULT_KEYBOARD_HEIGHT_DP = 290
     
+    private const val KEY_KEYBOARD_BOTTOM_PADDING_DP = "keyboard_bottom_padding_dp"
+    private const val DEFAULT_KEYBOARD_BOTTOM_PADDING_DP = 40
+    
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
@@ -164,4 +167,14 @@ object SettingsPreferences {
     }
     
     fun getDefaultKeyboardHeightDp(): Int = DEFAULT_KEYBOARD_HEIGHT_DP
+    
+    fun getKeyboardBottomPaddingDp(context: Context): Int {
+        return getPrefs(context).getInt(KEY_KEYBOARD_BOTTOM_PADDING_DP, DEFAULT_KEYBOARD_BOTTOM_PADDING_DP)
+    }
+    
+    fun setKeyboardBottomPaddingDp(context: Context, paddingDp: Int) {
+        getPrefs(context).edit().putInt(KEY_KEYBOARD_BOTTOM_PADDING_DP, paddingDp).apply()
+    }
+    
+    fun getDefaultKeyboardBottomPaddingDp(): Int = DEFAULT_KEYBOARD_BOTTOM_PADDING_DP
 }
