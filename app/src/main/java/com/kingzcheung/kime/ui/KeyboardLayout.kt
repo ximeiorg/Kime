@@ -20,11 +20,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.EmojiEmotions
-import androidx.compose.material.icons.filled.Keyboard
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -64,9 +61,6 @@ fun KeyboardLayout(
     keyTextColor: Color,
     specialKeyBackgroundColor: Color,
     keyboardBackgroundColor: Color = Color.Transparent,
-    showBottomButtons: Boolean = false,
-    onHideKeyboard: (() -> Unit)? = null,
-    onSwitchKeyboard: (() -> Unit)? = null,
     onVoiceModeChange: ((Boolean) -> Unit)? = null,
     isVoiceMode: Boolean = false,
     modifier: Modifier = Modifier,
@@ -390,37 +384,6 @@ fun KeyboardLayout(
             }
             }
             
-            // 底部按钮
-            if (showBottomButtons && !isVoiceMode) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(keyboardBackgroundColor),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    IconButton(
-                        onClick = { onHideKeyboard?.invoke() }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = "收起键盘",
-                            tint = keyTextColor,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                    
-                    IconButton(
-                        onClick = { onSwitchKeyboard?.invoke() }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Keyboard,
-                            contentDescription = "切换键盘",
-                            tint = keyTextColor,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
-            }
         }
         
         // 语音模式中央麦克风图标

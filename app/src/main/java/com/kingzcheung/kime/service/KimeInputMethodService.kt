@@ -475,7 +475,7 @@ if (state.showKeyboardResize) {
                               initialHeightDp = state.resizePreviewHeightDp,
                               initialBottomPaddingDp = state.resizePreviewBottomPaddingDp,
                               defaultHeightDp = SettingsPreferences.getDefaultKeyboardHeightDp(),
-                              defaultBottomPaddingDp = 40,
+                               defaultBottomPaddingDp = SettingsPreferences.getDefaultKeyboardBottomPaddingDp(),
                               maxContainerHeightDp = maxContainerHeightDp,
                               onHeightChange = { newHeight ->
                                   uiState.value = uiState.value.copy(

@@ -1,12 +1,20 @@
 package com.kingzcheung.kime.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
@@ -15,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.kingzcheung.kime.clipboard.ClipboardItem
 import com.kingzcheung.kime.service.InputUIState
 import com.kingzcheung.kime.settings.SchemaInfo
@@ -100,12 +109,11 @@ fun KeyboardView(
     val dividerColor = if (isDarkTheme) DividerColorDark else DividerColor
     val state = uiStateProvider()
 
-    Box(modifier = modifier) {
+    Box(modifier = modifier.background(keyboardBgColor)) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight()
-                .background(keyboardBgColor)
         ) {
             CandidateBar(
                 candidates = candidates.toList(),
@@ -302,18 +310,7 @@ onHideKeyboard = {
                                 keyTextColor = keyTextColor,
                                 specialKeyBackgroundColor = specialKeyBgColor,
                                 keyboardBackgroundColor = keyboardBgColor,
-                                showBottomButtons = showBottomButtons,
                                 modifier = Modifier.weight(1f),
-                                onHideKeyboard = {
-                                    onHideKeyboard?.invoke()
-                                    keyboardMode = KeyboardMode.FULL
-                                    showMenu = false
-                                    showCandidatePage = false
-                                    showClipboard = false
-                                    showEmoji = false
-                                    isShifted = false
-                                },
-                                onSwitchKeyboard = onSwitchKeyboard,
                                 onVoiceModeChange = onVoiceModeChange,
                                 isVoiceMode = isVoiceMode,
                                 onKeyPressDown = onKeyPressDown
@@ -355,8 +352,58 @@ onHideKeyboard = {
                                 )
                             }
                     }
+                }
+            }
+            // 底部按钮区（独立于键盘区，键盘调节时不拉伸此区域）
+            if (showBottomButtons && !isVoiceMode) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clickable(
+                                onClick = {
+                                    onHideKeyboard?.invoke()
+                                    keyboardMode = KeyboardMode.FULL
+                                    showMenu = false
+                                    showCandidatePage = false
+                                    showClipboard = false
+                                    showSchemaList = false
+                                    showEmoji = false
+                                    isShifted = false
+                                }
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = "收起键盘",
+                            tint = keyTextColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clickable(onClick = { onSwitchKeyboard?.invoke() }),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Keyboard,
+                            contentDescription = "切换键盘",
+                            tint = keyTextColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            } else if (!isVoiceMode) {
+                Spacer(modifier = Modifier.height(40.dp))
+            }
+        }
+    }
 }
-             }
-         }
-     }
- }
