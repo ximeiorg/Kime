@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -106,7 +105,6 @@ fun KeyboardLayout(
                 .background(keyboardBackgroundColor)
                 .padding(vertical = 8.dp, horizontal = 4.dp)
         ) {
-            Spacer(modifier = Modifier.weight(1f))
             
             Column(
                 modifier = Modifier.fillMaxWidth(),

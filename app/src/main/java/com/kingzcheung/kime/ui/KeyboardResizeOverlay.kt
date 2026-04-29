@@ -64,7 +64,7 @@ fun KeyboardResizeOverlay(
 
     var currentHeightDp by remember { mutableFloatStateOf(safeInitialHeightDp.toFloat()) }
     var currentBottomPaddingDp by remember { mutableFloatStateOf(safeInitialBottomPaddingDp.toFloat()) }
-    var baseHeightDp by remember { mutableFloatStateOf(safeInitialHeightDp.toFloat()) }
+    var baseHeightDp by remember { mutableFloatStateOf(safeDefaultHeightDp.toFloat()) }
 
     Box(
         modifier = modifier
@@ -104,7 +104,8 @@ fun KeyboardResizeOverlay(
                                     .coerceIn(minKeyboardHeightDp.toFloat(), maxKeyboardHeightDp.toFloat())
                                 onHeightChange(currentHeightDp.roundToInt())
                                 if (baseHeightDp > 0) {
-                                    val stretchFactor = currentHeightDp / baseHeightDp
+                                    val fixedComponents = 118f // 44(候选栏) + 40(底部按钮) + 18(行间距) + 16(内边距)
+                                    val stretchFactor = (currentHeightDp - fixedComponents) / (baseHeightDp - fixedComponents)
                                     onStretchChange(stretchFactor)
                                 }
                             },

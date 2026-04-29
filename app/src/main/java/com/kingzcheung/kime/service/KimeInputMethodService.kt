@@ -375,7 +375,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                                     resizePreviewBottomPaddingDp = currentPadding,
                                     originalKeyboardHeightDp = currentHeight,
                                     originalKeyboardBottomPaddingDp = currentPadding,
-                                    stretchFactor = 1f
+                                    stretchFactor = ((currentHeight - 118f) / (SettingsPreferences.getDefaultKeyboardHeightDp() - 118f)).coerceAtLeast(0f)
                                 )
                             },
                             onReloadConfig = {
@@ -516,13 +516,15 @@ if (state.showKeyboardResize) {
                                   )
                               },
                               onCancel = {
+                                  val originalHeight = state.originalKeyboardHeightDp
+                                  val cancelStretchFactor = ((originalHeight - 118f) / (SettingsPreferences.getDefaultKeyboardHeightDp() - 118f)).coerceAtLeast(0f)
                                   uiState.value = uiState.value.copy(
                                       showKeyboardResize = false,
-                                      keyboardHeightDp = state.originalKeyboardHeightDp,
+                                      keyboardHeightDp = originalHeight,
                                       keyboardBottomPaddingDp = state.originalKeyboardBottomPaddingDp,
-                                      resizePreviewHeightDp = state.originalKeyboardHeightDp,
+                                      resizePreviewHeightDp = originalHeight,
                                       resizePreviewBottomPaddingDp = state.originalKeyboardBottomPaddingDp,
-                                      stretchFactor = 1f
+                                      stretchFactor = cancelStretchFactor
                                   )
                               },
                                modifier = Modifier
