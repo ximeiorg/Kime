@@ -59,6 +59,7 @@ fun KeyboardView(
     recentClipboardItems: List<ClipboardItem> = emptyList(),
     associationCandidates: Array<String> = emptyArray(),
     keyboardHeightDp: Int = 290,
+    keyboardBottomPaddingDp: Int = 0,
     onKeyPress: (String, Boolean) -> Unit,
     onKeyPressDown: ((String) -> Unit)? = null,
     onCandidateSelect: (Int) -> Unit,
@@ -354,6 +355,8 @@ onHideKeyboard = {
                     }
                 }
             }
+            // 位移间距（键盘区和候选栏向上位移时在此处增加空白）
+            Spacer(modifier = Modifier.height(keyboardBottomPaddingDp.dp))
             // 底部按钮区（独立于键盘区，键盘调节时不拉伸此区域）
             if (showBottomButtons && !isVoiceMode) {
                 Row(

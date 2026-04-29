@@ -290,14 +290,19 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(if (state.showKeyboardResize) maxHeightDp.dp else state.keyboardHeightDp.dp)
+                            .height(
+                                if (state.showKeyboardResize)
+                                    (maxHeightDp + 100).dp
+                                else
+                                    (state.keyboardHeightDp + state.keyboardBottomPaddingDp).dp
+                            )
                     ) {
                         Surface(
                             modifier = Modifier
                                 .align(androidx.compose.ui.Alignment.BottomCenter)
                                 .fillMaxWidth()
-                                .padding(bottom = if (state.showKeyboardResize) state.resizePreviewBottomPaddingDp.dp else state.keyboardBottomPaddingDp.dp)
-                                .height(if (state.showKeyboardResize) state.resizePreviewHeightDp.dp else state.keyboardHeightDp.dp),
+                                .padding(bottom = 0.dp)
+                                .height(if (state.showKeyboardResize) (state.resizePreviewHeightDp + state.resizePreviewBottomPaddingDp).dp else (state.keyboardHeightDp + state.keyboardBottomPaddingDp).dp),
                             color = MaterialTheme.colorScheme.surface
                         ) {
                         CompositionLocalProvider(LocalStretchFactor provides state.stretchFactor) {
@@ -314,6 +319,7 @@ class KimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             themeId = state.themeId,
                             showBottomButtons = state.showBottomButtons,
                             keyboardHeightDp = state.keyboardHeightDp,
+                            keyboardBottomPaddingDp = state.keyboardBottomPaddingDp,
                              clipboardItems = clipboardItemsState.value,
                              quickSendItems = quickSendItemsState.value,
                              recentClipboardItems = recentClipboardItemsState.value,
@@ -519,7 +525,9 @@ if (state.showKeyboardResize) {
                                       stretchFactor = 1f
                                   )
                               },
-                              modifier = Modifier.fillMaxWidth()
+                               modifier = Modifier
+                                   .align(androidx.compose.ui.Alignment.BottomCenter)
+                                   .fillMaxWidth()
                           )
                       }
                     }
