@@ -52,7 +52,7 @@ fun KeyboardResizeOverlay(
     val density = LocalDensity.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val screenHeightDp = configuration.screenHeightDp
-    val minKeyboardHeightDp = screenHeightDp / 3
+    val minKeyboardHeightDp = defaultHeightDp
     val maxKeyboardHeightDp = screenHeightDp / 2
     val minBottomPaddingDp = 0
     val maxBottomPaddingDp = 100
