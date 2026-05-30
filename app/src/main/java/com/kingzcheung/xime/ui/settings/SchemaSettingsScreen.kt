@@ -85,6 +85,9 @@ fun SchemaSettingsContent(
     var showUrlDialog by remember { mutableStateOf(false) }
     var urlInput by remember { mutableStateOf("") }
     var wasDownloading by remember { mutableStateOf(false) }
+    var showImportWarning by remember { mutableStateOf(false) }
+    var dontShowImportWarning by remember { mutableStateOf(false) }
+    var pendingImportAction by remember { mutableStateOf<() -> Unit>({}) }
 
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenMultipleDocuments()
@@ -94,14 +97,10 @@ fun SchemaSettingsContent(
         }
     }
 
-    var showWarning by remember { mutableStateOf(!SettingsPreferences.isSchemaImportWarningDismissed(context)) }
-    var dontShowAgain by remember { mutableStateOf(false) }
-
-    if (showWarning) {
+    if (showImportWarning) {
         AlertDialog(
             onDismissRequest = {
-                if (dontShowAgain) SettingsPreferences.setSchemaImportWarningDismissed(context, true)
-                showWarning = false
+                showImportWarning = false
             },
             containerColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surface else Color.White,
             title = {
@@ -122,9 +121,9 @@ fun SchemaSettingsContent(
                     Spacer(modifier = Modifier.height(16.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.clickable { dontShowAgain = !dontShowAgain }
+                        modifier = Modifier.clickable { dontShowImportWarning = !dontShowImportWarning }
                     ) {
-                        Checkbox(checked = dontShowAgain, onCheckedChange = { dontShowAgain = it })
+                        Checkbox(checked = dontShowImportWarning, onCheckedChange = { dontShowImportWarning = it })
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("不再显示", style = MaterialTheme.typography.bodySmall)
                     }
@@ -133,12 +132,27 @@ fun SchemaSettingsContent(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (dontShowAgain) SettingsPreferences.setSchemaImportWarningDismissed(context, true)
-                        showWarning = false
+                        if (dontShowImportWarning) SettingsPreferences.setSchemaImportWarningDismissed(context, true)
+                        showImportWarning = false
+                        pendingImportAction()
                     }
-                ) { Text("知道了") }
+                ) { Text("继续导入") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImportWarning = false }) {
+                    Text("取消")
+                }
             }
         )
+    }
+
+    fun requireImportWarning(action: () -> Unit) {
+        if (SettingsPreferences.isSchemaImportWarningDismissed(context)) {
+            action()
+        } else {
+            pendingImportAction = action
+            showImportWarning = true
+        }
     }
 
     if (showWirelessSheet) {
@@ -289,7 +303,10 @@ fun SchemaSettingsContent(
                         ) {
                             DropdownMenuItem(
                                 text = { Text("浏览器导入") },
-                                onClick = { showMenu = false; showWirelessSheet = true },
+                                onClick = {
+                                    showMenu = false
+                                    requireImportWarning { showWirelessSheet = true }
+                                },
                                 leadingIcon = {
                                     Icon(Icons.Default.Computer, null,
                                         tint = MaterialTheme.colorScheme.primary,
@@ -298,7 +315,10 @@ fun SchemaSettingsContent(
                             )
                             DropdownMenuItem(
                                 text = { Text("网络导入") },
-                                onClick = { showMenu = false; showUrlDialog = true },
+                                onClick = {
+                                    showMenu = false
+                                    requireImportWarning { showUrlDialog = true }
+                                },
                                 leadingIcon = {
                                     Icon(Icons.Default.CloudDownload, null,
                                         tint = MaterialTheme.colorScheme.primary,
@@ -311,7 +331,10 @@ fun SchemaSettingsContent(
                             )
                             DropdownMenuItem(
                                 text = { Text("从文件选择") },
-                                onClick = { showMenu = false; importLauncher.launch(arrayOf("*/*")) },
+                                onClick = {
+                                    showMenu = false
+                                    requireImportWarning { importLauncher.launch(arrayOf("*/*")) }
+                                },
                                 leadingIcon = {
                                     Icon(Icons.Default.FolderOpen, null,
                                         tint = MaterialTheme.colorScheme.primary,
