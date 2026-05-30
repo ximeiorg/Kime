@@ -15,4 +15,5 @@ object SettingsRoutes {
     const val Privacy = "privacy"
     const val Licenses = "licenses"
     const val LogViewer = "log_viewer"
+    const val WebDav = "webdav"
 }

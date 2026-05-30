@@ -13,6 +13,7 @@ import com.kingzcheung.xime.ui.settings.SchemaSettingsContent
 import com.kingzcheung.xime.ui.settings.SettingsMainContent
 import com.kingzcheung.xime.ui.settings.SettingsRoutes
 import com.kingzcheung.xime.ui.settings.ThemeSettingsContent
+import com.kingzcheung.xime.ui.settings.WebDavSyncContent
 
 @Composable
 fun SettingsScreen(
@@ -35,7 +36,8 @@ fun SettingsScreen(
                 onNavigateToPlugins = { navController.navigate(SettingsRoutes.Plugins) },
                 onNavigateToSmartPrediction = { navController.navigate(SettingsRoutes.SmartPrediction) },
                 onNavigateToSpeechToText = { navController.navigate(SettingsRoutes.SpeechToText) },
-                onNavigateToAbout = { navController.navigate(SettingsRoutes.About) }
+                onNavigateToAbout = { navController.navigate(SettingsRoutes.About) },
+                onNavigateToWebDav = { navController.navigate(SettingsRoutes.WebDav) }
             )
         }
         composable(SettingsRoutes.Schema) {
@@ -90,6 +92,11 @@ fun SettingsScreen(
         }
         composable(SettingsRoutes.Dictionary) {
             DictionarySettingsContent(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(SettingsRoutes.WebDav) {
+            WebDavSyncContent(
                 onBack = { navController.popBackStack() }
             )
         }

@@ -36,6 +36,11 @@ object SettingsPreferences {
     
     private const val KEY_KEYBOARD_BOTTOM_PADDING_DP = "keyboard_bottom_padding_dp"
     private const val DEFAULT_KEYBOARD_BOTTOM_PADDING_DP = 0
+
+    private const val KEY_WEBDAV_URL = "webdav_url"
+    private const val KEY_WEBDAV_USERNAME = "webdav_username"
+    private const val KEY_WEBDAV_PASSWORD = "webdav_password"
+    private const val KEY_WEBDAV_PATH = "webdav_path"
     
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -242,4 +247,36 @@ object SettingsPreferences {
     }
     
     fun getDefaultKeyboardBottomPaddingDp(): Int = DEFAULT_KEYBOARD_BOTTOM_PADDING_DP
+
+    fun getWebDavUrl(context: Context): String {
+        return getPrefs(context).getString(KEY_WEBDAV_URL, "") ?: ""
+    }
+
+    fun setWebDavUrl(context: Context, url: String) {
+        getPrefs(context).edit().putString(KEY_WEBDAV_URL, url).apply()
+    }
+
+    fun getWebDavUsername(context: Context): String {
+        return getPrefs(context).getString(KEY_WEBDAV_USERNAME, "") ?: ""
+    }
+
+    fun setWebDavUsername(context: Context, username: String) {
+        getPrefs(context).edit().putString(KEY_WEBDAV_USERNAME, username).apply()
+    }
+
+    fun getWebDavPassword(context: Context): String {
+        return getPrefs(context).getString(KEY_WEBDAV_PASSWORD, "") ?: ""
+    }
+
+    fun setWebDavPassword(context: Context, password: String) {
+        getPrefs(context).edit().putString(KEY_WEBDAV_PASSWORD, password).apply()
+    }
+
+    fun getWebDavPath(context: Context): String {
+        return getPrefs(context).getString(KEY_WEBDAV_PATH, "xime") ?: "xime"
+    }
+
+    fun setWebDavPath(context: Context, path: String) {
+        getPrefs(context).edit().putString(KEY_WEBDAV_PATH, path).apply()
+    }
 }

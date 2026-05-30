@@ -1,6 +1,7 @@
 package com.kingzcheung.xime.ui.settings
 
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import android.view.inputmethod.InputMethodManager
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +15,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.twotone.LibraryBooks
 import androidx.compose.material.icons.twotone.AutoAwesome
+import androidx.compose.material.icons.twotone.CloudSync
+import androidx.compose.material.icons.twotone.Description
 import androidx.compose.material.icons.twotone.Extension
 import androidx.compose.material.icons.twotone.GraphicEq
 import androidx.compose.material.icons.twotone.Info
@@ -62,7 +65,8 @@ fun SettingsMainContent(
     onNavigateToPlugins: () -> Unit,
     onNavigateToSmartPrediction: () -> Unit,
     onNavigateToSpeechToText: () -> Unit,
-    onNavigateToAbout: () -> Unit
+    onNavigateToAbout: () -> Unit,
+    onNavigateToWebDav: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -93,7 +97,7 @@ fun SettingsMainContent(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                SettingsSection(title = "输入法设置", content = {
+                SettingsSection(title = "输入法", content = {
                     SettingsItem(
                         icon = Icons.TwoTone.Keyboard,
                         title = "启用输入法",
@@ -118,12 +122,12 @@ fun SettingsMainContent(
                             imm.showInputMethodPicker()
                         }
                     )
-                })
-            }
-            
-            item {
-                var testText by remember { mutableStateOf("") }
-                SettingsSection(title = "测试输入", content = {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                    var testText by remember { mutableStateOf("") }
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -167,11 +171,9 @@ fun SettingsMainContent(
                     }
                 })
             }
-            
+
             item {
-                SettingsSection(title = "功能设置", content = {
-                    var showBottomButtons by remember { mutableStateOf(SettingsPreferences.showBottomButtons(context)) }
-                    
+                SettingsSection(title = "方案与词库", content = {
                     SettingsItem(
                         icon = Icons.TwoTone.KeyboardAlt,
                         title = "输入方案",
@@ -184,6 +186,18 @@ fun SettingsMainContent(
                         thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
+                    SettingsItem(
+                        icon = Icons.AutoMirrored.TwoTone.LibraryBooks,
+                        title = "词库管理",
+                        subtitle = "管理用户词库",
+                        onClick = onNavigateToDictionary,
+                        showArrow = true
+                    )
+                })
+            }
+
+            item {
+                SettingsSection(title = "外观与交互", content = {
                     SettingsItem(
                         icon = Icons.TwoTone.Palette,
                         title = "主题与定制",
@@ -208,6 +222,7 @@ fun SettingsMainContent(
                         thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
+                    var showBottomButtons by remember { mutableStateOf(SettingsPreferences.showBottomButtons(context)) }
                     SettingsToggleItem(
                         icon = Icons.TwoTone.Straighten,
                         title = "显示底部按钮",
@@ -218,24 +233,11 @@ fun SettingsMainContent(
                             SettingsPreferences.setShowBottomButtons(context, newValue)
                         }
                     )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 56.dp),
-                        thickness = 0.5.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    )
-                    
-                    SettingsItem(
-                        icon = Icons.AutoMirrored.TwoTone.LibraryBooks,
-                        title = "词库管理",
-                        subtitle = "管理用户词库",
-                        onClick = onNavigateToDictionary,
-                        showArrow = true
-                    )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 56.dp),
-                        thickness = 0.5.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    )
+                })
+            }
+
+            item {
+                SettingsSection(title = "智能与扩展", content = {
                     SettingsItem(
                         icon = Icons.TwoTone.AutoAwesome,
                         title = "智能联想",
@@ -288,15 +290,42 @@ fun SettingsMainContent(
                     )
                 })
             }
-            
+
+            item {
+                SettingsSection(title = "同步与备份", content = {
+                    SettingsItem(
+                        icon = Icons.TwoTone.CloudSync,
+                        title = "WebDAV 同步",
+                        subtitle = "通过 WebDAV 备份和恢复输入方案与配置",
+                        onClick = onNavigateToWebDav,
+                        showArrow = true
+                    )
+                })
+            }
+
             item {
                 SettingsSection(title = "关于", content = {
                     SettingsItem(
-                        icon = Icons.TwoTone.Info,
-                        title = "关于曦码",
-                        subtitle = "版本信息、开发者、联系方式",
-                        onClick = onNavigateToAbout,
+                        icon = Icons.TwoTone.Description,
+                        title = "使用文档",
+                        subtitle = "ime.ximei.me",
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://ime.ximei.me"))
+                            context.startActivity(intent)
+                        },
                         showArrow = true
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                                        SettingsItem(
+                            icon = Icons.TwoTone.Info,
+                    title = "关于曦码",
+                    subtitle = "版本信息、开发者、联系方式",
+                    onClick = onNavigateToAbout,
+                    showArrow = true
                     )
                 })
             }
