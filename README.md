@@ -7,8 +7,7 @@
 [Xime 输入法 (Windows 版)](https://github.com/ximeiorg/winxime) [Xime 输入法 (Linux 版)](https://github.com/ximeiorg/xime-wayland)
 
 ---
-> 通过检索发现，“Kime” 已经是韩国输入法引擎的名称，为了避免与已有项目冲突，将名称改为 Xime。
->
+
 > 本输入法支持五笔/拼音输入，只是本人以五笔为主，拼音为辅，因此资源会倾向于五笔为主。
 
 <p align="center">
