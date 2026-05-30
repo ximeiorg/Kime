@@ -44,21 +44,21 @@ object SchemaManager {
         if (!schemaFile.exists()) return null
         return try {
             val content = schemaFile.readText()
-            // scan for dictionary: name at any nesting level
-            // matches patterns like: "  dictionary: wubi86" or "dictionary: wubi86"
-            val regex = Regex("""^([ \t]*)dictionary\s*:\s*['"]?(\w+)['"]?\s*$""", RegexOption.MULTILINE)
-            regex.find(content)?.groupValues?.getOrNull(2)
+            // matches "  dictionary: wubi86" or "translator/dictionary: wubi86" or inline {dictionary:wubi86}
+            val regex = Regex("""dictionary\s*:\s*['\"]?(\w[\w-]*)['\"]?""")
+            regex.find(content)?.groupValues?.getOrNull(1)
         } catch (e: Exception) { null }
     }
 
     fun hasDictFile(context: Context, schemaId: String): Boolean {
-        val dictName = getReferencedDictName(context, schemaId)
-        if (dictName == null) return true
-        return File(getSharedDir(context), "$dictName.dict.yaml").exists()
+        val dictName = getReferencedDictName(context, schemaId) ?: schemaId
+        val f = File(getSharedDir(context), "$dictName.dict.yaml")
+        return f.exists()
     }
 
     fun schemaNeedsDict(context: Context, schemaId: String): Boolean {
-        return getReferencedDictName(context, schemaId) != null
+        val dictName = getReferencedDictName(context, schemaId) ?: schemaId
+        return !File(getSharedDir(context), "$dictName.dict.yaml").exists()
     }
 
     fun getSchemaIssues(context: Context, schemaId: String): List<String> {
@@ -68,11 +68,9 @@ object SchemaManager {
             issues.add("缺少 .schema.yaml 文件")
             return issues
         }
-        val dictName = getReferencedDictName(context, schemaId)
-        if (dictName != null) {
-            if (!File(getSharedDir(context), "$dictName.dict.yaml").exists()) {
-                issues.add("缺少 $dictName.dict.yaml 词典文件，无法编译")
-            }
+        val dictName = getReferencedDictName(context, schemaId) ?: schemaId
+        if (!File(getSharedDir(context), "$dictName.dict.yaml").exists()) {
+            issues.add("缺少 $dictName.dict.yaml 词典文件，无法编译")
         }
         return issues
     }

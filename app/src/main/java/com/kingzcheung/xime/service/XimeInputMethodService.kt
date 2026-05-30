@@ -882,18 +882,22 @@ onVoiceModeChange = { enabled ->
             emptyList()
         }
 
+        val enabledIds = SchemaManager.getEnabledSchemas(this)
         val allSchemas = SchemaManager.discoverSchemas(this)
 
-        val schemas = allSchemas.map { meta ->
-            com.kingzcheung.xime.settings.SchemaInfo(
-                schemaId = meta.schemaId,
-                name = meta.name,
-                version = meta.version,
-                author = meta.author,
-                description = meta.description,
-                isDownloaded = meta.schemaId in availableSchemaIds
-            )
-        }
+        // 键盘菜单栏只显示：已启用 + 已编译的方案
+        val schemas = allSchemas
+            .filter { meta -> meta.schemaId in enabledIds && meta.schemaId in availableSchemaIds }
+            .map { meta ->
+                com.kingzcheung.xime.settings.SchemaInfo(
+                    schemaId = meta.schemaId,
+                    name = meta.name,
+                    version = meta.version,
+                    author = meta.author,
+                    description = meta.description,
+                    isDownloaded = true
+                )
+            }
 
         val currentSchemaId = rimeEngine.getCurrentSchema()
         val schemaInfo = schemas.find { it.schemaId == currentSchemaId }
