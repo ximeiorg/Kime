@@ -98,10 +98,10 @@ fun WirelessImportSheet(
                 tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(12.dp))
-            Text("从电脑导入", style = MaterialTheme.typography.titleLarge)
+            Text("浏览器导入", style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "确保电脑和手机在同一个 WiFi 网络下",
+                text = "确保设备和手机在同一个 WiFi 网络下",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -27,8 +27,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -36,11 +36,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -53,6 +56,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -118,22 +122,33 @@ fun SchemaSettingsContent(
                     IconButton(onClick = { showMenu = true }) {
                         Icon(Icons.Default.MoreVert, contentDescription = "更多")
                     }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        offset = DpOffset(0.dp, 4.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
                         DropdownMenuItem(
-                            text = { Text("从电脑导入") },
-                            onClick = {
-                                showMenu = false
-                                showWirelessSheet = true
-                            },
-                            leadingIcon = { Icon(Icons.Default.Computer, contentDescription = null) }
+                            text = { Text("浏览器导入") },
+                            onClick = { showMenu = false; showWirelessSheet = true },
+                            leadingIcon = {
+                                Icon(Icons.Default.Computer, null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp))
+                            }
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 12.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                         )
                         DropdownMenuItem(
                             text = { Text("从文件选择") },
-                            onClick = {
-                                showMenu = false
-                                importLauncher.launch(arrayOf("*/*"))
-                            },
-                            leadingIcon = { Icon(Icons.Default.FolderOpen, contentDescription = null) }
+                            onClick = { showMenu = false; importLauncher.launch(arrayOf("*/*")) },
+                            leadingIcon = {
+                                Icon(Icons.Default.FolderOpen, null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp))
+                            }
                         )
                     }
                 }
@@ -188,11 +203,11 @@ fun SchemaSettingsContent(
             item {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "未启用",
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 4.dp)
+                    text = "添加输入方案后，需要点击一次「部署方案」进行部署",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
                 )
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             val disabledSchemas = uiState.allSchemas.filter { it.schemaId !in uiState.enabledSchemas }
