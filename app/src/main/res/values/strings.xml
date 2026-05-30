@@ -1,6 +1,6 @@
 <resources>
 <string name="app_name">曦码输入法</string>
-    <string name="subtype_label_wubi">曦码五笔输入法</string>
+    <string name="subtype_label_wubi">曦码输入法</string>
     <string name="subtype_label_pinyin">拼音</string>
     <string name="keyboard_name">曦码输入法</string>
     <string name="ime_service_label">曦码输入法</string>
