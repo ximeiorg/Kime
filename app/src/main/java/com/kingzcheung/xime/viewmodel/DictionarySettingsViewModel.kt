@@ -5,7 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.kingzcheung.xime.settings.DictEntry
 import com.kingzcheung.xime.settings.DictionaryHelper
-import com.kingzcheung.xime.settings.SchemaConfigHelper
+import com.kingzcheung.xime.settings.SchemaManager
 import com.kingzcheung.xime.settings.SettingsPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,11 +36,11 @@ class DictionarySettingsViewModel(application: Application) : AndroidViewModel(a
     
     private fun loadDictionary() {
         val currentSchema = SettingsPreferences.getCurrentSchema(context)
-        val schemaInfo = SchemaConfigHelper.loadSchemas(context).find { it.schemaId == currentSchema }
+        val schemaMeta = SchemaManager.discoverSchemas(context).find { it.schemaId == currentSchema }
         
         _uiState.update { it.copy(
             currentSchema = currentSchema,
-            schemaName = schemaInfo?.name ?: currentSchema
+            schemaName = schemaMeta?.name ?: currentSchema
         )}
         
         viewModelScope.launch {

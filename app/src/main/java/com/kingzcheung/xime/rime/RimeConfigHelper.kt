@@ -3,6 +3,7 @@ package com.kingzcheung.xime.rime
 import android.content.Context
 import android.util.Log
 import com.kingzcheung.xime.settings.SchemaConfigHelper
+import com.kingzcheung.xime.settings.SchemaManager
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 import java.io.File
@@ -69,16 +70,14 @@ object RimeConfigHelper {
     }
     
     fun isDeploymentComplete(context: Context): Boolean {
-        val userDataDir = File(context.filesDir, "rime/user")
-        val buildDir = File(userDataDir, "build")
+        val buildDir = File(File(context.filesDir, "rime/user"), "build")
         if (!buildDir.exists()) return false
 
-        val schemaListIds = SchemaConfigHelper.parseSchemaListFromDefault(context)
-        if (schemaListIds.isEmpty()) return false
+        val enabledSchemas = SchemaManager.getEnabledSchemas(context)
+        if (enabledSchemas.isEmpty()) return false
 
-        for (schemaId in schemaListIds) {
-            val prismFile = File(buildDir, "$schemaId.prism.bin")
-            if (!prismFile.exists()) return false
+        for (schemaId in enabledSchemas) {
+            if (!File(buildDir, "$schemaId.prism.bin").exists()) return false
         }
         return true
     }

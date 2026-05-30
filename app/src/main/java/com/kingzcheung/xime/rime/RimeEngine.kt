@@ -177,9 +177,9 @@ class RimeEngine {
         return nativeSwitchSchema(schemaId)
     }
 
-    fun startMaintenance(full: Boolean) {
-        if (!isInitialized) return
-        nativeStartMaintenance(full)
+    fun startMaintenance(full: Boolean): Boolean {
+        if (!isInitialized) return false
+        return nativeStartMaintenance(full)
     }
 
     fun deploy(): Boolean {
@@ -225,7 +225,7 @@ class RimeEngine {
     private external fun nativeToggleAsciiMode(): Boolean
     private external fun nativeIsAsciiMode(): Boolean
     private external fun nativeSwitchSchema(schemaId: String): Boolean
-    private external fun nativeStartMaintenance(full: Boolean)
+    private external fun nativeStartMaintenance(full: Boolean): Boolean
     private external fun nativeDeploy(): Boolean
     private external fun nativeLookupText(text: String): String
     private external fun nativeGetAvailableSchemas(): Array<String>?

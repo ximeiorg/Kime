@@ -44,6 +44,7 @@ import com.kingzcheung.xime.speech.RecognitionState
 import com.kingzcheung.xime.rime.RimeConfigHelper
 import com.kingzcheung.xime.rime.RimeEngine
 import com.kingzcheung.xime.settings.SchemaConfigHelper
+import com.kingzcheung.xime.settings.SchemaManager
 import com.kingzcheung.xime.settings.SettingsPreferences
 import com.kingzcheung.xime.ui.KeyboardView
 import com.kingzcheung.xime.ui.KeysConfigHelper
@@ -222,27 +223,6 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             }
         }
         
-        if (RimeEngine.isInitialized()) {
-            Log.d(TAG, "initRimeEngine: Engine already initialized, setting up schema...")
-            serviceScope.launch(Dispatchers.IO) {
-                val sessionReady = rimeEngine.ensureSession()
-                if (sessionReady) {
-                    Log.d(TAG, "initRimeEngine: Session ready (from prewarm)")
-                }
-                withContext(Dispatchers.Main) {
-                    notifyDeploymentStatus(false, "")
-                    val savedSchema = SettingsPreferences.getCurrentSchema(this@XimeInputMethodService)
-                    val availableSchemas = rimeEngine.getAvailableSchemas()
-                    val currentSchema = rimeEngine.getCurrentSchema()
-                    if (savedSchema in availableSchemas && currentSchema != savedSchema) {
-                        rimeEngine.switchSchema(savedSchema)
-                    }
-                    updateSchemaName()
-                }
-            }
-            return
-        }
-        
         val initJob = serviceScope.launch(Dispatchers.IO) {
             try {
                 notifyDeploymentStatus(true, "正在初始化...")
@@ -257,10 +237,42 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                 val needsDeployment = !deploymentDone || !RimeConfigHelper.isDeploymentComplete(this@XimeInputMethodService)
 
                 if (needsDeployment) {
-                    // 首次部署：需要编译词库
+                    // 首次部署：需要完整编译词库
                     notifyDeploymentStatus(true, "正在编译词库...")
-                    rimeEngine.startMaintenance(false)
-                    SettingsPreferences.setDeploymentDone(this@XimeInputMethodService, true)
+                    val maintenanceStarted = rimeEngine.startMaintenance(true)
+                    if (!maintenanceStarted) {
+                        Log.w(TAG, "initRimeEngine: startMaintenance returned false! " +
+                                "Deployment may not have started. Trying deploy() as fallback...")
+                        val deployed = rimeEngine.deploy()
+                        if (deployed) {
+                            Log.i(TAG, "initRimeEngine: deploy() succeeded as fallback")
+                        } else {
+                            Log.e(TAG, "initRimeEngine: both startMaintenance and deploy() failed")
+                        }
+                    }
+
+                    // 诊断：检查 maintenance 是否真的进入了维护模式
+                    val maintaining = rimeEngine.isMaintaining()
+                    Log.d(TAG, "initRimeEngine: startMaintenance returned $maintenanceStarted, isMaintaining=$maintaining")
+
+                    // 等待编译完成（最多 120 秒），startMaintenance 是异步的，
+                    // 不等待的话 ensureSession 读到的是空 schema 列表
+                    if (maintaining) {
+                        var maintenanceWaited = 0L
+                        val maintenanceTimeoutMs = 120_000L
+                        while (rimeEngine.isMaintaining() && maintenanceWaited < maintenanceTimeoutMs) {
+                            Thread.sleep(100)
+                            maintenanceWaited += 100
+                            if (maintenanceWaited % 5000 == 0L) {
+                                Log.d(TAG, "initRimeEngine: waiting for maintenance... (${maintenanceWaited / 1000}s)")
+                            }
+                        }
+                        if (rimeEngine.isMaintaining()) {
+                            Log.w(TAG, "initRimeEngine: maintenance still running after timeout, continuing anyway")
+                        } else {
+                            Log.d(TAG, "initRimeEngine: maintenance completed in ${maintenanceWaited}ms")
+                        }
+                    }
                 } else {
                     // 词库已存在：快速刷新 schema 注册表，不显示"编译"提示
                     rimeEngine.startMaintenance(false)
@@ -269,8 +281,12 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                 val sessionReady = rimeEngine.ensureSession()
                 if (sessionReady) {
                     Log.d(TAG, "initRimeEngine: Session ready")
+                    // 确保部署成功后才标记完成，避免首次部署超时后误标记
+                    if (needsDeployment) {
+                        SettingsPreferences.setDeploymentDone(this@XimeInputMethodService, true)
+                    }
                 } else {
-                    Log.w(TAG, "initRimeEngine: Session not ready after 30s, continuing in background")
+                    Log.w(TAG, "initRimeEngine: Session not ready after 60s, continuing in background")
                 }
                 notifyDeploymentStatus(false, "")
 
@@ -296,12 +312,13 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             }
         }
         
-        // Watchdog: force-clear loading state after 60s
+        // Watchdog: force-clear loading state after 190s
         // withTimeout cannot cancel native JNI calls; if rimeEngine.initialize() hangs
         // in librime, the IO coroutine would block forever. This watchdog ensures the
         // user is never permanently stuck on the loading screen.
+        // 首次编译最多等 120s + ensureSession 60s + 10s 缓冲
         serviceScope.launch(Dispatchers.Main) {
-            delay(60_000L)
+            delay(190_000L)
             if (uiState.value.isDeploying) {
                 Log.w(TAG, "initRimeEngine: Watchdog triggered - native init appears stuck, forcing loading state cleared")
                 uiState.value = uiState.value.copy(
@@ -864,24 +881,23 @@ onVoiceModeChange = { enabled ->
         } else {
             emptyList()
         }
-        
-        val builtInSchemas = SchemaConfigHelper.getBuiltInSchemas()
-        
-        val schemas = builtInSchemas.map { builtIn ->
-            val isDeployed = builtIn.schemaId in availableSchemaIds
+
+        val allSchemas = SchemaManager.discoverSchemas(this)
+
+        val schemas = allSchemas.map { meta ->
             com.kingzcheung.xime.settings.SchemaInfo(
-                schemaId = builtIn.schemaId,
-                name = builtIn.name,
-                version = builtIn.version,
-                author = builtIn.author,
-                description = builtIn.description,
-                isDownloaded = isDeployed
+                schemaId = meta.schemaId,
+                name = meta.name,
+                version = meta.version,
+                author = meta.author,
+                description = meta.description,
+                isDownloaded = meta.schemaId in availableSchemaIds
             )
         }
-        
+
         val currentSchemaId = rimeEngine.getCurrentSchema()
         val schemaInfo = schemas.find { it.schemaId == currentSchemaId }
-        
+
         uiState.value = uiState.value.copy(
             schemaName = schemaInfo?.name ?: currentSchemaId,
             currentSchemaId = currentSchemaId,

@@ -445,6 +445,13 @@ dependencies {
     
     // Kaml for YAML parsing
     implementation(libs.kaml)
+
+    // ZXing for QR code generation
+    implementation("com.google.zxing:core:3.5.3")
+
+    // Ktor embedded server for wireless import
+    implementation("io.ktor:ktor-server-core:3.1.2")
+    implementation("io.ktor:ktor-server-cio:3.1.2")
     
     debugImplementation(libs.androidx.compose.ui.tooling)
     

@@ -60,10 +60,17 @@ public:
         // 避免每次切换输入法时都触发 librime 的部署流程。
     }
 
-    void startMaintenance(bool full) {
-        if (!rime) return;
+    Bool startMaintenance(bool full) {
+        if (!rime) {
+            LOGE("startMaintenance: rime not available");
+            return false;
+        }
         LOGI("Starting maintenance (full=%s)...", full ? "true" : "false");
-        rime->start_maintenance(full);
+        Bool result = rime->start_maintenance(full);
+        if (!result) {
+            LOGE("startMaintenance FAILED: rime->start_maintenance() returned false");
+        }
+        return result;
     }
 
     bool createSession() {
@@ -710,15 +717,15 @@ Java_com_kingzcheung_xime_rime_RimeEngine_nativeDeploy(
     return Rime::Instance().deploy() ? JNI_TRUE : JNI_FALSE;
 }
 
-// 启动维护（词库编译/刷新）
-JNIEXPORT void JNICALL
+// 启动维护（词库编译/刷新），返回是否成功启动部署
+JNIEXPORT jboolean JNICALL
 Java_com_kingzcheung_xime_rime_RimeEngine_nativeStartMaintenance(
     JNIEnv* env,
     jobject thiz,
     jboolean full
 ) {
-    LOGI("Starting maintenance (full=%s)", full ? "true" : "false");
-    Rime::Instance().startMaintenance(full);
+    Bool result = Rime::Instance().startMaintenance(full == JNI_TRUE);
+    return result ? JNI_TRUE : JNI_FALSE;
 }
 
 // 查询词汇编码

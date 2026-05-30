@@ -1,5 +1,6 @@
 package com.kingzcheung.xime
 
+import android.content.Intent
 import android.Manifest
 import android.os.Bundle
 import android.util.Log
@@ -21,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.kingzcheung.xime.rime.RimeConfigHelper
 import com.kingzcheung.xime.rime.RimeEngine
+import com.kingzcheung.xime.settings.SchemaManager
 import com.kingzcheung.xime.settings.SettingsPreferences
 import com.kingzcheung.xime.ui.KeysConfigHelper
 import com.kingzcheung.xime.ui.SettingsScreen
@@ -69,6 +71,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         
         prewarmRimeEngine()
+
+        handleSharedIntent(intent)
         
         val requestPermission = intent?.getStringExtra("request_permission")
         if (requestPermission == PermissionHelper.PERMISSION_RECORD_AUDIO) {
@@ -105,6 +109,39 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                 }
+            }
+        }
+    }
+    
+    private fun handleSharedIntent(intent: Intent?) {
+        if (intent == null) return
+        when (intent.action) {
+            Intent.ACTION_SEND -> {
+                val uri = intent.getParcelableExtra<android.net.Uri>(Intent.EXTRA_STREAM)
+                if (uri != null) {
+                    importSchema(uri)
+                }
+            }
+            Intent.ACTION_SEND_MULTIPLE -> {
+                val uris = intent.getParcelableArrayListExtra<android.net.Uri>(Intent.EXTRA_STREAM)
+                if (uris != null) {
+                    for (uri in uris) {
+                        importSchema(uri)
+                    }
+                }
+            }
+        }
+    }
+    
+    private fun importSchema(uri: android.net.Uri) {
+        prewarmScope.launch {
+            val success = SchemaManager.importSchemaFile(this@MainActivity, uri)
+            launch(Dispatchers.Main) {
+                Toast.makeText(
+                    this@MainActivity,
+                    if (success) "方案导入成功，请到「输入方案」页面部署" else "方案导入失败",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         }
     }
