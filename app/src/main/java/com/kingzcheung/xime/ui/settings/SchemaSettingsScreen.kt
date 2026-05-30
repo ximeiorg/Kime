@@ -35,6 +35,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -45,6 +46,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -67,6 +69,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kingzcheung.xime.settings.SchemaManager
 import com.kingzcheung.xime.settings.SchemaMeta
+import com.kingzcheung.xime.settings.SettingsPreferences
 import com.kingzcheung.xime.viewmodel.SchemaSettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -89,6 +92,53 @@ fun SchemaSettingsContent(
         for (uri in uris) {
             viewModel.importSchemaFile(uri)
         }
+    }
+
+    var showWarning by remember { mutableStateOf(!SettingsPreferences.isSchemaImportWarningDismissed(context)) }
+    var dontShowAgain by remember { mutableStateOf(false) }
+
+    if (showWarning) {
+        AlertDialog(
+            onDismissRequest = {
+                if (dontShowAgain) SettingsPreferences.setSchemaImportWarningDismissed(context, true)
+                showWarning = false
+            },
+            containerColor = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surface else Color.White,
+            title = {
+                Text("导入方案须知", fontWeight = FontWeight.SemiBold)
+            },
+            text = {
+                Column {
+                    Text(
+                        "使用导入方案功能时，请先去了解 Rime 配置方案以及相关文档（ime.ximei.me），并确保你知道自己正在做什么。",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        "如果你不知道自己在做什么，请使用默认方案。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { dontShowAgain = !dontShowAgain }
+                    ) {
+                        Checkbox(checked = dontShowAgain, onCheckedChange = { dontShowAgain = it })
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("不再显示", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (dontShowAgain) SettingsPreferences.setSchemaImportWarningDismissed(context, true)
+                        showWarning = false
+                    }
+                ) { Text("知道了") }
+            }
+        )
     }
 
     if (showWirelessSheet) {
@@ -156,7 +206,21 @@ fun SchemaSettingsContent(
                         )
                     }
                     if (uiState.isDownloading) {
-                        Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+                Card(
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                    )
+                ) {
+                    Text(
+                        text = "使用导入方案功能时，请先了解 Rime 配置方案以及文档（ime.ximei.me），以及确保你知道自己正在做什么。如果你不知道自己在做什么，请使用默认方案。",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
                         LinearProgressIndicator(
                             modifier = Modifier.fillMaxWidth(),
                             color = MaterialTheme.colorScheme.primary
@@ -203,79 +267,77 @@ fun SchemaSettingsContent(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        TopAppBar(
-            title = {
-                Text("输入方案", style = MaterialTheme.typography.titleMedium)
-            },
-            navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "返回"
-                    )
-                }
-            },
-            actions = {
-                Box {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "更多")
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("输入方案") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false },
-                        offset = DpOffset(0.dp, 4.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("浏览器导入") },
-                            onClick = { showMenu = false; showWirelessSheet = true },
-                            leadingIcon = {
-                                Icon(Icons.Default.Computer, null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp))
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("网络导入") },
-                            onClick = { showMenu = false; showUrlDialog = true },
-                            leadingIcon = {
-                                Icon(Icons.Default.CloudDownload, null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp))
-                            }
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 12.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
-                        DropdownMenuItem(
-                            text = { Text("从文件选择") },
-                            onClick = { showMenu = false; importLauncher.launch(arrayOf("*/*")) },
-                            leadingIcon = {
-                                Icon(Icons.Default.FolderOpen, null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp))
-                            }
-                        )
+                },
+                actions = {
+                    Box {
+                        IconButton(onClick = { showMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "更多")
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                            offset = DpOffset(0.dp, 4.dp),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("浏览器导入") },
+                                onClick = { showMenu = false; showWirelessSheet = true },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Computer, null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp))
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("网络导入") },
+                                onClick = { showMenu = false; showUrlDialog = true },
+                                leadingIcon = {
+                                    Icon(Icons.Default.CloudDownload, null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp))
+                                }
+                            )
+                            HorizontalDivider(
+                                modifier = Modifier.padding(horizontal = 12.dp),
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            )
+                            DropdownMenuItem(
+                                text = { Text("从文件选择") },
+                                onClick = { showMenu = false; importLauncher.launch(arrayOf("*/*")) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.FolderOpen, null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp))
+                                }
+                            )
+                        }
                     }
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.background,
-                titleContentColor = MaterialTheme.colorScheme.onBackground
-            ),
-            windowInsets = WindowInsets(0.dp)
-        )
-
-        LazyColumn(
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                ),
+                windowInsets = WindowInsets(0.dp)
+            )
+        }
+    ) { paddingValues ->
+        Column(
             modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 16.dp),
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item {
@@ -371,6 +433,7 @@ fun SchemaSettingsContent(
             }
         }
     }
+    }
 }
 
 @Composable
@@ -385,7 +448,6 @@ private fun SchemaToggleItem(
 ) {
     val context = LocalContext.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
-    val missingDict = SchemaManager.schemaNeedsDict(context, schema.schemaId) && !SchemaManager.hasDictFile(context, schema.schemaId)
 
     if (showDeleteConfirm) {
         AlertDialog(
@@ -471,15 +533,6 @@ private fun SchemaToggleItem(
                             color = MaterialTheme.colorScheme.error
                         )
                     }
-                }
-                if (missingDict) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "缺少 .dict.yaml 词典文件，无法编译",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error,
-                        maxLines = 1
-                    )
                 }
             }
 

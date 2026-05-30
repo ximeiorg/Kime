@@ -41,6 +41,8 @@ object SettingsPreferences {
     private const val KEY_WEBDAV_USERNAME = "webdav_username"
     private const val KEY_WEBDAV_PASSWORD = "webdav_password"
     private const val KEY_WEBDAV_PATH = "webdav_path"
+
+    private const val KEY_SCHEMA_IMPORT_WARNING_DISMISSED = "schema_import_warning_dismissed"
     
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -278,5 +280,13 @@ object SettingsPreferences {
 
     fun setWebDavPath(context: Context, path: String) {
         getPrefs(context).edit().putString(KEY_WEBDAV_PATH, path).apply()
+    }
+
+    fun isSchemaImportWarningDismissed(context: Context): Boolean {
+        return getPrefs(context).getBoolean(KEY_SCHEMA_IMPORT_WARNING_DISMISSED, false)
+    }
+
+    fun setSchemaImportWarningDismissed(context: Context, dismissed: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_SCHEMA_IMPORT_WARNING_DISMISSED, dismissed).apply()
     }
 }

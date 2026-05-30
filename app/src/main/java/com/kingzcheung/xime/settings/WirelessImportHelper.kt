@@ -114,7 +114,7 @@ class WirelessImportHelper(private val context: Context) {
                         }
 
                         lastName = name
-                        val contentBytes = partSlice.copyOfRange(hdrEnd + 4, partSlice.size - 2)
+                        val contentBytes = partSlice.copyOfRange(hdrEnd + 6, partSlice.size - 2)
                         File(sharedDir, name).writeBytes(contentBytes)
                         saved = true
 

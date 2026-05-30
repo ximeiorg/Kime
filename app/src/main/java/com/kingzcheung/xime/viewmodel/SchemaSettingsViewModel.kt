@@ -82,24 +82,10 @@ class SchemaSettingsViewModel(application: Application) : AndroidViewModel(appli
             val success = SchemaManager.importSchemaFile(context, uri)
             refresh()
             if (success) {
-                val importedId = detectImportedSchemaId(uri)
-                if (importedId != null && SchemaManager.schemaNeedsDict(context, importedId) && !SchemaManager.hasDictFile(context, importedId)) {
-                    showToast("${importedId}.schema.yaml 已导入，但缺少对应的 .dict.yaml 词典文件，编译会失败")
-                } else {
-                    showToast("导入成功")
-                }
+                showToast("导入成功")
             } else {
                 showToast("导入失败")
             }
-        }
-    }
-
-    private fun detectImportedSchemaId(uri: Uri): String? {
-        val name = uri.lastPathSegment ?: return null
-        return when {
-            name.endsWith(".schema.yaml") -> name.removeSuffix(".schema.yaml")
-            name.endsWith(".dict.yaml") -> name.removeSuffix(".dict.yaml")
-            else -> null
         }
     }
 
