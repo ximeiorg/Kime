@@ -5,10 +5,16 @@ import android.net.Uri
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
+import java.io.InputStream
 import java.io.InputStreamReader
+import java.util.concurrent.TimeUnit
 import java.util.zip.ZipInputStream
 
 data class SchemaMeta(
@@ -315,6 +321,93 @@ object SchemaManager {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to import zip", e)
             return false
+        }
+    }
+
+    suspend fun importFromUrl(context: Context, url: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val sharedDir = getSharedDir(context)
+            if (!sharedDir.exists()) sharedDir.mkdirs()
+
+            val client = OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(120, TimeUnit.SECONDS)
+                .followRedirects(true)
+                .build()
+
+            val request = Request.Builder().url(url).build()
+            val response = client.newCall(request).execute()
+            if (!response.isSuccessful) {
+                Log.e(TAG, "Download failed: ${response.code} $url")
+                return@withContext false
+            }
+
+            val body = response.body ?: return@withContext false
+
+            when {
+                url.endsWith(".zip", ignoreCase = true) ->
+                    importZipFromStream(body.byteStream(), sharedDir)
+                url.endsWith(".tar.gz", ignoreCase = true) || url.endsWith(".tgz", ignoreCase = true) ->
+                    importTarGzFromStream(body.byteStream(), sharedDir)
+                else -> {
+                    Log.e(TAG, "Unsupported format: $url")
+                    false
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to import from URL: $url", e)
+            false
+        }
+    }
+
+    private fun importZipFromStream(inputStream: InputStream, targetDir: File): Boolean {
+        return try {
+            var count = 0
+            ZipInputStream(inputStream.buffered()).use { zis ->
+                var entry = zis.nextEntry
+                while (entry != null) {
+                    val name = entry.name
+                    if (!entry.isDirectory && (name.endsWith(".yaml") || name.endsWith(".txt") || name.endsWith(".bin"))) {
+                        val file = File(targetDir, name.substringAfterLast('/'))
+                        file.parentFile?.mkdirs()
+                        FileOutputStream(file).use { output -> zis.copyTo(output) }
+                        count++
+                        Log.d(TAG, "Extracted zip entry: ${file.name}")
+                    }
+                    zis.closeEntry()
+                    entry = zis.nextEntry
+                }
+            }
+            Log.i(TAG, "Extracted $count files from zip stream")
+            count > 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to extract zip stream", e)
+            false
+        }
+    }
+
+    private fun importTarGzFromStream(inputStream: InputStream, targetDir: File): Boolean {
+        return try {
+            var count = 0
+            TarArchiveInputStream(GzipCompressorInputStream(inputStream.buffered())).use { tarIn ->
+                var entry = tarIn.nextEntry
+                while (entry != null) {
+                    val name = entry.name
+                    if (!entry.isDirectory && (name.endsWith(".yaml") || name.endsWith(".txt") || name.endsWith(".bin"))) {
+                        val file = File(targetDir, name.substringAfterLast('/'))
+                        file.parentFile?.mkdirs()
+                        FileOutputStream(file).use { output -> tarIn.copyTo(output) }
+                        count++
+                        Log.d(TAG, "Extracted tar.gz entry: ${file.name}")
+                    }
+                    entry = tarIn.nextEntry
+                }
+            }
+            Log.i(TAG, "Extracted $count files from tar.gz stream")
+            count > 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to extract tar.gz", e)
+            false
         }
     }
 
