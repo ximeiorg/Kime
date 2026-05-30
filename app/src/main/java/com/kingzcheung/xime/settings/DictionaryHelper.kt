@@ -3,6 +3,8 @@ package com.kingzcheung.xime.settings
 import android.content.Context
 import android.util.Log
 import java.io.BufferedReader
+import java.io.File
+import java.io.FileInputStream
 import java.io.InputStreamReader
 
 data class DictEntry(
@@ -12,60 +14,54 @@ data class DictEntry(
 
 object DictionaryHelper {
     private const val TAG = "DictionaryHelper"
-    
-    private val schemaToDictMap = mapOf(
-        "wubi86" to "wubi86.dict.yaml",
-        "wubi86_pinyin" to "wubi86.dict.yaml",
-        "pinyin_simp" to "pinyin_simp.dict.yaml"
-    )
-    
-    fun getDictFileForSchema(schemaId: String): String? {
-        return schemaToDictMap[schemaId]
+
+    private fun getDictFile(context: Context, schemaId: String): File? {
+        val dictName = SchemaManager.getReferencedDictName(context, schemaId) ?: schemaId
+        val f = File(SchemaManager.getSharedDir(context), "$dictName.dict.yaml")
+        return if (f.exists()) f else null
     }
-    
+
     fun loadDictionary(context: Context, schemaId: String): List<DictEntry> {
-        val dictFile = getDictFileForSchema(schemaId) ?: return emptyList()
+        val dictFile = getDictFile(context, schemaId) ?: return emptyList()
         val entries = mutableListOf<DictEntry>()
-        
+
         try {
-            val inputStream = context.assets.open("rime/$dictFile")
-            val reader = BufferedReader(InputStreamReader(inputStream, "UTF-8"))
-            
-            var inDataSection = false
-            var line: String? = reader.readLine()
-            
-            while (line != null) {
-                val trimmed = line.trim()
-                
-                if (trimmed == "...") {
-                    inDataSection = true
-                    line = reader.readLine()
-                    continue
-                }
-                
-                if (inDataSection && trimmed.isNotEmpty() && !trimmed.startsWith("#")) {
-                    val parts = trimmed.split("\t")
-                    if (parts.size >= 2) {
-                        entries.add(DictEntry(parts[0], parts[1]))
+            FileInputStream(dictFile).use { input ->
+                val reader = BufferedReader(InputStreamReader(input, "UTF-8"))
+                var inDataSection = false
+                var line = reader.readLine()
+
+                while (line != null) {
+                    val trimmed = line.trimStart()
+
+                    if (trimmed == "...") {
+                        inDataSection = true
+                        line = reader.readLine()
+                        continue
                     }
+
+                    if (inDataSection && trimmed.isNotEmpty() && !trimmed.startsWith("#")) {
+                        val parts = trimmed.split("\t", "  ", " ")
+                        if (parts.size >= 2) {
+                            entries.add(DictEntry(parts[0], parts[1]))
+                        }
+                    }
+
+                    line = reader.readLine()
                 }
-                
-                line = reader.readLine()
+                reader.close()
             }
-            
-            reader.close()
-            inputStream.close()
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to load dictionary: $dictFile", e)
+            Log.e(TAG, "Failed to load dictionary for $schemaId", e)
         }
-        
+
         return entries
     }
-    
+
     fun searchDictionary(entries: List<DictEntry>, query: String): List<DictEntry> {
         if (query.isEmpty()) return entries.take(100)
-        return entries.filter { 
-            it.word.contains(query) || it.code.contains(query) 
+        return entries.filter {
+            it.word.contains(query) || it.code.contains(query)
         }.take(100)
     }
 }

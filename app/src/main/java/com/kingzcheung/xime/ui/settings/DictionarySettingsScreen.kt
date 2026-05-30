@@ -1,6 +1,7 @@
 package com.kingzcheung.xime.ui.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -17,9 +19,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,14 +37,17 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.kingzcheung.xime.settings.DictEntry
-import com.kingzcheung.xime.ui.SettingsSection
 import com.kingzcheung.xime.viewmodel.DictionarySettingsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,25 +57,19 @@ fun DictionarySettingsContent(
 ) {
     val viewModel: DictionarySettingsViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    
+    var showSchemaMenu by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
         TopAppBar(
-            title = { 
-                Column {
-                    Text(
-                        "词库管理",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    Text(
-                        text = uiState.schemaName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            title = {
+                Text(
+                    "词库管理",
+                    style = MaterialTheme.typography.titleMedium
+                )
             },
             navigationIcon = {
                 IconButton(onClick = onBack) {
@@ -81,11 +85,73 @@ fun DictionarySettingsContent(
             ),
             windowInsets = WindowInsets(0.dp)
         )
-        
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showSchemaMenu = true }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val schema = uiState.availableSchemas.find { it.schemaId == uiState.selectedSchema }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = schema?.name ?: uiState.selectedSchema,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = uiState.selectedSchema,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            DropdownMenu(
+                expanded = showSchemaMenu,
+                onDismissRequest = { showSchemaMenu = false },
+                offset = DpOffset(0.dp, 4.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                for (s in uiState.availableSchemas) {
+                    DropdownMenuItem(
+                        text = {
+                            Column {
+                                Text(s.name, style = MaterialTheme.typography.bodyMedium)
+                                Text(s.schemaId, style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        },
+                        onClick = {
+                            showSchemaMenu = false
+                            viewModel.selectSchema(s.schemaId)
+                        }
+                    )
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -144,12 +210,12 @@ fun DictionarySettingsContent(
                 }
             }
         }
-        
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
-        ) {
+            ) {
             if (uiState.isLoading) {
                 Box(
                     modifier = Modifier.fillMaxWidth().weight(1f),
@@ -157,14 +223,22 @@ fun DictionarySettingsContent(
                 ) {
                     CircularProgressIndicator()
                 }
+            } else if (uiState.selectedSchema.isEmpty() && uiState.availableSchemas.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("没有可用的输入方案", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             } else {
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "共 ${uiState.allEntries.size} 条词条${if (uiState.searchQuery.isNotEmpty()) "，搜索结果 ${uiState.displayedEntries.size} 条" else ""}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
-                
+
                 if (uiState.displayedEntries.isEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxWidth().weight(1f),
@@ -176,15 +250,13 @@ fun DictionarySettingsContent(
                         )
                     }
                 } else {
-                    SettingsSection(title = "词条列表", content = {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxWidth().weight(1f)
-                        ) {
-                            items(uiState.displayedEntries.take(50)) { entry ->
-                                DictEntryItem(entry = entry)
-                            }
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().weight(1f)
+                    ) {
+                        items(uiState.displayedEntries) { entry ->
+                            DictEntryItem(entry = entry)
                         }
-                    })
+                    }
                 }
             }
         }
@@ -196,7 +268,7 @@ fun DictEntryItem(entry: DictEntry) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(horizontal = 8.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {

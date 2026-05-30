@@ -29,7 +29,7 @@ object SchemaManager {
     private const val TAG = "SchemaManager"
     private const val CUSTOM_YAML = "default.custom.yaml"
 
-    private fun getSharedDir(context: Context): File =
+    fun getSharedDir(context: Context): File =
         File(context.filesDir, "rime/shared")
 
     private fun getUserDir(context: Context): File =
