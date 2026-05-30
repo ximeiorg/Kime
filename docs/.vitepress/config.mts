@@ -30,16 +30,37 @@ export default defineConfig({
           ]
         },
         {
-          text: '功能',
+          text: '方案与词库',
+          items: [
+            { text: '输入方案', link: '/features/input-scheme' },
+            { text: '部署方案', link: '/features/deployment' }
+          ]
+        },
+        {
+          text: '外观与交互',
+          items: [
+            { text: '键盘调节', link: '/features/keyboard-adjustment' }
+          ]
+        },
+        {
+          text: '智能与扩展',
           items: [
             { text: '智能联想', link: '/features/smart-prediction' },
-            { text: '语音转文本', link: '/features/speech-to-text' },
+            { text: '语音转文本', link: '/features/speech-to-text' }
+          ]
+        },
+        {
+          text: '同步与备份',
+          items: [
+            { text: 'WebDAV 同步', link: '/features/webdav-sync' }
+          ]
+        },
+        {
+          text: '其他功能',
+          items: [
             { text: '剪贴板', link: '/features/clipboard' },
             { text: '快捷发送', link: '/features/quick-send' },
-            { text: '键盘调节', link: '/features/keyboard-adjustment' },
-            { text: '表情', link: '/features/emoji' },
-            { text: '部署方案', link: '/features/deployment' },
-            { text: '输入方案', link: '/features/input-scheme' }
+            { text: '表情', link: '/features/emoji' }
           ]
         },
         {
