@@ -244,14 +244,17 @@ object SchemaManager {
 
     fun deleteSchemaFiles(context: Context, schemaId: String) {
         val sharedDir = getSharedDir(context)
-        for (ext in listOf(".schema.yaml", ".dict.yaml")) {
-            val f = File(sharedDir, "$schemaId$ext")
-            if (f.exists()) f.delete()
-        }
+        val schemaFile = File(sharedDir, "$schemaId.schema.yaml")
+        if (schemaFile.exists()) schemaFile.delete()
+
+        val dictName = getReferencedDictName(context, schemaId) ?: schemaId
+        val dictFile = File(sharedDir, "$dictName.dict.yaml")
+        if (dictFile.exists()) dictFile.delete()
+
         val enabled = getEnabledSchemas(context).toMutableList()
         enabled.remove(schemaId)
         setEnabledSchemas(context, enabled)
-        Log.i(TAG, "Deleted schema files for: $schemaId")
+        Log.i(TAG, "Deleted schema files for: $schemaId (dict=$dictName)")
     }
 
     suspend fun importSchemaFile(context: Context, uri: Uri): Boolean {

@@ -29,6 +29,7 @@ object RimeConfigHelper {
         }
         
         copyAssetsToRimeDir(context, sharedDataDir)
+        stripLuaTranslatorFromSchemas(sharedDataDir)
         
         Log.d(TAG, "Checking for missing schema files...")
         try {
@@ -163,14 +164,18 @@ object RimeConfigHelper {
     
     private fun copyAssetFile(context: Context, assetPath: String, targetFile: File) {
         try {
-            if (targetFile.exists()) {
+            if (targetFile.exists() && targetFile.name != "default.yaml") {
                 return
             }
-            
+
             targetFile.parentFile?.mkdirs()
             context.assets.open(assetPath).use { input ->
+                val text = input.bufferedReader().readText()
+                val cleaned = if (targetFile.name.endsWith(".schema.yaml")) {
+                    text.lines().filter { !it.trimStart().startsWith("- lua_translator") }.joinToString("\n")
+                } else text
                 FileOutputStream(targetFile).use { output ->
-                    input.copyTo(output)
+                    output.write(cleaned.toByteArray())
                 }
             }
             Log.d(TAG, "Copied: $assetPath -> ${targetFile.absolutePath}")
@@ -178,7 +183,23 @@ object RimeConfigHelper {
             Log.e(TAG, "Failed to copy: $assetPath", e)
         }
     }
-    
+
+    private fun stripLuaTranslatorFromSchemas(sharedDataDir: File) {
+        val schemaFiles = sharedDataDir.listFiles { f -> f.name.endsWith(".schema.yaml") } ?: return
+        for (file in schemaFiles) {
+            try {
+                val lines = file.readLines()
+                val filtered = lines.filter { !it.trimStart().startsWith("- lua_translator") }
+                if (filtered.size != lines.size) {
+                    file.writeText(filtered.joinToString("\n"))
+                    Log.d(TAG, "Stripped lua_translator from ${file.name}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to process ${file.name}", e)
+            }
+        }
+    }
+
     private fun listFilesRecursively(dir: File, tag: String, prefix: String = "") {
         val files = dir.listFiles()
         if (files == null) {

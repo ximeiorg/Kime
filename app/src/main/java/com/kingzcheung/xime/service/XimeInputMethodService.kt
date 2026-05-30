@@ -876,37 +876,40 @@ onVoiceModeChange = { enabled ->
     }
     
     private fun updateSchemaName() {
-        val availableSchemaIds = if (RimeEngine.isInitialized()) {
-            rimeEngine.getAvailableSchemas().toList()
-        } else {
-            emptyList()
-        }
-
-        val enabledIds = SchemaManager.getEnabledSchemas(this)
-        val allSchemas = SchemaManager.discoverSchemas(this)
-
-        // 键盘菜单栏只显示：已启用 + 已编译的方案
-        val schemas = allSchemas
-            .filter { meta -> meta.schemaId in enabledIds && meta.schemaId in availableSchemaIds }
-            .map { meta ->
-                com.kingzcheung.xime.settings.SchemaInfo(
-                    schemaId = meta.schemaId,
-                    name = meta.name,
-                    version = meta.version,
-                    author = meta.author,
-                    description = meta.description,
-                    isDownloaded = true
-                )
+        serviceScope.launch(Dispatchers.IO) {
+            val availableSchemaIds = if (RimeEngine.isInitialized()) {
+                rimeEngine.getAvailableSchemas().toList()
+            } else {
+                emptyList()
             }
 
-        val currentSchemaId = rimeEngine.getCurrentSchema()
-        val schemaInfo = schemas.find { it.schemaId == currentSchemaId }
+            val enabledIds = SchemaManager.getEnabledSchemas(this@XimeInputMethodService)
+            val allSchemas = SchemaManager.discoverSchemas(this@XimeInputMethodService)
 
-        uiState.value = uiState.value.copy(
-            schemaName = schemaInfo?.name ?: currentSchemaId,
-            currentSchemaId = currentSchemaId,
-            schemas = schemas
-        )
+            val schemas = allSchemas
+                .filter { meta -> meta.schemaId in enabledIds && meta.schemaId in availableSchemaIds }
+                .map { meta ->
+                    com.kingzcheung.xime.settings.SchemaInfo(
+                        schemaId = meta.schemaId,
+                        name = meta.name,
+                        version = meta.version,
+                        author = meta.author,
+                        description = meta.description,
+                        isDownloaded = true
+                    )
+                }
+
+            val currentSchemaId = rimeEngine.getCurrentSchema()
+            val schemaInfo = schemas.find { it.schemaId == currentSchemaId }
+
+            withContext(Dispatchers.Main) {
+                uiState.value = uiState.value.copy(
+                    schemaName = schemaInfo?.name ?: currentSchemaId,
+                    currentSchemaId = currentSchemaId,
+                    schemas = schemas
+                )
+            }
+        }
     }
 
     private fun handleKeyPress(key: String, isShifted: Boolean) {

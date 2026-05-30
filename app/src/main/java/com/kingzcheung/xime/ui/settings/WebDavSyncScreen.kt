@@ -196,7 +196,7 @@ fun WebDavSyncContent(
                                 connectionOk = null
                                 scope.launch {
                                     val result = WebDavSyncHelper.testConnection(
-                                        serverUrl, username, password
+                                        serverUrl, username, password, remotePath
                                     )
                                     connectionOk = result.isSuccess
                                     connectionStatus = result.getOrNull() ?: result.exceptionOrNull()?.message

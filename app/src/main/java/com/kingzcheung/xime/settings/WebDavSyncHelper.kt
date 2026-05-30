@@ -5,10 +5,10 @@ import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
-import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
 import java.io.File
@@ -42,19 +42,23 @@ object WebDavSyncHelper {
     suspend fun testConnection(
         baseUrl: String,
         username: String,
-        password: String
+        password: String,
+        remotePath: String = ""
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val url = normalizeUrl(baseUrl)
             val client = buildClient()
+            val headers = authHeaders(username, password)
+            val url = normalizeUrl(baseUrl)
+            val testUrl = if (remotePath.isNotBlank()) "$url/$remotePath" else url
             val request = Request.Builder()
-                .url(url)
+                .url(testUrl)
                 .method("PROPFIND", null)
-                .apply { authHeaders(username, password).forEach { (k, v) -> header(k, v) } }
+                .apply { headers.forEach { (k, v) -> header(k, v) } }
                 .header("Depth", "0")
                 .build()
             val response = client.newCall(request).execute()
-            if (response.isSuccessful) {
+            if (response.isSuccessful || response.code == 404 || response.code == 405) {
+                // 404 = path doesn't exist yet (can be created), 405 = already exists
                 Result.success("连接成功")
             } else {
                 Result.failure(Exception("HTTP ${response.code}: ${response.message}"))
@@ -150,14 +154,22 @@ object WebDavSyncHelper {
             for (remoteFile in remoteSharedFiles.filter { !it.isDirectory && it.name.endsWith(".yaml") }) {
                 val localFile = File(sharedDir, remoteFile.name)
                 onProgress("下载 shared/${remoteFile.name}")
-                downloadFile(client, "$remoteBase/shared/${remoteFile.name}", localFile, headers)
+                val err = downloadFile(client, "$remoteBase/shared/${remoteFile.name}", localFile, headers)
+                if (err != null) {
+                    onProgress("下载 shared/${remoteFile.name} 失败: $err")
+                    return@withContext false
+                }
             }
 
             val remoteUserFiles = listRemoteDir(client, "$remoteBase/user", headers)
             for (remoteFile in remoteUserFiles.filter { !it.isDirectory && it.name in userConfigFiles }) {
                 val localFile = File(userDir, remoteFile.name)
                 onProgress("下载 user/${remoteFile.name}")
-                downloadFile(client, "$remoteBase/user/${remoteFile.name}", localFile, headers)
+                val err = downloadFile(client, "$remoteBase/user/${remoteFile.name}", localFile, headers)
+                if (err != null) {
+                    onProgress("下载 user/${remoteFile.name} 失败: $err")
+                    return@withContext false
+                }
             }
 
             onProgress("下载完成")
@@ -213,8 +225,7 @@ object WebDavSyncHelper {
         headers: Map<String, String>
     ): String? {
         return try {
-            val body = file.readBytes()
-                .toRequestBody("application/octet-stream".toMediaType())
+            val body = file.asRequestBody("application/octet-stream".toMediaTypeOrNull())
             val request = Request.Builder()
                 .url(url)
                 .put(body)
@@ -236,19 +247,27 @@ object WebDavSyncHelper {
         url: String,
         localFile: File,
         headers: Map<String, String>
-    ) {
-        val request = Request.Builder()
-            .url(url)
-            .get()
-            .apply { headers.forEach { (k, v) -> header(k, v) } }
-            .build()
-        val response = client.newCall(request).execute()
-        if (response.isSuccessful) {
-            response.body?.byteStream()?.use { input ->
-                localFile.outputStream().use { output ->
-                    input.copyTo(output)
+    ): String? {
+        return try {
+            val request = Request.Builder()
+                .url(url)
+                .get()
+                .apply { headers.forEach { (k, v) -> header(k, v) } }
+                .build()
+            val response = client.newCall(request).execute()
+            if (response.isSuccessful) {
+                response.body?.byteStream()?.use { input ->
+                    localFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
                 }
+                null
+            } else {
+                "HTTP ${response.code} ${response.message}"
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "GET $url exception", e)
+            e.message ?: "未知错误"
         }
     }
 

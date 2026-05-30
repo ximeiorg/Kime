@@ -320,12 +320,12 @@ fun SettingsMainContent(
                         thickness = 0.5.dp,
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
-                                        SettingsItem(
-                            icon = Icons.TwoTone.Info,
-                    title = "关于曦码",
-                    subtitle = "版本信息、开发者、联系方式",
-                    onClick = onNavigateToAbout,
-                    showArrow = true
+                    SettingsItem(
+                        icon = Icons.TwoTone.Info,
+                        title = "关于曦码",
+                        subtitle = "版本信息、开发者、联系方式",
+                        onClick = onNavigateToAbout,
+                        showArrow = true
                     )
                 })
             }

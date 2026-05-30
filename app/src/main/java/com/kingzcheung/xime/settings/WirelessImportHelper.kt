@@ -15,6 +15,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -65,6 +66,7 @@ class WirelessImportHelper(private val context: Context) {
     }
 
     fun start(port: Int): String? {
+        if (server != null) return null
         val ip = getLocalIpAddress() ?: return null
         val url = "http://$ip:$port"
 
@@ -97,8 +99,7 @@ class WirelessImportHelper(private val context: Context) {
                         val partEnd = bytes.indexOf(boundaryMarker, partStart + boundaryMarker.size)
                         if (partEnd < 0) break
 
-                        val headerStart = partStart + boundaryMarker.size
-                        val partSlice = bytes.copyOfRange(headerStart, partEnd)
+                        val partSlice = bytes.copyOfRange(partStart + boundaryMarker.size, partEnd)
                         val partText = partSlice.toString(Charsets.UTF_8).trimStart('\r', '\n')
 
                         val hdrEnd = partText.indexOf("\r\n\r\n")
@@ -143,6 +144,16 @@ class WirelessImportHelper(private val context: Context) {
 
     val isRunning: Boolean get() = server != null
 
+    private fun ByteArray.indexOf(pattern: ByteArray, start: Int = 0): Int {
+        outer@ for (i in start..this.size - pattern.size) {
+            for (j in pattern.indices) {
+                if (this[i + j] != pattern[j]) continue@outer
+            }
+            return i
+        }
+        return -1
+    }
+
     fun generateQrCode(url: String, size: Int = 512): Bitmap? {
         return try {
             val writer = QRCodeWriter()
@@ -159,16 +170,6 @@ class WirelessImportHelper(private val context: Context) {
             Log.e(TAG, "QR generation failed", e)
             null
         }
-    }
-
-    private fun ByteArray.indexOf(pattern: ByteArray, start: Int = 0): Int {
-        outer@ for (i in start..this.size - pattern.size) {
-            for (j in pattern.indices) {
-                if (this[i + j] != pattern[j]) continue@outer
-            }
-            return i
-        }
-        return -1
     }
 
     companion object {

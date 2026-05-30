@@ -80,8 +80,7 @@ key_binder:
     # 空格键选第一候选词
     - { when: has_menu, accept: space, send: 1 }
     # 回车键提交输入编码
-    - { when: composing, accept: Return, send: Enter }
-    - { when: composing, accept: Enter, send: Escape }
+    - { when: composing, accept: Return, send: Return }
     # 退格键删除
     - { when: composing, accept: BackSpace, send: BackSpace }
     # 删除键
@@ -102,7 +101,6 @@ key_binder:
     - { when: has_menu, accept: "7", send: 7 }
     - { when: has_menu, accept: "8", send: 8 }
     - { when: has_menu, accept: "9", send: 9 }
-    - { when: has_menu, accept: "0", send: 10 }
   select:
     - { when: has_menu, accept: "1", send: 1 }
     - { when: has_menu, accept: "2", send: 2 }
@@ -113,7 +111,6 @@ key_binder:
     - { when: has_menu, accept: "7", send: 7 }
     - { when: has_menu, accept: "8", send: 8 }
     - { when: has_menu, accept: "9", send: 9 }
-    - { when: has_menu, accept: "0", send: 10 }
 
 recognizer:
   patterns:
@@ -131,11 +128,10 @@ ascii_composer:
 editor:
   bindings:
     - { when: composing, accept: BackSpace, send: BackSpace }
-    - { when: composing, accept: Delete, send: Delete }
+    - { when: composing, accept: Return, send: Return }
+    - { when: composing, accept: Escape, send: Escape }
     - { when: composing, accept: Left, send: Left }
     - { when: composing, accept: Right, send: Right }
-    - { when: composing, accept: Return, send: Enter }
-    - { when: composing, accept: Enter, send: Escape }
 
 spacer:
   max_width: 1
