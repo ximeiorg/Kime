@@ -96,6 +96,8 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     private var voiceRecordingStarted = false
     private var lastClearedText: String = ""
     
+    private val calculatorEngine = com.kingzcheung.xime.calculator.CalculatorEngine()
+    
     private val predictionManager = PredictionManager(
         context = this,
         serviceScope = serviceScope,
@@ -919,6 +921,10 @@ onVoiceModeChange = { enabled ->
             
             when (key) {
                 "delete" -> {
+                    // 计算器模式：追踪退格
+                    calculatorEngine.handleDelete()
+                    updateCalculatorCandidates()
+                    
                     val pendingEnglish = state.pendingEnglishText
                     
                     if (pendingEnglish.isNotEmpty()) {
@@ -1019,6 +1025,8 @@ onVoiceModeChange = { enabled ->
                     Log.d(TAG, "Undo clear: restored='$text'")
                 }
                 "enter" -> {
+                    calculatorEngine.clear()
+                    updateCalculatorCandidates()
                     if (state.isComposing) {
                         val input = state.inputText
                         if (input.isNotEmpty()) {
@@ -1099,6 +1107,8 @@ onVoiceModeChange = { enabled ->
                     }
                 }
                 "abc" -> {
+                    calculatorEngine.clear()
+                    updateCalculatorCandidates()
                 }
                 "emoji" -> {
                     withContext(Dispatchers.Main) {
@@ -1107,6 +1117,24 @@ onVoiceModeChange = { enabled ->
                 }
                 else -> {
                     val pendingEnglish = state.pendingEnglishText
+                    
+                    // 非计算器键（如符号键盘的符号、全键盘的字母）清除计算器状态
+                    if (!key.matches(Regex("[0-9]")) && key !in listOf("+", "-", "*", "/", ".")) {
+                        if (calculatorEngine.isActive() || calculatorEngine.getCandidate() != null) {
+                            calculatorEngine.clear()
+                            updateCalculatorCandidates()
+                        }
+                    }
+                    
+                    // 计算器模式：追踪数字、运算符和小数点
+                    if (key.matches(Regex("[0-9]")) || key in listOf("+", "-", "*", "/", ".")) {
+                        if (key.matches(Regex("[0-9]")) || key == ".") {
+                            calculatorEngine.handleDigit(key)
+                        } else {
+                            calculatorEngine.handleOperator(key)
+                        }
+                        updateCalculatorCandidates()
+                    }
                     
                     if (key.matches(Regex("[0-9]")) ||
                         key in listOf("-", "/", ":", ";", "(", ")", "@", "\"", "'", "#", ".", ",", "!", "?", "，", "。")) {
@@ -1215,7 +1243,53 @@ onVoiceModeChange = { enabled ->
         }
     }
     
+    /**
+     * 更新计算器候选栏显示
+     */
+    private fun updateCalculatorCandidates() {
+        val candidate = calculatorEngine.getCandidate()
+        uiState.value = if (candidate != null) {
+            uiState.value.copy(
+                candidates = arrayOf(candidate),
+                candidateComments = emptyArray()
+            )
+        } else {
+            // 如果计算器之前有显示但现在已清除，也要清空候选栏
+            if (uiState.value.candidates.isNotEmpty() && !calculatorEngine.isActive()) {
+                uiState.value.copy(
+                    candidates = emptyArray(),
+                    candidateComments = emptyArray()
+                )
+            } else {
+                uiState.value
+            }
+        }
+    }
+
     private fun selectCandidate(index: Int) {
+        // 计算器模式：选择计算结果替换输入框
+        if (index == 0 && calculatorEngine.isActive()) {
+            val result = calculatorEngine.getResult()
+            val expression = calculatorEngine.getExpression()
+            if (result.isNotEmpty() && expression.isNotEmpty()) {
+                calculatorEngine.clear()
+                serviceScope.launch(Dispatchers.Main) {
+                    val ic = currentInputConnection
+                    if (ic != null) {
+                        // 删除输入框中已键入的表达式
+                        ic.deleteSurroundingText(expression.length, 0)
+                        // 提交计算结果
+                        ic.commitText(result, result.length)
+                    }
+                    uiState.value = uiState.value.copy(
+                        candidates = emptyArray(),
+                        candidateComments = emptyArray()
+                    )
+                }
+            }
+            return
+        }
+        
         if (uiState.value.isShowingRecentClipboard && index >= 0 && index < recentClipboardItemsState.value.size) {
             val text = recentClipboardItemsState.value[index].text
             selectClipboardItem(text)

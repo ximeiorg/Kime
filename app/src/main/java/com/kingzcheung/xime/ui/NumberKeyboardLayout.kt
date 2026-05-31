@@ -23,9 +23,9 @@ import androidx.compose.ui.unit.dp
 /**
  * 九宫格数字键盘布局
  * 第1行：符号 | 1 | 2 | 3 | 退格
- * 第2行：符号 | 4 | 5 | 6 | 空格
+ * 第2行：符号 | 4 | 5 | 6 | 符号切换
  * 第3行：符号 | 7 | 8 | 9 | 表情
- * 第4行：ABC | 符号切换 | 0 | . | 确定
+ * 第4行：ABC | / | 0 | . | 确定
  */
 @Composable
 fun NumberKeyboardLayout(
@@ -99,7 +99,7 @@ fun NumberKeyboardLayout(
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        KeyButton(text = "@", onClick = { onKeyPress("@") }, backgroundColor = keyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke("@") })
+                        KeyButton(text = "+", onClick = { onKeyPress("+") }, backgroundColor = keyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke("+") })
                         listOf("1","2","3").forEach { k -> KeyButton(text = k, onClick = { onKeyPress(k) }, backgroundColor = keyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke(k) }) }
                         SwipeableIconKeyButton(icon = rememberVectorPainter(Icons.AutoMirrored.Filled.Backspace), onClick = { onKeyPress("delete") }, backgroundColor = specialKeyBackgroundColor, iconColor = keyTextColor, modifier = Modifier.weight(1f), onSwipe = { onKeyPress("clear_composition") }, onLongClick = { onKeyPress("delete") }, onPress = { onKeyPressDown?.invoke("delete") })
                     }
@@ -108,16 +108,16 @@ fun NumberKeyboardLayout(
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        KeyButton(text = "+", onClick = { onKeyPress("+") }, backgroundColor = keyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke("+") })
+                        KeyButton(text = "-", onClick = { onKeyPress("-") }, backgroundColor = keyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke("-") })
                         listOf("4","5","6").forEach { k -> KeyButton(text = k, onClick = { onKeyPress(k) }, backgroundColor = keyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke(k) }) }
-                        KeyButton(text = "空格", onClick = { onKeyPress("space") }, backgroundColor = specialKeyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke("space") })
+                        KeyButton(text = "符号", onClick = { onKeyPress("symbol") }, backgroundColor = specialKeyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke("symbol") })
                     }
                     // 第三行：符号 | 7 | 8 | 9 | 表情
                     Row(
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        KeyButton(text = "-", onClick = { onKeyPress("-") }, backgroundColor = keyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke("-") })
+                        KeyButton(text = "*", onClick = { onKeyPress("*") }, backgroundColor = keyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke("*") })
                         listOf("7","8","9").forEach { k -> KeyButton(text = k, onClick = { onKeyPress(k) }, backgroundColor = keyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke(k) }) }
                         IconKeyButton(icon = rememberVectorPainter(Icons.Default.EmojiEmotions), onClick = { onKeyPress("emoji") }, backgroundColor = specialKeyBackgroundColor, iconColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke("emoji") })
                     }
@@ -127,7 +127,7 @@ fun NumberKeyboardLayout(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         IconKeyButton(icon = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack), onClick = { onKeyPress("abc") }, backgroundColor = specialKeyBackgroundColor, iconColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke("abc") })
-                        KeyButton(text = "符号", onClick = { onKeyPress("symbol") }, backgroundColor = specialKeyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke("symbol") })
+                        KeyButton(text = "/", onClick = { onKeyPress("/") }, backgroundColor = keyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke("/") })
                         KeyButton(text = "0", onClick = { onKeyPress("0") }, backgroundColor = keyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1.5f), onPress = { onKeyPressDown?.invoke("0") })
                         KeyButton(text = ".", onClick = { onKeyPress(".") }, backgroundColor = keyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1f), onPress = { onKeyPressDown?.invoke(".") })
                         KeyButton(text = "确定", onClick = { onKeyPress("enter") }, backgroundColor = specialKeyBackgroundColor, textColor = keyTextColor, modifier = Modifier.weight(1.2f), onPress = { onKeyPressDown?.invoke("enter") })
@@ -235,12 +235,12 @@ private fun NumberRows(
                 )
             }
             KeyButton(
-                text = "空格",
-                onClick = { onKeyPress("space") },
+                text = "符号",
+                onClick = { onKeyPress("symbol") },
                 backgroundColor = specialKeyBackgroundColor,
                 textColor = keyTextColor,
                 modifier = Modifier.weight(1f),
-                onPress = { onKeyPressDown?.invoke("space") }
+                onPress = { onKeyPressDown?.invoke("symbol") }
             )
         }
 
@@ -295,12 +295,12 @@ private fun NumberRows(
                 onPress = { onKeyPressDown?.invoke("abc") }
             )
             KeyButton(
-                text = "符号",
-                onClick = { onKeyPress("symbol") },
-                backgroundColor = specialKeyBackgroundColor,
+                text = "/",
+                onClick = { onKeyPress("/") },
+                backgroundColor = keyBackgroundColor,
                 textColor = keyTextColor,
                 modifier = Modifier.weight(1f),
-                onPress = { onKeyPressDown?.invoke("symbol") }
+                onPress = { onKeyPressDown?.invoke("/") }
             )
             KeyButton(
                 text = "0",
