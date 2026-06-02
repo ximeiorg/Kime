@@ -66,6 +66,7 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         private const val TAG = "XimeInputMethodService"
         private const val DARK_MODE_LIGHT = 0
         private const val DARK_MODE_DARK = 1
+        private const val DARK_MODE_SYSTEM = 2
     }
 
     private val lifecycleRegistry = LifecycleRegistry(this)
@@ -147,12 +148,27 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     }
     
     fun toggleDarkMode() {
-        val newMode = if (uiState.value.darkMode == DARK_MODE_LIGHT) DARK_MODE_DARK else DARK_MODE_LIGHT
+        val currentMode = uiState.value.darkMode
+        val newMode = when (currentMode) {
+            DARK_MODE_LIGHT -> DARK_MODE_DARK
+            DARK_MODE_DARK -> DARK_MODE_LIGHT
+            else -> { // DARK_MODE_SYSTEM: 切换到当前系统主题的反面
+                if (isDarkTheme()) DARK_MODE_LIGHT else DARK_MODE_DARK
+            }
+        }
         saveDarkModePreference(newMode)
     }
     
     fun isDarkTheme(): Boolean {
-        return uiState.value.darkMode == DARK_MODE_DARK
+        return when (uiState.value.darkMode) {
+            DARK_MODE_DARK -> true
+            DARK_MODE_SYSTEM -> {
+                val nightModeFlags = resources.configuration.uiMode and
+                        android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES
+            }
+            else -> false
+        }
     }
 
     override fun onCreate() {

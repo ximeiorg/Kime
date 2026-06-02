@@ -84,8 +84,19 @@ fun ThemeSettingsContent(
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    ThemeCard(
+                        title = "跟随系统",
+                        isSelected = uiState.darkMode == 2,
+                        isDark = false,
+                        isSystem = true,
+                        onClick = {
+                            viewModel.setDarkMode(2)
+                            onThemeChanged()
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
                     ThemeCard(
                         title = "浅色",
                         isSelected = uiState.darkMode == 0,

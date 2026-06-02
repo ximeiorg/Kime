@@ -354,7 +354,8 @@ fun ThemeCard(
     isSelected: Boolean,
     isDark: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSystem: Boolean = false
 ) {
     val backgroundColor = if (isDark) Color(0xFF202124) else Color(0xFFE8EAED)
     val keyColor = if (isDark) Color(0xFF35363A) else Color(0xFFFFFFFF)
@@ -390,56 +391,144 @@ fun ThemeCard(
                     .fillMaxSize()
                     .padding(8.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(backgroundColor)
-                        .padding(4.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
+                if (isSystem) {
+                    // 跟随系统: 左半浅色 + 右半深色
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .clip(RoundedCornerShape(6.dp))
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(12.dp)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(candidateBarColor)
-                                .padding(horizontal = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
+                        Row(modifier = Modifier.fillMaxSize()) {
+                            // 左半浅色
                             Box(
                                 modifier = Modifier
-                                    .width(16.dp)
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(if (isDark) Color(0xFF8AB4F8) else Color(0xFF1A73E8))
-                            )
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(topStart = 6.dp, bottomStart = 6.dp))
+                                    .background(Color(0xFFE8EAED))
+                                    .padding(3.dp)
+                            ) {
+                                Column(modifier = Modifier.fillMaxSize()) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(Color(0xFFF8F9FA))
+                                            .padding(horizontal = 3.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(12.dp)
+                                                .height(4.dp)
+                                                .clip(RoundedCornerShape(1.dp))
+                                                .background(Color(0xFF1A73E8))
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(Color.White)
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.width(1.dp))
+                            // 右半深色
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(topEnd = 6.dp, bottomEnd = 6.dp))
+                                    .background(Color(0xFF202124))
+                                    .padding(3.dp)
+                            ) {
+                                Column(modifier = Modifier.fillMaxSize()) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(Color(0xFF2D2D2D))
+                                            .padding(horizontal = 3.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(12.dp)
+                                                .height(4.dp)
+                                                .clip(RoundedCornerShape(1.dp))
+                                                .background(Color(0xFF8AB4F8))
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .weight(1f)
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(Color(0xFF35363A))
+                                    )
+                                }
+                            }
                         }
-                        
-                        Spacer(modifier = Modifier.height(4.dp))
-                        
-                        repeat(3) { rowIndex ->
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(backgroundColor)
+                            .padding(4.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .weight(1f)
-                                    .padding(vertical = 1.dp),
-                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                    .height(12.dp)
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(candidateBarColor)
+                                    .padding(horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                val keysInRow = if (rowIndex == 2) 4 else 10
-                                repeat(keysInRow) { keyIndex ->
-                                    val isSpecialKey = (rowIndex == 0 && keyIndex == 0) ||
-                                            (rowIndex == 2 && (keyIndex == 0 || keyIndex == 3))
-                                    Box(
-                                        modifier = Modifier
-                                            .weight(if (isSpecialKey) 1.5f else 1f)
-                                            .fillMaxHeight()
-                                            .clip(RoundedCornerShape(3.dp))
-                                            .background(if (isSpecialKey) specialKeyColor else keyColor)
-                                    )
+                                Box(
+                                    modifier = Modifier
+                                        .width(16.dp)
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(2.dp))
+                                        .background(if (isDark) Color(0xFF8AB4F8) else Color(0xFF1A73E8))
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(4.dp))
+                            
+                            repeat(3) { rowIndex ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .weight(1f)
+                                        .padding(vertical = 1.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    val keysInRow = if (rowIndex == 2) 4 else 10
+                                    repeat(keysInRow) { keyIndex ->
+                                        val isSpecialKey = (rowIndex == 0 && keyIndex == 0) ||
+                                                (rowIndex == 2 && (keyIndex == 0 || keyIndex == 3))
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(if (isSpecialKey) 1.5f else 1f)
+                                                .fillMaxHeight()
+                                                .clip(RoundedCornerShape(3.dp))
+                                                .background(if (isSpecialKey) specialKeyColor else keyColor)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -459,15 +548,6 @@ fun ThemeCard(
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                     )
-                    if (isSelected) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
                 }
             }
         }
@@ -581,26 +661,27 @@ fun KeyboardThemeCard(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(12.dp)
+                            .size(14.dp)
                             .clip(RoundedCornerShape(2.dp))
                             .background(specialKeyColor)
+                            .padding(end = 4.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = theme.name,
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         color = if (isSelected) accentColor else MaterialTheme.colorScheme.onSurface
                     )
-                    if (isSelected) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            tint = accentColor,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+//                    if (isSelected) {
+//                        Spacer(modifier = Modifier.width(4.dp))
+//                        Icon(
+//                            imageVector = Icons.Default.Check,
+//                            contentDescription = null,
+//                            tint = accentColor,
+//                            modifier = Modifier.size(16.dp)
+//                        )
+//                    }
                 }
             }
         }

@@ -81,7 +81,8 @@ object SettingsPreferences {
     }
     
     fun getDarkMode(context: Context): Int {
-        return getPrefs(context).getInt(KEY_DARK_MODE, 0)
+        // 0 = 浅色, 1 = 深色, 2 = 跟随系统（默认）
+        return getPrefs(context).getInt(KEY_DARK_MODE, 2)
     }
     
     fun setDarkMode(context: Context, mode: Int) {

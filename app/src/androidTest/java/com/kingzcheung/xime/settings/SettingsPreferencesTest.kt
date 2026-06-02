@@ -32,11 +32,11 @@ class SettingsPreferencesTest {
 
     @Test
     fun `dark mode persists integer setting`() {
-        assertEquals(0, SettingsPreferences.getDarkMode(context))
-
-        SettingsPreferences.setDarkMode(context, 2)
-
         assertEquals(2, SettingsPreferences.getDarkMode(context))
+
+        SettingsPreferences.setDarkMode(context, 0)
+
+        assertEquals(0, SettingsPreferences.getDarkMode(context))
     }
 
     @Test
