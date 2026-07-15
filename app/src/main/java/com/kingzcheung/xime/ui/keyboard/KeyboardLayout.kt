@@ -135,6 +135,7 @@ fun KeyboardLayout(
     val shadowElevation = kbShadow.elevation.dp
     val shadowShapeRadius = kbShadow.shapeRadius.dp
     val schemaName = uiState.schemaName
+    val isMicrosoftDoublePinyin = schemaName.contains("微软双拼")
     val enterKeyText = uiState.enterKeyText
     val isDarkTheme = uiState.isDarkTheme
     val isSttEnabled = uiState.isSttEnabled
@@ -322,12 +323,14 @@ fun KeyboardLayout(
                     // 第二行
                     if (isVoiceMode) {
                         Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 16.dp)
+                            modifier =
+                                if (isMicrosoftDoublePinyin)
+                                    Modifier.weight(1f)
+                                else
+                                    Modifier.weight(1f).padding(horizontal = 16.dp)
                         ) {
                             DummyKeyboardRow(
-                                keysCount = 9,
+                                keysCount = if (isMicrosoftDoublePinyin) 10 else 9,
                                 keyBackgroundColor = keyBackgroundColor.copy(alpha = 0.5f),
                                 keyboardBackgroundColor = keyboardBackgroundColor
                             )
@@ -335,7 +338,11 @@ fun KeyboardLayout(
                     } else {
                         Box(modifier = Modifier.weight(1f)) {
                             KeyboardRowWithConfig(
-                                keys = listOf("a", "s", "d", "f", "g", "h", "j", "k", "l"),
+                                keys =
+                                    if (isMicrosoftDoublePinyin)
+                                        listOf("a", "s", "d", "f", "g", "h", "j", "k", "l", ";")
+                                    else
+                                        listOf("a", "s", "d", "f", "g", "h", "j", "k", "l"),
                                 onKeyPress = onKeyPress,
                                 config = KeyboardRowConfig(
                                     keyBackgroundColor = keyBackgroundColor,
@@ -347,7 +354,7 @@ fun KeyboardLayout(
                                 ),
                                 isShifted = visualIsShifted,
                                 isAsciiMode = isAsciiMode,
-                                modifier = Modifier.padding(horizontal = 16.dp),
+                                modifier = if (isMicrosoftDoublePinyin) Modifier else Modifier.padding(horizontal = 16.dp),
                                 onSwipeStateChange = { state, bounds ->
                                     processSwipeState(
                                         state,
@@ -966,7 +973,9 @@ fun KeyboardRowWithConfig(
             // 键帽显示文本
             val rawCommitValue = KeysConfigHelper.getKeyCommitValue(key, isAsciiMode)
             val commitValue = if (isShifted) rawCommitValue.uppercase() else rawCommitValue
-            val displayText = if (isAsciiMode) {
+            val displayText = if (isShifted && key == ";") {
+                if (isAsciiMode) ":" else "："
+            } else if (isAsciiMode) {
                 commitValue
             } else {
                 KeysConfigHelper.getKeyDisplayLabel(key, isAsciiMode)
@@ -1188,6 +1197,7 @@ private fun LandscapeKeyboardContent(
     val shadowElevation = kbShadow.elevation.dp
     val shadowShapeRadius = kbShadow.shapeRadius.dp
     val schemaName = uiState.schemaName
+    val isMicrosoftDoublePinyin = schemaName.contains("微软双拼")
     val enterKeyText = uiState.enterKeyText
     val onKeyPressDown = callbacks.onKeyPressDown
     val onKeyRelease = callbacks.onKeyRelease
@@ -1427,7 +1437,7 @@ private fun LandscapeKeyboardContent(
                     .padding(end = staggerStep)
             ) {
                 CompactKeyboardRowWithConfig(
-                    keys = listOf("g", "h", "j", "k", "l"),
+                    keys = if (isMicrosoftDoublePinyin) listOf("h", "j", "k", "l", ";") else listOf("g", "h", "j", "k", "l"),
                     onKeyPress = onKeyPress,
                     config = KeyboardRowConfig(
                         keyBackgroundColor = keyBackgroundColor,
@@ -1991,7 +2001,9 @@ fun CompactKeyboardRowWithConfig(
 
             val rawCommitValue = KeysConfigHelper.getKeyCommitValue(key, isAsciiMode)
             val commitValue = if (isShifted) rawCommitValue.uppercase() else rawCommitValue
-            val compactDisplayText = if (isAsciiMode) commitValue else KeysConfigHelper.getKeyDisplayLabel(key, isAsciiMode)
+            val compactDisplayText = if (isShifted && key == ";") {
+                if (isAsciiMode) ":" else "："
+            } else if (isAsciiMode) commitValue else KeysConfigHelper.getKeyDisplayLabel(key, isAsciiMode)
             val compactOnClick = remember(key, commitValue, onKeyPress) { { onKeyPress(commitValue) } }
             val compactOnPress: (() -> Unit)? = remember(key, onKeyPressDown) { { onKeyPressDown?.invoke(key); Unit } }
             val compactOnRelease: (() -> Unit)? = remember(key, onKeyRelease) { { onKeyRelease?.invoke(key); Unit } }

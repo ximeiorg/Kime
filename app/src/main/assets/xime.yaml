@@ -143,6 +143,7 @@ keyboard:
       j: { tap: "j", swipe_up: { label: "－", value: "-" }, swipe_down: { label: "日曰早廾刂虫丿Ⅱ", action: "none", display: "bubble" }, long_press: { display: "bubble", values: ["j", "J"] } }
       k: { tap: "k", swipe_up: { label: "（", value: "(" }, swipe_down: { label: "口Ⅲ川", action: "none", display: "bubble" }, long_press: { display: "bubble", values: ["k", "K"] } }
       l: { tap: "l", swipe_up: { label: "）", value: ")" }, swipe_down: { label: "田甲囗四罒车皿力", action: "none", display: "bubble" }, long_press: { display: "bubble", values: ["l", "L"] } }
+      ";": { tap: { label: "；", value: ";" } }
 
       # ── 第三行 ──
       z: { tap: "z", swipe_up: { label: "＊", value: "*" }, swipe_down: { label: "", action: "none", display: "key" }, long_press: { display: "bubble", values: [ "z","Z"] } }
@@ -185,6 +186,7 @@ keyboard:
       j: { tap: "j", swipe_up: "-", long_press: { display: "bubble", values: ["j", "J"] } }
       k: { tap: "k", swipe_up: "(", long_press: { display: "bubble", values: ["k", "K"] } }
       l: { tap: "l", swipe_up: ")", long_press: { display: "bubble", values: ["l", "L"] } }
+      ";": { tap: ";" }
 
       # ── 第三行 ──
       z: { tap: "z", swipe_up: "*", long_press: { display: "bubble", values: ["z", "Z"] } }
