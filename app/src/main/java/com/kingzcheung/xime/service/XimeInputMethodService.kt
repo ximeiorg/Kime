@@ -1671,7 +1671,7 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             displayComments = display.displayComments
             isComposing = display.isComposing
         } else {
-            displayText = inputText
+            displayText = if (preeditText.isNotEmpty()) preeditText else inputText
             displayCandidates = filteredTexts
             displayComments = filteredComments
             isComposing = inputText.isNotEmpty()
@@ -1747,7 +1747,7 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
             displayComments = display.displayComments
             isComposing = display.isComposing
         } else {
-            displayText = result.inputText
+            displayText = if (result.preeditText.isNotEmpty()) result.preeditText else result.inputText
             displayCandidates = filteredTexts
             displayComments = filteredComments
             isComposing = result.inputText.isNotEmpty()
