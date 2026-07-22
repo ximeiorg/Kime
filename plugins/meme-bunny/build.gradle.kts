@@ -57,5 +57,5 @@ dependencies {
         implementation("org.jetbrains:annotations:23.0.0")
     }
     compileOnly(project(":plugin-core"))
-    implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("io.coil-kt:coil-compose:2.7.0")
 }
