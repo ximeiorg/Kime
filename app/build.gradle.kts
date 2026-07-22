@@ -480,8 +480,8 @@ dependencies {
     implementation("com.google.zxing:core:3.5.3")
 
     // Ktor embedded server for wireless import
-    implementation("io.ktor:ktor-server-core:3.1.2")
-    implementation("io.ktor:ktor-server-cio:3.1.2")
+    implementation("io.ktor:ktor-server-core:3.5.1")
+    implementation("io.ktor:ktor-server-cio:3.5.1")
 
     // Sora Code Editor for YAML viewing/editing
     implementation(platform("io.github.rosemoe:editor-bom:0.24.4"))
