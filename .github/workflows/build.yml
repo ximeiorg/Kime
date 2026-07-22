@@ -80,7 +80,7 @@ jobs:
           
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: unit-test-results
           path: app/build/test-results/testDebugUnitTest/
@@ -90,7 +90,7 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon
         
       - name: Upload Debug APKs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: debug-apks
           path: |
