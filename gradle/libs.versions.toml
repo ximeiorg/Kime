@@ -1,6 +1,6 @@
 [versions]
 agp = "9.1.0"
-kotlin = "2.3.20"
+kotlin = "2.4.10"
 kotlinSerialization = "2.3.20"
 coreKtx = "1.18.0"
 junit = "4.13.2"
