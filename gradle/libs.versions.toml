@@ -1,5 +1,5 @@
 [versions]
-agp = "9.1.0"
+agp = "9.3.0"
 kotlin = "2.3.20"
 kotlinSerialization = "2.3.20"
 coreKtx = "1.18.0"
