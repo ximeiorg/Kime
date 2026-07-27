@@ -505,15 +505,15 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
-    androidTestImplementation("androidx.test:runner:1.6.2")
-    androidTestImplementation("androidx.test:rules:1.6.1")
-    androidTestImplementation("androidx.concurrent:concurrent-futures:1.2.0")
+    androidTestImplementation("androidx.test:runner:1.7.0")
+    androidTestImplementation("androidx.test:rules:1.7.0")
+    androidTestImplementation("androidx.concurrent:concurrent-futures:1.3.0")
 }
 
 // Align concurrent-futures version: espresso 3.7.0 requires 1.2.0
 dependencies {
     constraints {
-        implementation("androidx.concurrent:concurrent-futures:1.2.0") {
+        implementation("androidx.concurrent:concurrent-futures:1.3.0") {
             because("test dependencies (espresso 3.7.0) require 1.2.0")
         }
     }
