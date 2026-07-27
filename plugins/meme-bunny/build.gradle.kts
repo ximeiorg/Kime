@@ -54,7 +54,7 @@ android.applicationVariants.all {
 
 dependencies {
     constraints {
-        implementation("org.jetbrains:annotations:23.0.0")
+        implementation("org.jetbrains:annotations:26.1.0")
     }
     compileOnly(project(":plugin-core"))
     implementation("io.coil-kt:coil-compose:2.7.0")

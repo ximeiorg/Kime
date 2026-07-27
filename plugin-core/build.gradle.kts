@@ -34,7 +34,7 @@ android {
 
 dependencies {
     constraints {
-        implementation("org.jetbrains:annotations:23.0.0")
+        implementation("org.jetbrains:annotations:26.1.0")
     }
     
     api(kotlin("stdlib"))
