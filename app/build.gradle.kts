@@ -220,8 +220,8 @@ dependencies {
     implementation("com.google.zxing:core:3.5.4")
 
     // Ktor embedded server for wireless import
-    implementation("io.ktor:ktor-server-core:3.5.1")
-    implementation("io.ktor:ktor-server-cio:3.5.1")
+    implementation("io.ktor:ktor-server-core:3.5.2")
+    implementation("io.ktor:ktor-server-cio:3.5.2")
     implementation(libs.kotlinx.serialization.json)
 
     // Sora Code Editor for YAML viewing/editing
