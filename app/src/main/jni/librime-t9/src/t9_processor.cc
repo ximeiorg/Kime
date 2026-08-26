@@ -68,13 +68,17 @@ T9Processor::T9Processor(const Ticket& ticket) : Processor(ticket) {
             //     → 拼音音节消歧；否则（英文 table_translator，如 melt_eng_t9）
             //     → 无左栏候选（kNone）。
             //   显式 t9/left_panel_mode: pinyin|none 覆盖 auto 判定。
+            //   t9_script_translator（词组快通道，perf/t9-fast-input-flush）是
+            //   script_translator 的复刻替换，同样具备拼音音节消歧能力，需一并
+            //   判定为拼音方案——否则左栏误判英文方案落入 kNone（空闲态）。
             std::string panel_mode;
             config->GetString("t9/left_panel_mode", &panel_mode);
             bool has_script_translator = false;
             if (auto translators = config->GetList("engine/translators")) {
                 for (auto it = translators->begin(); it != translators->end(); ++it) {
                     auto value = As<ConfigValue>(*it);
-                    if (value && value->str() == "script_translator") {
+                    if (value && (value->str() == "script_translator" ||
+                                  value->str() == "t9_script_translator")) {
                         has_script_translator = true;
                         break;
                     }

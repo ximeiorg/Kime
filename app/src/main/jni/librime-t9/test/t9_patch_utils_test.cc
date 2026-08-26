@@ -12,6 +12,7 @@ using rime::t9_patch_utils::EvaluatePacksState;
 using rime::t9_patch_utils::HasPreeditLuaFilter;
 using rime::t9_patch_utils::PacksState;
 using rime::t9_patch_utils::SanitizePackName;
+using rime::t9_patch_utils::BuildFastTranslatorPatchLines;
 using rime::t9_patch_utils::StripPacksLines;
 
 // ── SanitizePackName ──
@@ -167,4 +168,35 @@ TEST(T9PatchUtilsTest, PreeditFilter_Ignores_Doc_Example_In_Comment) {
 
 TEST(T9PatchUtilsTest, PreeditFilter_Empty_Content) {
   EXPECT_FALSE(HasPreeditLuaFilter(""));
+}
+
+// ── BuildFastTranslatorPatchLines（v3 插入式）──
+
+TEST(T9PatchUtilsTest, FastTranslator_InsertionTwoLines) {
+  const std::string schema =
+      "engine:\n"
+      "  translators:\n"
+      "    - punct_translator  #注释\n"
+      "    - script_translator\n";
+  const auto lines = BuildFastTranslatorPatchLines(schema);
+  ASSERT_EQ(lines.size(), 2u);
+  EXPECT_EQ(lines[0],
+            "  \"engine/translators/@after 1\": \"t9_script_translator@translator\"");
+  EXPECT_EQ(lines[1], "  \"translator/tag\": \"_t9_fast_only_\"");
+}
+
+TEST(T9PatchUtilsTest, FastTranslator_SkipWhenCustomTags) {
+  // schema 显式自定义 translator/tags：哨兵会被追加的 abc 绕过 → 保守不干预
+  const std::string schema =
+      "translator:\n"
+      "  dictionary: wanxiang\n"
+      "  tags:\n"
+      "    - abc\n"
+      "    - custom_tag\n";
+  EXPECT_TRUE(BuildFastTranslatorPatchLines(schema).empty());
+}
+
+TEST(T9PatchUtilsTest, FastTranslator_PlainSchemaNoTags) {
+  const std::string schema = "schema_id: t9_x\nengine:\n  translators:\n    - script_translator\n";
+  EXPECT_EQ(BuildFastTranslatorPatchLines(schema).size(), 2u);
 }

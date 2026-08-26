@@ -226,12 +226,14 @@ public:
         result.inputText = input ? input : "";
         result.preeditText = context.composition.preedit ?
             context.composition.preedit : "";
-        LOGI("readCurrentState: input='%s' num_candidates=%d", result.inputText.c_str(), context.menu.num_candidates);
+        // 汇总一条（逐候选日志已删：每键 20 条 logcat 写入与字符串创建
+        // 在快速输入热路径上非必要）
+        LOGI("readCurrentState: input='%s' num_candidates=%d",
+             result.inputText.c_str(), context.menu.num_candidates);
         if (context.menu.num_candidates > 0) {
             for (int i = 0; i < context.menu.num_candidates; ++i) {
                 const char* text = context.menu.candidates[i].text;
                 const char* comment = context.menu.candidates[i].comment;
-                LOGI("Candidate[%d]: text='%s' comment='%s'", i, text ? text : "", comment ? comment : "");
                 result.candidates.push_back(std::make_pair(
                     text ? text : "",
                     comment ? comment : ""
@@ -323,7 +325,6 @@ public:
             for (int i = 0; i < context.menu.num_candidates; ++i) {
                 const char* text = context.menu.candidates[i].text;
                 const char* comment = context.menu.candidates[i].comment;
-                LOGI("Candidate[%d]: text='%s' comment='%s'", i, text ? text : "", comment ? comment : "");
                 result.candidates.push_back(std::make_pair(
                     text ? text : "",
                     comment ? comment : ""
@@ -1504,10 +1505,36 @@ static jboolean DoEnsureT9SchemaPatches(
         patch_lines.push_back("  \"t9/enable_date_translator\": true");
     }
 
+    // 拼音方案判定：含 script_translator 的 schema 才支持词组快通道注入。
+    const bool is_pinyin_schema =
+        schema_content.find("script_translator") != std::string::npos;
+
     // 清理已废弃的 enable_abbrev_recall 产物
     const bool has_derive = existing_content.find("derive/^([a-z])") != std::string::npos;
     const bool has_abbrev_custom = existing_content.find("enable_abbrev_recall") != std::string::npos;
     bool need_remove_derive = has_derive || has_abbrev_custom;
+
+    // T9 拼音方案词组快通道：以两条单键 patch 接入 t9_script_translator
+    //（@after 1 插入第三位——首位 t9_user_translator @before 0、第二位
+    // t9_date_translator @after 0，同 key 会互相覆盖；@translator 复用原
+    // script_translator 的词典配置 namespace），不覆盖 translators 列表
+    //——用户对方案的 translators 补丁不受影响。
+    // 哨兵 tag（_t9_fast_only_）禁用原 script_translator 防同段双计算
+    //（空列表方式会自动回填 abc，故必须用单数 tag）；Query 固定处理 abc tag
+    // 不受哨兵影响。
+    // 幂等：custom 已含哨兵跳过；用户显式配置 translator/tag 或
+    // t9/disable_fast_translator 时跳过。
+    bool fast_translator_patch_changed = false;
+    if (is_pinyin_schema &&
+        existing_content.find(rime::t9_patch_utils::kT9FastOnlyTag) == std::string::npos &&
+        existing_content.find("\"translator/tag\"") == std::string::npos &&
+        existing_content.find("t9/disable_fast_translator") == std::string::npos) {
+        for (const auto& line :
+             rime::t9_patch_utils::BuildFastTranslatorPatchLines(schema_content)) {
+            patch_lines.push_back(line);
+            fast_translator_patch_changed = true;
+        }
+    }
 
     // translator/packs 个人词库：合法保留 / 畸形修复 / 缺失交由 PersonalDictManager。
     const std::string packs_name = "user_" + rime::t9_patch_utils::SanitizePackName(schema);
@@ -1588,12 +1615,13 @@ static jboolean DoEnsureT9SchemaPatches(
         actual_pack_name = packs_name;
     }
 
-    LOGI("T9Patches: applied '%s' (packs=%s)", schema,
-         actual_pack_name.c_str());
+    LOGI("T9Patches: applied '%s' (fast_translator=%d, packs=%s)", schema,
+         fast_translator_patch_changed ? 1 : 0, actual_pack_name.c_str());
 
     // 返回 true 表示词库/补丁尚未编译，调用方可据此触发部署。
     const bool need_deploy =
-        T9PackTableBinMissing(user_data_dir, actual_pack_name);
+        T9PackTableBinMissing(user_data_dir, actual_pack_name) ||
+        fast_translator_patch_changed;
     return need_deploy ? JNI_TRUE : JNI_FALSE;
 }
 

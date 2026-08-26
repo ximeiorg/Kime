@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <sstream>
+#include <vector>
 
 namespace rime {
 namespace t9_patch_utils {
@@ -122,6 +123,51 @@ bool HasPreeditLuaFilter(const std::string& content) {
     }
   }
   return false;
+}
+
+std::vector<std::string> BuildFastTranslatorPatchLines(
+    const std::string& schema_yaml_content) {
+  // 防御：schema 显式自定义 translator/tags（列表）时，tag 哨兵会被追加的
+  // abc 绕过（tags_ = [哨兵, abc, ...]），原 script_translator 仍查询 abc 段
+  // 造成双计算——保守不干预。YAML 嵌套形式：translator: 块内的 tags: 键。
+  size_t pos = 0;
+  bool in_translator_block = false;
+  size_t translator_indent = 0;
+  while (pos < schema_yaml_content.size()) {
+    const size_t eol = schema_yaml_content.find('\n', pos);
+    const size_t end =
+        eol == std::string::npos ? schema_yaml_content.size() : eol;
+    std::string line = schema_yaml_content.substr(pos, end - pos);
+    const size_t s = line.find_first_not_of(" \t\r");
+    if (s != std::string::npos) {
+      const size_t indent = s;
+      const std::string content = line.substr(s);
+      if (!in_translator_block) {
+        if (content.rfind("translator:", 0) == 0) {
+          in_translator_block = true;
+          translator_indent = indent;
+        }
+      } else {
+        if (indent > translator_indent) {
+          if (content.rfind("tags:", 0) == 0) {
+            return {};
+          }
+        } else {
+          in_translator_block = false;  // 块结束
+          if (content.rfind("translator:", 0) == 0) {
+            in_translator_block = true;
+            translator_indent = indent;
+          }
+        }
+      }
+    }
+    if (eol == std::string::npos) break;
+    pos = eol + 1;
+  }
+  return {
+      "  \"engine/translators/@after 1\": \"t9_script_translator@translator\"",
+      std::string("  \"translator/tag\": \"") + kT9FastOnlyTag + "\"",
+  };
 }
 
 }  // namespace t9_patch_utils

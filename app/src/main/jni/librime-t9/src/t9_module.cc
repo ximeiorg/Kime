@@ -6,6 +6,7 @@
 #include "t9_filter.h"
 #include "t9_date_translator.h"
 #include "t9_user_translator.h"
+#include "t9_script_translator.h"
 
 using namespace rime;
 
@@ -20,6 +21,9 @@ static void rime_t9_initialize() {
     // 九键数字序列用户词召回（按实际输入数字序列召回用户词，
     // 解决声母简拼组词无法被 pinyin 用户词典召回的问题）。
     r.Register("t9_user_translator", new Component<T9UserTranslator>);
+    // T9 快速词组翻译器：wordgraph 跨键增量缓存，由 T9 patch 管线以
+    // 插入式两条 patch 接入（@after 1 + 哨兵 tag），不覆盖 translators 列表。
+    r.Register("t9_script_translator", new Component<T9ScriptTranslator>);
 }
 
 static void rime_t9_finalize() {

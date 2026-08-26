@@ -93,6 +93,16 @@ class T9InputController(
     }
 
     /**
+     * 数字键合帧序号：每次 onDigitPressed 在主线程递增并捕获。
+     * 任务执行时若发现自己之后已有更新的数字键入队，则跳过本帧的 flush——
+     * set_input 是全量语义，中间帧的 compose 结果会被后续键完全覆盖，属纯浪费
+     * （长序列单次 compose 可达 400ms+，远超按键间隔，会持续堆积队列）。
+     * 仅数字键合帧：左选/右选/清空等低频路径保持原语义。
+     */
+    @Volatile
+    private var digitSeq = 0L
+
+    /**
      * 同步等待后台队列排空（仅 onRightCandidateSelected 使用）。
      * 该方法必须且只会被**非主线程**调用（服务层 keyProcessingDispatcher），
      * 阻塞的是该后台线程而非 UI；队列空闲时立即返回。
@@ -284,13 +294,20 @@ class T9InputController(
 
     fun onDigitPressed(digit: String) {
         val code = digit[0].code
+        val seq = ++digitSeq
         enqueue {
             rimeEngine.processKey(code, 0)
             // C++ T9Processor 采用异步 flush 模型：processKey 只标记 pending 动作，
             // 必须调用 FlushRimeInput 才能真正触发 set_input → compose。
             // 全程在后台线程执行，引擎 compose（2-23ms）不阻塞 UI 线程。
-            rimeEngine.t9FlushRimeInput()
-            refreshOnBackground()
+            //
+            // 合帧：快速连打时，非队尾的数字键帧跳过 flush（compose 结果会被后续键的
+            // 全量 set_input 完全覆盖）；队尾帧执行 flush 并刷新 UI。processKey 每键
+            // 照常执行（C++ pending_input_ 追加，微秒级），不丢按键、不延迟处理。
+            if (seq == digitSeq) {
+                rimeEngine.t9FlushRimeInput()
+                refreshOnBackground()
+            }
         }
     }
 

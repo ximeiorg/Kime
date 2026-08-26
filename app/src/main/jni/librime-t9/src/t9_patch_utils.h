@@ -17,6 +17,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace rime {
 namespace t9_patch_utils {
@@ -49,6 +50,25 @@ std::string StripPacksLines(const std::string& custom_yaml_content);
 // 扫描，不误伤仅含 preedit_format / 注释提及 preedit 的三方方案。
 // 命中时 DoEnsureT9SchemaPatches 默认 t9/isDisplayOriginalPreedit: true。
 bool HasPreeditLuaFilter(const std::string& content);
+
+// 生成词组快通道 translators 补丁行（插入式）：
+// 以两条单键 patch 接入 t9_script_translator（不覆盖 translators 列表，
+// 不冻结方案快照——用户对方案的 translators 补丁不受影响）：
+//   "engine/translators/@after 1": "t9_script_translator@translator"
+//     ↑ 插入第二位（首位是 t9_user_translator @before 0、第二位
+//       t9_date_translator @after 0，同 key 会互相覆盖）；@translator
+//       复用原 script_translator 的词典配置 namespace
+//   "translator/tag": "_t9_fast_only_"
+//     ↑ 哨兵 tag 禁用原 script_translator（避免同段双计算；tags_ 读到哨兵
+//       后不匹配 abc 段——空列表方式会自动回填 abc，故必须用单数 tag）
+// t9_script_translator::Query 固定处理 abc tag，不受哨兵影响。
+// 防御：schema 显式自定义 translator/tags（列表）时哨兵会被追加的 abc 绕过
+// → 返回空（不干预，保守回退）。
+// 返回 0 或 2 行（含缩进）；纯文本算法，纳入单测。
+std::vector<std::string> BuildFastTranslatorPatchLines(const std::string& schema_yaml_content);
+
+// 哨兵 tag 常量（与 t9_script_translator 接入约定一致）。
+inline constexpr const char* kT9FastOnlyTag = "_t9_fast_only_";
 
 }  // namespace t9_patch_utils
 }  // namespace rime
