@@ -43,19 +43,52 @@ ExtraSyllableCommitCheck LetterBufferStrategy::CheckExtraSyllableCommit(
         selection_count, static_cast<int>(comment_syllables.size())) - 1;
     if (cover_idx < 0) cover_idx = 0;
     const std::string& syl_covering_prev_opt = comment_syllables[cover_idx];
-    check.last_syl_covers_prev_opt =
-        syl_covering_prev_opt == prev_selected_option.pinyin ||
-        StartsWith(syl_covering_prev_opt, prev_selected_option.pinyin);
-    // 公共前缀长度：末音节是末选择真前缀（如 'gu' ⊂ 'gua'）时，
-    // 该长度决定退还未消费位数（initials-only 分支据此计算，替代固定 digit_length-1）。
-    // T9 数字码与拼音字母 1:1，字母前缀长度即已消费的数字位数。
+
+    // S9：覆盖判定改用数字码而非字母前缀。
+    // 字母前缀（StartsWith("hen","he")）会把更长的不同音节误判为覆盖，
+    // 但"hen"→"436"≠"he"→"43"，用户从未输入末音节所需的额外数字。
+    // 覆盖仅当：数字码相等（同一音节），或末选择是简拼且末音节以该字母开头（补全）。
+    const auto& pmap = T9PinyinMap::Instance();
+    auto syl_code_opt = pmap.PinyinToDigitCode(syl_covering_prev_opt);
+    auto opt_code_opt = pmap.PinyinToDigitCode(prev_selected_option.pinyin);
+    bool syl_digit_eq_opt =
+        syl_code_opt.has_value() && opt_code_opt.has_value() &&
+        *syl_code_opt == *opt_code_opt;
+    bool prev_opt_is_abbrev = prev_selected_option.pinyin.size() == 1;
+    bool syl_starts_with_opt_letter = prev_opt_is_abbrev &&
+        !syl_covering_prev_opt.empty() &&
+        syl_covering_prev_opt[0] == prev_selected_option.pinyin[0];
+    check.last_syl_covers_prev_opt = syl_digit_eq_opt || syl_starts_with_opt_letter;
+
+    // 公共前缀长度：用数字码计算，供 initials-only 分支退还未消费位数。
+    // 末音节更长（数字码以末选择为前缀但不等）时，仅首字母匹配，限制为 1。
     int overlap = 0;
-    int max_overlap = std::min(
-        static_cast<int>(syl_covering_prev_opt.size()),
-        static_cast<int>(prev_selected_option.pinyin.size()));
-    while (overlap < max_overlap &&
-           syl_covering_prev_opt[overlap] == prev_selected_option.pinyin[overlap]) {
-        ++overlap;
+    if (syl_code_opt.has_value() && opt_code_opt.has_value()) {
+        const std::string& syl_code = *syl_code_opt;
+        const std::string& opt_code = *opt_code_opt;
+        int max_overlap = std::min(
+            static_cast<int>(syl_code.size()),
+            static_cast<int>(opt_code.size()));
+        while (overlap < max_overlap &&
+               syl_code[overlap] == opt_code[overlap]) {
+            ++overlap;
+        }
+        // 末音节更长且以末选择数字码为前缀 → 仅首字母匹配，限制 overlap 为 1
+        bool syl_code_longer_starts_with_opt =
+            syl_code.size() > opt_code.size() &&
+            syl_code.compare(0, opt_code.size(), opt_code) == 0;
+        if (syl_code_longer_starts_with_opt && overlap > 1) {
+            overlap = 1;
+        }
+    } else {
+        // 数字码查询失败时回退到字母公共前缀
+        int max_overlap = std::min(
+            static_cast<int>(syl_covering_prev_opt.size()),
+            static_cast<int>(prev_selected_option.pinyin.size()));
+        while (overlap < max_overlap &&
+               syl_covering_prev_opt[overlap] == prev_selected_option.pinyin[overlap]) {
+            ++overlap;
+        }
     }
     check.covered_prefix_len = overlap;
 

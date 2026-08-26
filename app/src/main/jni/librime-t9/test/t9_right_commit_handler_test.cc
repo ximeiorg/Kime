@@ -1704,5 +1704,163 @@ TEST(T9RightCommitHandlerTest, LetterBufferPartialCommit_8268426_Tiao_Duplicated
     EXPECT_FALSE(result);   // partial commit — history 重复导致 full commit 判定失败
 }
 
+// ── 场景 [Bug-fix]: letterBuffer 末音节数字码前缀误判 full commit ──
+// 输入5143→左选k→左选he，右选"可恨 ke hen"。
+// 末音节"hen"→"436"是末选择"he"→"43"的字母超集但数字码不等，不应 full commit。
+// 修复前：StartsWith("hen","he")=true 误判覆盖 → full commit。
+// 修复后：改用数字码判定 → partial commit，剩余"3"→预编辑"可恨e"。
+TEST(T9RightCommitHandlerTest, LetterBufferSyllablePrefixMismatch_543_KeHen) {
+    std::vector<SyllableOption> sels{
+        SyllableOption("k", 1), SyllableOption("he", 2)};
+    std::vector<SyllableOption> history{sels[0], sels[1]};
+    auto ctx = MakeContext({
+        .digits = "543",
+        .selections = sels,
+        .consumed_count = 3,
+        .state = T9StateMachine::State::kSelection,
+        .selected_option = sels[1],
+        .selection_candidate_digits = std::optional<std::string>("43"),
+        .confirmed_pinyin = "k",
+        .selection_history = history,
+        .has_separator = true,
+        .separator_position = 1
+    });
+    T9RightCommitHandler handler;
+    bool result = handler.HandleRightCommit(ctx, std::optional<std::string>("ke hen"), 2);
+    EXPECT_FALSE(result);                                  // partial commit（非 full commit）
+    EXPECT_FALSE(ctx.input_buffer.is_empty());
+    EXPECT_FALSE(ctx.state_machine.is_idle());
+    EXPECT_EQ(0, ctx.input_buffer.selections.size());      // he 被消费，不保留
+    EXPECT_EQ("3", ctx.input_buffer.unassigned());         // 剩余 '3' → 预编辑 "可恨e"
+}
+
+// 同类：右选"匡衡 kuang heng"（末音节"heng"→"4364"同理），应 partial commit。
+TEST(T9RightCommitHandlerTest, LetterBufferSyllablePrefixMismatch_543_KuangHeng) {
+    std::vector<SyllableOption> sels{
+        SyllableOption("k", 1), SyllableOption("he", 2)};
+    std::vector<SyllableOption> history{sels[0], sels[1]};
+    auto ctx = MakeContext({
+        .digits = "543",
+        .selections = sels,
+        .consumed_count = 3,
+        .state = T9StateMachine::State::kSelection,
+        .selected_option = sels[1],
+        .selection_candidate_digits = std::optional<std::string>("43"),
+        .confirmed_pinyin = "k",
+        .selection_history = history,
+        .has_separator = true,
+        .separator_position = 1
+    });
+    T9RightCommitHandler handler;
+    bool result = handler.HandleRightCommit(ctx, std::optional<std::string>("kuang heng"), 2);
+    EXPECT_FALSE(result);                                  // partial commit
+    EXPECT_FALSE(ctx.input_buffer.is_empty());
+    EXPECT_FALSE(ctx.state_machine.is_idle());
+    EXPECT_EQ(0, ctx.input_buffer.selections.size());
+    EXPECT_EQ("3", ctx.input_buffer.unassigned());
+}
+
+// 同类（ge 分支）：左选 k+ge，右选"快跟 kuai gen"（末音节"gen"→"436"同理），应 partial commit。
+TEST(T9RightCommitHandlerTest, LetterBufferSyllablePrefixMismatch_543_KuaiGen) {
+    std::vector<SyllableOption> sels{
+        SyllableOption("k", 1), SyllableOption("ge", 2)};
+    std::vector<SyllableOption> history{sels[0], sels[1]};
+    auto ctx = MakeContext({
+        .digits = "543",
+        .selections = sels,
+        .consumed_count = 3,
+        .state = T9StateMachine::State::kSelection,
+        .selected_option = sels[1],
+        .selection_candidate_digits = std::optional<std::string>("43"),
+        .confirmed_pinyin = "k",
+        .selection_history = history,
+        .has_separator = true,
+        .separator_position = 1
+    });
+    T9RightCommitHandler handler;
+    bool result = handler.HandleRightCommit(ctx, std::optional<std::string>("kuai gen"), 2);
+    EXPECT_FALSE(result);                                  // partial commit
+    EXPECT_FALSE(ctx.input_buffer.is_empty());
+    EXPECT_FALSE(ctx.state_machine.is_idle());
+    EXPECT_EQ(0, ctx.input_buffer.selections.size());
+    EXPECT_EQ("3", ctx.input_buffer.unassigned());
+}
+
+// ── 场景 [Bug-fix]: apostrophe 末音节数字码前缀误判 full commit ──
+// 输入5143→只左选k（unassigned="43"），右选"可恨 ke hen"。
+// 末音节"hen"→"436"以"43"为前缀但≠"43"，不应 full commit。
+// 修复前：HandleCanCoverAll 用 syl_code 以 unassigned 为前缀判定 → 误判 full commit。
+// 修复后：改用"完整消费"语义 → partial commit，剩余"3"→预编辑"可恨e"。
+TEST(T9RightCommitHandlerTest, ApostropheSyllablePrefixMismatch_543_KeHen) {
+    std::vector<SyllableOption> sels{SyllableOption("k", 1)};
+    std::vector<SyllableOption> history{sels[0]};
+    auto ctx = MakeContext({
+        .digits = "543",
+        .selections = sels,
+        .consumed_count = 1,
+        .state = T9StateMachine::State::kSelection,
+        .selected_option = sels[0],
+        .selection_candidate_digits = std::optional<std::string>("43"),
+        .confirmed_pinyin = "k",
+        .selection_history = history,
+        .has_separator = true,
+        .separator_position = 1
+    });
+    T9RightCommitHandler handler;
+    bool result = handler.HandleRightCommit(ctx, std::optional<std::string>("ke hen"), 2);
+    EXPECT_FALSE(result);                                  // partial commit（非 full commit）
+    EXPECT_FALSE(ctx.input_buffer.is_empty());
+    EXPECT_FALSE(ctx.state_machine.is_idle());
+    EXPECT_EQ("3", ctx.input_buffer.unassigned());         // 剩余 '3' → 预编辑 "可恨e"
+}
+
+// 同类：右选"抗衡 kang heng"（末音节"heng"→"4364"同理），应 partial commit。
+TEST(T9RightCommitHandlerTest, ApostropheSyllablePrefixMismatch_543_KuangHeng) {
+    std::vector<SyllableOption> sels{SyllableOption("k", 1)};
+    std::vector<SyllableOption> history{sels[0]};
+    auto ctx = MakeContext({
+        .digits = "543",
+        .selections = sels,
+        .consumed_count = 1,
+        .state = T9StateMachine::State::kSelection,
+        .selected_option = sels[0],
+        .selection_candidate_digits = std::optional<std::string>("43"),
+        .confirmed_pinyin = "k",
+        .selection_history = history,
+        .has_separator = true,
+        .separator_position = 1
+    });
+    T9RightCommitHandler handler;
+    bool result = handler.HandleRightCommit(ctx, std::optional<std::string>("kang heng"), 2);
+    EXPECT_FALSE(result);                                  // partial commit
+    EXPECT_FALSE(ctx.input_buffer.is_empty());
+    EXPECT_FALSE(ctx.state_machine.is_idle());
+    EXPECT_EQ("3", ctx.input_buffer.unassigned());
+}
+
+// 同类（ge 分支）：右选"快跟 kuai gen"（末音节"gen"→"436"同理），应 partial commit。
+TEST(T9RightCommitHandlerTest, ApostropheSyllablePrefixMismatch_543_KuaiGen) {
+    std::vector<SyllableOption> sels{SyllableOption("k", 1)};
+    std::vector<SyllableOption> history{sels[0]};
+    auto ctx = MakeContext({
+        .digits = "543",
+        .selections = sels,
+        .consumed_count = 1,
+        .state = T9StateMachine::State::kSelection,
+        .selected_option = sels[0],
+        .selection_candidate_digits = std::optional<std::string>("43"),
+        .confirmed_pinyin = "k",
+        .selection_history = history,
+        .has_separator = true,
+        .separator_position = 1
+    });
+    T9RightCommitHandler handler;
+    bool result = handler.HandleRightCommit(ctx, std::optional<std::string>("kuai gen"), 2);
+    EXPECT_FALSE(result);                                  // partial commit
+    EXPECT_FALSE(ctx.input_buffer.is_empty());
+    EXPECT_FALSE(ctx.state_machine.is_idle());
+    EXPECT_EQ("3", ctx.input_buffer.unassigned());
+}
+
 }  // namespace
 }  // namespace rime

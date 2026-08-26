@@ -184,12 +184,15 @@ bool ApostropheStrategy::HandleCanCoverAll(
         if (unassigned_syl_index < alignment.syllable_count()) {
             const std::string& syl_code = alignment.syllable_codes[unassigned_syl_index];
             if (!syl_code.empty()) {
+                // S9：改用"完整消费"语义——unassigned 被完整消费才算覆盖，
+                // 不允许候选音节数字码更长（如"hen"→"436"以"43"为前缀但≠"43"）。
+                // 简拼 unassigned（1 位）首字母匹配即覆盖；全拼级要求 syl_code 更短或相等。
                 if (unassigned_str.size() == 1 &&
                     syl_code[0] == unassigned_str[0]) {
                     unassigned_covered = true;
                 } else if (unassigned_str.size() > 1 &&
-                           syl_code.size() >= unassigned_str.size() &&
-                           syl_code.compare(0, unassigned_str.size(), unassigned_str) == 0) {
+                           syl_code.size() <= unassigned_str.size() &&
+                           unassigned_str.compare(0, syl_code.size(), syl_code) == 0) {
                     unassigned_covered = true;
                 }
             }
