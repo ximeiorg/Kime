@@ -217,9 +217,9 @@ dependencies {
     implementation(libs.coil)
 
     // OkHttp for WebSocket and model download
-    implementation("com.squareup.okhttp3:okhttp:5.4.0")
+    implementation("com.squareup.okhttp3:okhttp:5.5.0")
     // okhttp-sse for SSE stream parsing (plugin streaming API)
-    implementation("com.squareup.okhttp3:okhttp-sse:5.4.0")
+    implementation("com.squareup.okhttp3:okhttp-sse:5.5.0")
     // Apache Commons Compress for tar.bz2 extraction
     implementation("org.apache.commons:commons-compress:1.28.0")
 
