@@ -258,7 +258,7 @@ dependencies {
     testImplementation("org.mockito:mockito-core:5.23.0")
     testImplementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
     // JVM 单测使用真实 org.json 实现（android.jar 内为抛异常的 stub）
-    testImplementation("org.json:json:20240303")
+    testImplementation("org.json:json:20260814")
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
